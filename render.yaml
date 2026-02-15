@@ -1,42 +1,14 @@
 services:
-  # PostgreSQL Database
-  - type: pserv
-    name: mountain-made-db
-    env: docker
-    plan: free
-    region: singapore
-
   # Web Service
   - type: web
     name: mountain-made-app
     env: node
-    region: singapore
     plan: free
     buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DB_HOST
-        fromDatabase:
-          name: mountain-made-db
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: mountain-made-db
-          property: port
-      - key: DB_NAME
-        fromDatabase:
-          name: mountain-made-db
-          property: database
-      - key: DB_USER
-        fromDatabase:
-          name: mountain-made-db
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: mountain-made-db
-          property: password
       - key: JWT_SECRET
         value: mountain-made-secret-key-2026-change-this
       - key: ADMIN_EMAIL
