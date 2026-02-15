@@ -55,7 +55,7 @@ const upload = multer({
 
 // Middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : 'http://localhost:3000',
+  origin: true,
   credentials: true
 }));
 app.use(express.json());
@@ -189,14 +189,18 @@ const initializeApp = async () => {
     console.log('✓ Application initialized successfully');
   } catch (error) {
     console.error('Application initialization failed:', error);
-    process.exit(1);
+    // Don't exit on Vercel, just log the error
+    if (process.env.VERCEL !== '1') {
+      process.exit(1);
+    }
   }
 };
 
-// Start server
-const startServer = async () => {
-  await initializeApp();
-  
+// Initialize the app immediately for Vercel
+initializeApp();
+
+// Only start server if not running on Vercel (for local development)
+if (process.env.VERCEL !== '1' && require.main === module) {
   app.listen(PORT, () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════╗
@@ -212,8 +216,7 @@ const startServer = async () => {
 ╚═══════════════════════════════════════════════════════╝
     `);
   });
-};
+}
 
-startServer();
-
+// Export for Vercel
 module.exports = app;

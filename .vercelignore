@@ -1,0 +1,10 @@
+node_modules
+.env
+.env.local
+.env.production
+.git
+*.log
+.vscode
+.idea
+restart-server.ps1
+TODO.md

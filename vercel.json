@@ -21,6 +21,12 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "VERCEL": "1"
+  },
+  "functions": {
+    "server.js": {
+      "maxDuration": 10
+    }
   }
 }
