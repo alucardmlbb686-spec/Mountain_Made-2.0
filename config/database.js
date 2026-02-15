@@ -26,6 +26,13 @@ if (process.env.DB_PASSWORD) {
   poolConfig.password = process.env.DB_PASSWORD;
 }
 
+// Add SSL for production (Neon, Supabase, etc.)
+if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+  poolConfig.ssl = {
+    rejectUnauthorized: false
+  };
+}
+
 // Create a temporary pool config for the postgres database (to create the target database if it doesn't exist)
 const adminPoolConfig = {
   host: process.env.DB_HOST || 'localhost',
@@ -41,6 +48,13 @@ if (process.env.DB_PASSWORD) {
   adminPoolConfig.password = process.env.DB_PASSWORD;
 }
 
+// Add SSL for production
+if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+  adminPoolConfig.ssl = {
+    rejectUnauthorized: false
+  };
+}
+
 const pool = new Pool(poolConfig);
 
 pool.on('connect', () => {
@@ -54,6 +68,13 @@ pool.on('error', (err) => {
 
 // Create database if it doesn't exist
 const ensureDatabaseExists = async () => {
+  // Skip database creation on Vercel/production (Neon, Supabase, etc.)
+  // These services pre-create the database
+  if (process.env.VERCEL === '1' || process.env.NODE_ENV === 'production') {
+    console.log('✓ Using existing cloud database');
+    return;
+  }
+  
   const adminPool = new Pool(adminPoolConfig);
   const client = await adminPool.connect();
   try {
