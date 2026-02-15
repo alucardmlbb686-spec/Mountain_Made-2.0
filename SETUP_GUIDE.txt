@@ -1,0 +1,131 @@
+╔═══════════════════════════════════════════════════════════════════════╗
+║                                                                       ║
+║              MOUNTAIN MADE 2.0 - QUICK SETUP GUIDE                   ║
+║                                                                       ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+STEP 1: DATABASE SETUP (PostgreSQL)
+────────────────────────────────────────────────────────────────────────
+Method A - Using pgAdmin (Recommended):
+  1. Open pgAdmin 
+  2. Connect to your PostgreSQL server
+  3. Right-click on "Databases" → Create → Database
+  4. Database name: mountain_made
+  5. Click Save
+
+Method B - Using Command Line:
+  psql -U postgres
+  CREATE DATABASE mountain_made;
+  \q
+
+STEP 2: CONFIGURE APPLICATION
+────────────────────────────────────────────────────────────────────────
+1. Copy .env.example to .env:
+   - Windows: copy .env.example .env
+   - Mac/Linux: cp .env.example .env
+
+2. Edit .env file and update these values:
+   DB_PASSWORD=your_postgresql_password
+   JWT_SECRET=change_this_to_a_long_random_string
+   
+3. Optional: Change admin credentials:
+   ADMIN_EMAIL=admin@mountainmade.com
+   ADMIN_PASSWORD=Admin@123
+
+STEP 3: INSTALL DEPENDENCIES
+────────────────────────────────────────────────────────────────────────
+npm install
+
+STEP 4: START THE APPLICATION
+────────────────────────────────────────────────────────────────────────
+npm start
+
+The database tables will be created automatically on first run!
+
+STEP 5: ACCESS THE APPLICATION
+────────────────────────────────────────────────────────────────────────
+Main Website:  http://localhost:3000
+Admin Panel:   http://localhost:3000/admin
+
+Default Admin Login:
+  Email:    admin@mountainmade.com
+  Password: Admin@123
+
+STEP 6: ADD PRODUCTS (IMPORTANT!)
+────────────────────────────────────────────────────────────────────────
+1. Login to admin panel: http://localhost:3000/admin
+2. Go to "Products Management"
+3. Click "Add Product" button
+4. Fill in product details:
+   - Name (required)
+   - Description
+   - Category (select from dropdown)
+   - Price (required)
+   - Wholesale Price (optional, for wholesale customers)
+   - Stock Quantity (required)
+   - Image URL (use placeholder: /images/placeholder.jpg)
+5. Click Save
+
+Repeat for multiple products!
+
+TESTING THE SYSTEM
+────────────────────────────────────────────────────────────────────────
+1. Customer Flow:
+   - Go to http://localhost:3000
+   - Click "Register"
+   - Create a customer account
+   - Browse products and add to cart
+   - Complete checkout
+
+2. Wholesale Flow:
+   - Register with "Wholesale" account type
+   - Provide business name and tax ID
+   - Login as admin and approve the account
+   - Login as wholesale user to see special pricing
+
+3. Admin Flow:
+   - Manage products, orders, and users
+   - Approve wholesale accounts
+   - Update order statuses
+   - View dashboard statistics
+
+COMMON ISSUES
+────────────────────────────────────────────────────────────────────────
+Issue: "Cannot connect to database"
+Fix:   - Verify PostgreSQL is running
+       - Check DB_PASSWORD in .env
+       - Ensure database 'mountain_made' exists
+
+Issue: "Port 3000 already in use"
+Fix:   - Change PORT in .env to 3001 or another port
+       - Or stop the process using port 3000
+
+Issue: "No products showing"
+Fix:   - Login as admin and add products manually
+       - Products must have is_active = true
+
+NEXT STEPS
+────────────────────────────────────────────────────────────────────────
+1. Add your product images to public/images/
+2. Customize colors in public/css/styles.css (CSS variables)
+3. Update business information in footer
+4. Add more product categories as needed
+5. Configure email notifications (requires additional setup)
+
+PRODUCTION DEPLOYMENT
+────────────────────────────────────────────────────────────────────────
+Before deploying to production:
+  - Change JWT_SECRET to a strong random string
+  - Update admin credentials
+  - Set NODE_ENV=production
+  - Configure SSL/HTTPS
+  - Set up proper database backups
+  - Use PM2 or similar process manager
+
+For detailed documentation, see README.md
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                                                                       ║
+║                   🏔️ Happy Selling! 🏔️                              ║
+║                                                                       ║
+╚═══════════════════════════════════════════════════════════════════════╝

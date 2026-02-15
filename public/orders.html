@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders - Mountain Made 2.0</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand"><span class="logo-icon">🏔️</span>Mountain Made 2.0</a>
+            <ul class="navbar-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li id="admin-link" class="hidden"><a href="/admin">Admin</a></li>
+            </ul>
+            <div class="navbar-actions">
+                <div id="auth-buttons"><a href="/login" class="btn btn-secondary btn-sm">Login</a></div>
+                <div id="user-menu" class="hidden flex gap-2" style="align-items: center;">
+                    <a href="/orders" class="icon-button" title="My Orders">
+                        <i class="fas fa-shopping-bag"></i>
+                    </a>
+                    <a href="/cart" class="icon-button"><i class="fas fa-shopping-cart"></i><span id="cart-badge" class="cart-badge hidden">0</span></a>
+                    <div class="account-menu">
+                        <button id="account-toggle" class="icon-button" title="Account">
+                            <i class="fas fa-user-circle"></i>
+                        </button>
+                        <div id="account-dropdown" class="account-dropdown hidden">
+                            <div class="account-section">
+                                <strong>Account</strong>
+                                <button class="account-link" onclick="openProfileModal()">Edit Profile</button>
+                            </div>
+                            <div class="account-section">
+                                <strong>Billing Management</strong>
+                                <div class="account-text">Payment methods: GPay / Cash on Delivery</div>
+                                <div class="account-text">UPI ID: <span id="billing-upi">mountainmade@upi</span></div>
+                                <div class="account-text">Bank: Mountain Made Foods</div>
+                            </div>
+                            <div class="account-section">
+                                <strong>Appearance</strong>
+                                <button id="theme-toggle" class="account-link">Toggle Dark / Light</button>
+                            </div>
+                            <div class="account-section">
+                                <button id="account-logout" class="account-link account-link-danger">Logout</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <section class="container">
+        <div class="section-title">
+            <h2 style="font-size: 3rem; line-height: 1;">
+                <i class="fas fa-shopping-bag"></i>
+            </h2>
+        </div>
+        <div id="orders-list" class="orders-list"></div>
+    </section>
+
+    <style>
+        .orders-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .order-header-left {
+            min-width: 0;
+        }
+
+        .order-header-right {
+            text-align: right;
+        }
+
+        .order-status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.9rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .order-status-pending {
+            background: var(--warning-bg);
+            color: var(--warning);
+        }
+
+        .order-status-processing,
+        .order-status-shipped {
+            background: var(--info-bg);
+            color: var(--info);
+        }
+
+        .order-status-delivered {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .order-status-cancelled {
+            background: var(--error-bg);
+            color: var(--error);
+        }
+
+        @media (max-width: 600px) {
+            .order-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .order-header-right {
+                text-align: left;
+            }
+        }
+
+        /* Account Dropdown Styles */
+        .account-menu {
+            position: relative;
+        }
+
+        .account-dropdown {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.5rem);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            min-width: 280px;
+            z-index: 1000;
+            border: 1px solid var(--border-primary);
+        }
+
+        .account-dropdown.hidden {
+            display: none;
+        }
+
+        .account-section {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .account-section:last-child {
+            border-bottom: none;
+        }
+
+        .account-section strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .account-link {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            display: block;
+            text-align: left;
+            margin-top: 0.5rem;
+        }
+
+        .account-link:hover {
+            background: var(--primary-100);
+            border-color: var(--primary-400);
+        }
+
+        .account-link-danger {
+            background: var(--error-bg);
+            color: var(--error);
+            border-color: var(--error);
+        }
+
+        .account-link-danger:hover {
+            background: var(--error);
+            color: white;
+        }
+
+        .account-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            padding: 0.25rem 0;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .navbar {
+            background: #2d2d2d;
+            border-bottom-color: #404040;
+        }
+
+        body.dark-mode .card,
+        body.dark-mode .account-dropdown {
+            background: #2d2d2d;
+            border-color: #404040;
+        }
+
+        body.dark-mode .form-input,
+        body.dark-mode .form-select,
+        body.dark-mode .form-textarea {
+            background: #2d2d2d;
+            color: #e0e0e0;
+            border-color: #404040;
+        }
+    </style>
+
+    <script src="/js/main.js"></script>
+    <script>
+        let ordersRefreshInterval = null;
+
+        function getCustomerOrderStatusText(status) {
+            if (!status) return 'Order Pending';
+            switch (status) {
+                case 'pending':
+                    return 'Order Pending';
+                case 'processing':
+                    return 'Order Confirmed';
+                case 'shipped':
+                    return 'Shipped';
+                case 'delivered':
+                    return 'Delivered';
+                case 'cancelled':
+                    return 'Rejected by owner';
+                default:
+                    return status;
+            }
+        }
+
+        function getCustomerOrderStatusClass(status) {
+            switch (status) {
+                case 'pending':
+                    return 'order-status-badge order-status-pending';
+                case 'processing':
+                    return 'order-status-badge order-status-processing';
+                case 'shipped':
+                    return 'order-status-badge order-status-shipped';
+                case 'delivered':
+                    return 'order-status-badge order-status-delivered';
+                case 'cancelled':
+                    return 'order-status-badge order-status-cancelled';
+                default:
+                    return 'order-status-badge';
+            }
+        }
+
+        async function loadOrders() {
+            const data = await api.get('/orders');
+            const container = document.getElementById('orders-list');
+            
+            if (!data.orders || data.orders.length === 0) {
+                container.innerHTML = '<div class="card"><div class="card-content text-center"><p>You have no orders yet</p><a href="/products" class="btn btn-primary mt-2">Start Shopping</a></div></div>';
+                return;
+            }
+            
+            container.innerHTML = data.orders.map(order => `
+                <div class="card">
+                    <div class="card-content">
+                        <div class="order-header" style="margin-bottom: 1rem;">
+                            <div class="order-header-left">
+                                <strong>Order #${order.order_number}</strong>
+                                <p style="color: var(--text-light); margin-top: 0.25rem;">${formatDate(order.created_at)}</p>
+                            </div>
+                            <div class="order-header-right">
+                                <span class="${getCustomerOrderStatusClass(order.status)}">${getCustomerOrderStatusText(order.status)}</span>
+                                <p style="margin-top: 0.5rem; font-size: 1.25rem; font-weight: 700; color: var(--primary);">${formatCurrency(order.total_amount)}</p>
+                            </div>
+                        </div>
+                        <div style="border-top: 1px solid var(--border); padding-top: 1rem;">
+                            <p style="margin: 0 0 0.5rem; font-weight: 600; color: var(--primary);">
+                                Status: <span class="${getCustomerOrderStatusClass(order.status)}" style="margin-left: 0.25rem;">${getCustomerOrderStatusText(order.status)}</span>
+                            </p>
+                            <strong style="display: block; margin-bottom: 0.5rem;">Items:</strong>
+                            ${order.items.map(item => `<div style="display: flex; justify-content: space-between; padding: 0.5rem 0;"><span>${item.product_name} x ${item.quantity}</span><span>${formatCurrency(item.subtotal)}</span></div>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function startOrdersAutoRefresh() {
+            if (ordersRefreshInterval) return;
+            ordersRefreshInterval = setInterval(() => {
+                loadOrders().catch(err => console.error('Auto-refresh orders error:', err));
+            }, 15000); // refresh every 15 seconds
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (ordersRefreshInterval) {
+                clearInterval(ordersRefreshInterval);
+                ordersRefreshInterval = null;
+            }
+        });
+
+        (async () => {
+            const user = await auth.checkAuth();
+
+            if (!user) {
+                const redirect = encodeURIComponent('/orders');
+                window.location.href = `/login?redirect=${redirect}`;
+            } else {
+                await loadOrders();
+                startOrdersAutoRefresh();
+            }
+
+            // Account dropdown toggle
+            const accountToggle = document.getElementById('account-toggle');
+            const accountDropdown = document.getElementById('account-dropdown');
+
+            if (accountToggle && accountDropdown) {
+                accountToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    accountDropdown.classList.toggle('hidden');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.account-menu')) {
+                        accountDropdown.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Account logout handler
+            const accountLogout = document.getElementById('account-logout');
+            if (accountLogout) {
+                accountLogout.addEventListener('click', async () => {
+                    if (confirm('Are you sure you want to logout?')) {
+                        await auth.logout();
+                    }
+                });
+            }
+
+            // Theme toggle handler
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                // Load saved theme
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                if (savedTheme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                }
+
+                themeToggle.addEventListener('click', () => {
+                    document.body.classList.toggle('dark-mode');
+                    const isDark = document.body.classList.contains('dark-mode');
+                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

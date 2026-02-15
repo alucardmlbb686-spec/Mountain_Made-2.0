@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2c5f2d">
+    <link rel="manifest" href="/manifest.json">
+    <title>Mountain Made 2.0 - Premium Food E-Commerce</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Search Section Styles */
+        .search-section {
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%);
+            padding: 2rem 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-container {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            gap: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+            outline: none;
+            background: white;
+        }
+
+        /* Search Suggestions */
+        .search-suggestions {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 100%;
+            margin-top: 0.5rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            max-height: 320px;
+            overflow-y: auto;
+            z-index: 50;
+        }
+
+        .search-suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            gap: 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .search-suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-suggestion-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .search-suggestion-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            object-fit: cover;
+            background: var(--bg-secondary);
+            flex-shrink: 0;
+        }
+
+        .search-suggestion-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-suggestion-name {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .search-suggestion-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .search-suggestions-empty {
+            padding: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .search-button {
+            padding: 1rem 2rem;
+            background: var(--primary-900);
+            color: white;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            white-space: nowrap;
+        }
+
+        .search-button:hover {
+            background: var(--primary-800);
+        }
+
+        /* Carousel Styles */
+        .carousel-section {
+            background: var(--bg-secondary);
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .carousel-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .carousel-title {
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .carousel-wrapper {
+            position: relative;
+        }
+
+        .carousel-track-container {
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        .carousel-track {
+            display: flex;
+            gap: 1rem;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .carousel-item {
+            min-width: 280px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .carousel-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .carousel-item-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .carousel-item-content {
+            padding: 1rem;
+        }
+
+        .carousel-item-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-clamp: 2;
+            overflow: hidden;
+        }
+
+        .carousel-item-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-600);
+            margin-bottom: 0.75rem;
+        }
+
+        .carousel-item-footer {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .carousel-item-footer .btn {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .carousel-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid var(--border-primary);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .carousel-nav:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .carousel-prev {
+            left: -24px;
+        }
+
+        .carousel-next {
+            right: -24px;
+        }
+
+        .carousel-loader {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .search-input-wrapper {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .search-button {
+                padding: 0.875rem;
+            }
+
+            .carousel-item {
+                min-width: 240px;
+            }
+
+            .carousel-nav {
+                width: 40px;
+                height: 40px;
+            }
+
+            .carousel-prev {
+                left: 4px;
+            }
+
+            .carousel-next {
+                right: 4px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .carousel-item {
+                min-width: 200px;
+            }
+        }
+
+        /* Account Dropdown Styles */
+        .account-menu {
+            position: relative;
+        }
+
+        .account-dropdown {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.5rem);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            min-width: 280px;
+            z-index: 1000;
+            border: 1px solid var(--border-primary);
+        }
+
+        .account-dropdown.hidden {
+            display: none;
+        }
+
+        .account-section {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .account-section:last-child {
+            border-bottom: none;
+        }
+
+        .account-section strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .account-link {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            display: block;
+            text-align: left;
+            margin-top: 0.5rem;
+        }
+
+        .account-link:hover {
+            background: var(--primary-100);
+            border-color: var(--primary-400);
+        }
+
+        .account-link-danger {
+            background: var(--error-bg);
+            color: var(--error);
+            border-color: var(--error);
+        }
+
+        .account-link-danger:hover {
+            background: var(--error);
+            color: white;
+        }
+
+        .account-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            padding: 0.25rem 0;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .navbar {
+            background: #2d2d2d;
+            border-bottom-color: #404040;
+        }
+
+        body.dark-mode .card,
+        body.dark-mode .account-dropdown {
+            background: #2d2d2d;
+            border-color: #404040;
+        }
+
+        body.dark-mode .search-input,
+        body.dark-mode .search-suggestions {
+            background: #2d2d2d;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">
+                <span class="logo-icon">🏔️</span>
+                Mountain Made
+            </a>
+            
+            <ul class="navbar-menu">
+                <li><a href="/" class="active">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="#categories">Categories</a></li>
+                <li><a href="#about">About</a></li>
+                <li id="admin-link" class="hidden"><a href="/admin">Admin</a></li>
+            </ul>
+            
+            <div class="navbar-actions">
+                <div id="auth-buttons">
+                    <a href="/login" class="btn btn-secondary btn-sm">Login</a>
+                    <a href="/register" class="btn btn-primary btn-sm">Register</a>
+                    <a href="/login?admin=true" class="btn btn-sm" style="background: var(--accent); color: rgb(5, 79, 50); border: 1px solid rgb(5, 79, 50);">Admin</a>
+                </div>
+                
+                <div id="user-menu" class="hidden flex gap-2" style="align-items: center;">
+                    <a href="/orders" class="icon-button" title="My Orders">
+                        <i class="fas fa-shopping-bag"></i>
+                    </a>
+                    <a href="/cart" class="icon-button" title="Shopping Cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span id="cart-badge" class="cart-badge hidden">0</span>
+                    </a>
+                    <div class="account-menu">
+                        <button id="account-toggle" class="icon-button" title="Account">
+                            <i class="fas fa-user-circle"></i>
+                        </button>
+                        <div id="account-dropdown" class="account-dropdown hidden">
+                            <div class="account-section">
+                                <strong>Account</strong>
+                                <button class="account-link" onclick="openProfileModal()">Edit Profile</button>
+                            </div>
+                            <div class="account-section">
+                                <strong>Billing Management</strong>
+                                <div class="account-text">Payment methods: GPay / Cash on Delivery</div>
+                                <div class="account-text">UPI ID: <span id="billing-upi">mountainmade@upi</span></div>
+                                <div class="account-text">Bank: Mountain Made Foods</div>
+                            </div>
+                            <div class="account-section">
+                                <strong>Appearance</strong>
+                                <button id="theme-toggle" class="account-link">Toggle Dark / Light</button>
+                            </div>
+                            <div class="account-section">
+                                <button id="account-logout" class="account-link account-link-danger">Logout</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Search Bar Section -->
+    <section class="search-section">
+        <div class="search-container">
+            <div class="search-input-wrapper">
+                <input type="text" id="home-search-input" class="search-input" placeholder="Search for products..." />
+                <button id="home-search-btn" class="search-button">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+            <div id="home-search-suggestions" class="search-suggestions hidden"></div>
+        </div>
+    </section>
+
+    <!-- Product Carousel Slider -->
+    <section class="carousel-section">
+        <div class="carousel-container">
+            <h2 class="carousel-title">Featured Products</h2>
+            <div class="carousel-wrapper">
+                <button class="carousel-nav carousel-prev" id="carousel-prev">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="carousel-track-container">
+                    <div class="carousel-track" id="carousel-track">
+                        <div class="carousel-loader">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+                <button class="carousel-nav carousel-next" id="carousel-next">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section id="categories" class="container">
+        <div class="section-title">
+            <h2>Shop by Category</h2>
+            <p>Explore our wide range of premium food products</p>
+        </div>
+        
+        <div id="categories-grid" class="grid grid-3">
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dynamic Homepage Sections -->
+    <div id="homepage-sections-container"></div>
+
+    
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Mountain Made 2.0</h3>
+                <p>Premium organic food products from mountain farms to your table.</p>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="/products">Products</a></li>
+                    <li><a href="/#categories">Categories</a></li>
+                    <li><a href="/#about">About Us</a></li>
+                    <li><a href="/register?type=wholesale">Wholesale</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Customer Service</h3>
+                <ul>
+                    <li><a href="/orders">My Orders</a></li>
+                    <li><a href="/cart">Shopping Cart</a></li>
+                    <li><a href="#">Contact Us</a></li>
+                    <li><a href="#">FAQs</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <ul>
+                    <li><i class="fas fa-envelope"></i> hello@mountain-made.com</li>
+                    <li><i class="fas fa-phone"></i> (555) 123-4567</li>
+                    <li><i class="fas fa-map-marker-alt"></i> India, Manipur</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2026 Mountain Made 2.0. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+    <script>
+        // In-memory data for homepage
+        let homeCategories = [];
+        let carouselProducts = [];
+        let currentCarouselIndex = 0;
+
+        // Load categories
+        async function loadCategories() {
+            try {
+                const data = await api.get('/products/categories');
+                homeCategories = data.categories || [];
+                const grid = document.getElementById('categories-grid');
+                
+                if (homeCategories.length === 0) {
+                    grid.innerHTML = '<p class="text-center">No categories available</p>';
+                    return;
+                }
+                
+                grid.innerHTML = homeCategories.map(category => `
+                    <a href="/products?category=${category.id}" class="card">
+                        <img src="${category.image_url || '/images/placeholder.jpg'}" 
+                             alt="${category.name}" 
+                             class="card-image category-image"
+                             onerror="this.src='/images/placeholder.jpg'">
+                        <div class="card-content text-center">
+                            <h3 class="card-title">${category.name}</h3>
+                            <p class="card-description">${category.description || ''}</p>
+                        </div>
+                    </a>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+                document.getElementById('categories-grid').innerHTML = 
+                    '<p class="text-center">Failed to load categories</p>';
+            }
+        }
+        
+        // Load dynamic homepage sections with products
+        async function loadHomepageSections() {
+            try {
+                const data = await api.get('/products/homepage-sections');
+                const container = document.getElementById('homepage-sections-container');
+                
+                if (!data.sections || data.sections.length === 0) {
+                    container.innerHTML = '<section class="container"><div class="section-title"><h2>Featured Products</h2><p>No homepage sections configured yet. Add a section in the admin panel and assign products to it to feature them here.</p></div></section>';
+                    return;
+                }
+                
+                let html = '';
+                
+                data.sections.forEach(section => {
+                    html += `
+                        <section class="container">
+                            <div class="section-title">
+                                <h2>${section.name}</h2>
+                                ${section.description ? `<p>${section.description}</p>` : ''}
+                            </div>
+                            
+                            <div class="grid grid-4">
+                    `;
+
+                    if (section.products && section.products.length > 0) {
+                        section.products.forEach(product => {
+                            html += `
+                                <div class="card product-card">
+                                    ${product.stock_quantity < 10 && product.stock_quantity > 0 ? 
+                                        '<span class="product-badge">Low Stock</span>' : ''}
+                                    ${product.stock_quantity === 0 ? 
+                                        '<span class="product-badge" style="background: var(--error);">Out of Stock</span>' : ''}
+                                    
+                                    <a href="/product-details?id=${product.id}" style="text-decoration: none; color: inherit;">
+                                        <img src="${product.image_url || '/images/placeholder.jpg'}" 
+                                             alt="${product.name}" 
+                                             class="card-image"
+                                             onerror="this.src='/images/placeholder.jpg'">
+                                        
+                                        <div class="card-content">
+                                            <h3 class="card-title">${product.name}</h3>
+                                            <p class="card-description">${product.description || ''}</p>
+                                            
+                                            ${(() => {
+                                                const useWholesale = auth.isWholesale() && product.wholesale_price;
+                                                const base = parseFloat(product.price || 0);
+                                                const discount = product.discount_price != null ? parseFloat(product.discount_price) : null;
+                                                const retail = discount != null && discount < base ? discount : base;
+                                                const sale = useWholesale ? parseFloat(product.wholesale_price) : retail;
+                                                const showDiscount = !useWholesale && discount != null && discount < base;
+                                                if (useWholesale) {
+                                                    return `<div class="product-price">${formatCurrency(sale)} <small>/ ${product.unit || 'unit'}</small></div><p class="stock-info">Min order: ${product.min_wholesale_qty} units</p>`;
+                                                }
+                                                if (showDiscount) {
+                                                    return `<div class="product-price"><span class="price-original">${formatCurrency(base)}</span><span class="price-discount">${formatCurrency(retail)}</span> <small>/ ${product.unit || 'unit'}</small></div>`;
+                                                }
+                                                return `<div class="product-price">${formatCurrency(sale)} <small>/ ${product.unit || 'unit'}</small></div>`;
+                                            })()}
+                                        </div>
+                                    </a>
+                                    
+                                    <div class="card-footer" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                                        <div style="display:flex; align-items:center; gap:0.25rem;">
+                                            <label for="home-qty-${product.id}" style="font-size:0.8rem; color:var(--text-light);">Qty</label>
+                                            <input type="number"
+                                                   id="home-qty-${product.id}"
+                                                   class="form-input"
+                                                   value="1"
+                                                   min="1"
+                                                   max="${product.stock_quantity || 99}"
+                                                   style="width:64px; padding:0.25rem 0.35rem; font-size:0.85rem;">
+                                        </div>
+                                        <button class="btn btn-primary btn-sm" 
+                                                onclick="addToCart(${product.id})"
+                                                ${product.stock_quantity === 0 ? 'disabled' : ''}>
+                                            <i class="fas fa-cart-plus"></i>
+                                            ${product.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+                                        </button>
+                                        <button class="btn btn-success btn-sm" 
+                                                onclick="buyNow(${product.id})"
+                                                ${product.stock_quantity === 0 ? 'disabled' : ''}
+                                                style="margin-left: 0.5rem;">
+                                            <i class="fas fa-credit-card"></i> Buy Now
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += `
+                            <div class="card" style="grid-column: 1 / -1; text-align: center;">
+                                <div class="card-content">
+                                    <p>No products in this section yet. Add products in the admin panel and assign them to "${section.name}" to show them here.</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    html += `
+                            </div>
+                            <div class="text-center mt-3">
+                                <a href="/products" class="btn btn-primary">View All Products</a>
+                            </div>
+                        </section>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Failed to load homepage sections:', error);
+                document.getElementById('homepage-sections-container').innerHTML = '<section class="container"><div class="section-title"><h2>Featured Products</h2><p>Unable to load featured sections right now. Please try again later.</p></div></section>';
+            }
+        }
+        
+        function getHomeQuantity(productId) {
+            const input = document.getElementById(`home-qty-${productId}`);
+            if (!input) return 1;
+            const val = parseInt(input.value, 10);
+            if (isNaN(val) || val < 1) return 1;
+            return val;
+        }
+
+        // Add to cart function
+        async function addToCart(productId) {
+            try {
+                const quantity = getHomeQuantity(productId);
+                await cart.add(productId, quantity);
+                showAlert('Product added to cart!', 'success');
+            } catch (error) {
+                console.error('Add to cart error:', error);
+                if (!auth.isAuthenticated()) {
+                    showAlert('Please login to add items to cart', 'error');
+                    setTimeout(() => window.location.href = '/login', 1500);
+                } else {
+                    showAlert('Failed to add product to cart', 'error');
+                }
+            }
+        }
+        
+        // Buy now function - route through checkout with selected quantity
+        async function buyNow(productId) {
+            try {
+                const user = await auth.checkAuth();
+
+                if (!user) {
+                    showAlert('Please login to buy products', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/login?redirect=/checkout';
+                    }, 1500);
+                    return;
+                }
+
+                const quantity = getHomeQuantity(productId);
+                // Quick buy should only have this one product in checkout
+                await cart.clear();
+                await cart.add(productId, quantity);
+                window.location.href = '/checkout';
+            } catch (error) {
+                console.error('Buy now error:', error);
+                showAlert(error.message || 'Failed to start checkout', 'error');
+            }
+        }
+        
+        function getCategoryIcon(name) {
+            const icons = {
+                'Fresh Produce': '🥬',
+                'Dairy Products': '🧀',
+                'Bakery': '🥖',
+                'Meat & Poultry': '🥩',
+                'Beverages': '🥤',
+                'Snacks': '🍿'
+            };
+            return icons[name] || '🍽️';
+        }
+        
+        async function loadCarouselProducts() {
+            try {
+                const data = await api.get('/products');
+                carouselProducts = data.products || [];
+                
+                if (carouselProducts.length === 0) {
+                    document.getElementById('carousel-track').innerHTML = '<div class="carousel-loader"><p>No products available</p></div>';
+                    return;
+                }
+
+                renderCarousel();
+                startAutoSlide();
+            } catch (error) {
+                console.error('Failed to load carousel products:', error);
+                document.getElementById('carousel-track').innerHTML = '<div class="carousel-loader"><p>Failed to load products</p></div>';
+            }
+        }
+
+        function renderCarousel() {
+            const track = document.getElementById('carousel-track');
+            track.innerHTML = carouselProducts.map(product => `
+                <div class="carousel-item" onclick="location.href='/product-details?id=${product.id}'">
+                    <img src="${product.image_url || '/images/placeholder.jpg'}" 
+                         alt="${product.name}" 
+                         class="carousel-item-image"
+                         onerror="this.src='/images/placeholder.jpg'">
+                    <div class="carousel-item-content">
+                        <h3 class="carousel-item-title">${product.name}</h3>
+                        ${(() => {
+                            const base = parseFloat(product.price || 0);
+                            const discount = product.discount_price != null ? parseFloat(product.discount_price) : null;
+                            const retail = discount != null && discount < base ? discount : base;
+                            if (discount != null && discount < base) {
+                                return `<div class="carousel-item-price"><span class="price-original">${formatCurrency(base)}</span> <span class="price-discount">${formatCurrency(retail)}</span></div>`;
+                            }
+                            return `<div class="carousel-item-price">${formatCurrency(retail)}</div>`;
+                        })()}
+                        <div class="carousel-item-footer">
+                            <button class="btn btn-primary btn-sm" 
+                                    onclick="event.stopPropagation(); addToCart(${product.id})">
+                                <i class="fas fa-cart-plus"></i> Add
+                            </button>
+                            <button class="btn btn-success btn-sm" 
+                                    onclick="event.stopPropagation(); buyNow(${product.id})">
+                                <i class="fas fa-credit-card"></i> Buy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function slideCarousel(direction) {
+            const track = document.getElementById('carousel-track');
+            const itemWidth = 280 + 16; // item width + gap
+            const visibleItems = Math.floor(track.parentElement.offsetWidth / itemWidth);
+            const maxIndex = Math.max(0, carouselProducts.length - visibleItems);
+
+            if (direction === 'next') {
+                currentCarouselIndex = Math.min(currentCarouselIndex + 1, maxIndex);
+            } else {
+                currentCarouselIndex = Math.max(currentCarouselIndex - 1, 0);
+            }
+
+            track.style.transform = `translateX(-${currentCarouselIndex * itemWidth}px)`;
+        }
+
+        let autoSlideInterval;
+        function startAutoSlide() {
+            autoSlideInterval = setInterval(() => {
+                const track = document.getElementById('carousel-track');
+                const itemWidth = 280 + 16;
+                const visibleItems = Math.floor(track.parentElement.offsetWidth / itemWidth);
+                const maxIndex = Math.max(0, carouselProducts.length - visibleItems);
+
+                if (currentCarouselIndex >= maxIndex) {
+                    currentCarouselIndex = 0;
+                } else {
+                    currentCarouselIndex++;
+                }
+
+                track.style.transform = `translateX(-${currentCarouselIndex * itemWidth}px)`;
+            }, 4000);
+        }
+
+        function stopAutoSlide() {
+            if (autoSlideInterval) {
+                clearInterval(autoSlideInterval);
+            }
+        }
+
+        // Search functionality
+        function handleSearch() {
+            const searchInput = document.getElementById('home-search-input');
+            const query = searchInput.value.trim();
+            if (query) {
+                window.location.href = `/products?search=${encodeURIComponent(query)}`;
+            }
+        }
+
+        function renderSearchSuggestions(suggestions, query) {
+            const container = document.getElementById('home-search-suggestions');
+            if (!container) return;
+
+            if (!query || suggestions.length === 0) {
+                container.innerHTML = suggestions.length === 0 && query
+                    ? '<div class="search-suggestions-empty">No matches found</div>'
+                    : '';
+                container.classList.toggle('hidden', !query);
+                return;
+            }
+
+            container.innerHTML = suggestions.map(item => {
+                const image = item.image_url || '/images/placeholder.jpg';
+                const typeLabel = item.type === 'category' ? 'Category' : 'Product';
+                const meta = item.type === 'product' && item.price
+                    ? (() => {
+                        const base = parseFloat(item.price || 0);
+                        const discount = item.discount_price != null ? parseFloat(item.discount_price) : null;
+                        const retail = discount != null && discount < base ? discount : base;
+                        if (discount != null && discount < base) {
+                            return `${typeLabel} • ${formatCurrency(retail)} (was ${formatCurrency(base)})`;
+                        }
+                        return `${typeLabel} • ${formatCurrency(retail)}`;
+                    })()
+                    : typeLabel;
+
+                return `
+                    <div class="search-suggestion-item" data-type="${item.type}" data-id="${item.id}">
+                        <img src="${image}" alt="${item.name}" class="search-suggestion-image" onerror="this.src='/images/placeholder.jpg'">
+                        <div class="search-suggestion-text">
+                            <div class="search-suggestion-name">${item.name}</div>
+                            <div class="search-suggestion-meta">${meta}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.classList.remove('hidden');
+
+            // Click handling
+            container.querySelectorAll('.search-suggestion-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const type = el.getAttribute('data-type');
+                    const id = el.getAttribute('data-id');
+
+                    if (type === 'category') {
+                        window.location.href = `/products?category=${encodeURIComponent(id)}`;
+                    } else {
+                        window.location.href = `/product-details?id=${encodeURIComponent(id)}`;
+                    }
+                });
+            });
+        }
+
+        async function loadSearchSuggestions(query) {
+            const trimmed = query.trim().toLowerCase();
+            const container = document.getElementById('home-search-suggestions');
+            if (!container) return;
+
+            if (!trimmed) {
+                container.innerHTML = '';
+                container.classList.add('hidden');
+                return;
+            }
+
+            // Build suggestions from in-memory products and categories
+            const productMatches = (carouselProducts || []).filter(p => {
+                const name = (p.name || '').toLowerCase();
+                return name.includes(trimmed);
+            }).slice(0, 8).map(p => ({
+                type: 'product',
+                id: p.id,
+                name: p.name,
+                image_url: p.image_url,
+                price: p.price
+            }));
+
+            const categoryMatches = (homeCategories || []).filter(c => {
+                const name = (c.name || '').toLowerCase();
+                return name.includes(trimmed);
+            }).slice(0, 5).map(c => ({
+                type: 'category',
+                id: c.id,
+                name: c.name,
+                image_url: c.image_url
+            }));
+
+            const suggestions = [...productMatches, ...categoryMatches];
+            renderSearchSuggestions(suggestions, trimmed);
+        }
+
+        function debounce(fn, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => fn.apply(this, args), wait);
+            };
+        }
+
+        const debouncedSuggestions = debounce(loadSearchSuggestions, 300);
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCategories();
+            loadHomepageSections();
+            loadCarouselProducts();
+
+            // Wire carousel navigation
+            document.getElementById('carousel-prev').addEventListener('click', () => {
+                stopAutoSlide();
+                slideCarousel('prev');
+                startAutoSlide();
+            });
+
+            document.getElementById('carousel-next').addEventListener('click', () => {
+                stopAutoSlide();
+                slideCarousel('next');
+                startAutoSlide();
+            });
+
+            // Wire search
+            const searchInput = document.getElementById('home-search-input');
+            const searchBtn = document.getElementById('home-search-btn');
+            const suggestionsContainer = document.getElementById('home-search-suggestions');
+
+            if (searchBtn) {
+                searchBtn.addEventListener('click', handleSearch);
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        handleSearch();
+                    }
+                });
+
+                searchInput.addEventListener('input', (e) => {
+                    debouncedSuggestions(e.target.value || '');
+                });
+
+                searchInput.addEventListener('focus', (e) => {
+                    if (e.target.value && e.target.value.trim().length >= 2) {
+                        debouncedSuggestions(e.target.value);
+                    }
+                });
+            }
+
+            // Hide suggestions on click outside
+            document.addEventListener('click', (e) => {
+                if (!suggestionsContainer) return;
+                const isInsideSearch = e.target.closest('.search-container');
+                if (!isInsideSearch) {
+                    suggestionsContainer.classList.add('hidden');
+                }
+            });
+
+            // Account dropdown toggle
+            const accountToggle = document.getElementById('account-toggle');
+            const accountDropdown = document.getElementById('account-dropdown');
+
+            if (accountToggle && accountDropdown) {
+                accountToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    accountDropdown.classList.toggle('hidden');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.account-menu')) {
+                        accountDropdown.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Account logout handler
+            const accountLogout = document.getElementById('account-logout');
+            if (accountLogout) {
+                accountLogout.addEventListener('click', async () => {
+                    if (confirm('Are you sure you want to logout?')) {
+                        await auth.logout();
+                    }
+                });
+            }
+
+            // Theme toggle handler
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                // Load saved theme
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                if (savedTheme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                }
+
+                themeToggle.addEventListener('click', () => {
+                    document.body.classList.toggle('dark-mode');
+                    const isDark = document.body.classList.contains('dark-mode');
+                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

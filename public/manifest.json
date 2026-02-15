@@ -1,0 +1,22 @@
+{
+  "name": "Mountain Made E-Commerce",
+  "short_name": "Mountain Made",
+  "description": "Fresh from the Mountains - Food E-Commerce Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2c5f2d",
+  "theme_color": "#2c5f2d",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

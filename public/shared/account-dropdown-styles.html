@@ -1,0 +1,94 @@
+<!-- Account Dropdown Styles - Include in <head> -->
+<style>
+    .account-menu {
+        position: relative;
+    }
+
+    .account-dropdown {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 0.5rem);
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
+        min-width: 280px;
+        z-index: 1000;
+        border: 1px solid var(--border-primary);
+    }
+
+    .account-dropdown.hidden {
+        display: none;
+    }
+
+    .account-section {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    .account-section:last-child {
+        border-bottom: none;
+    }
+
+    .account-section strong {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .account-link {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        font-size: 0.875rem;
+        color: var(--text-primary);
+        transition: all 0.2s;
+        display: block;
+        text-align: left;
+        margin-top: 0.5rem;
+    }
+
+    .account-link:hover {
+        background: var(--primary-100);
+        border-color: var(--primary-400);
+    }
+
+    .account-link-danger {
+        background: var(--error-bg);
+        color: var(--error);
+        border-color: var(--error);
+    }
+
+    .account-link-danger:hover {
+        background: var(--error);
+        color: white;
+    }
+
+    .account-text {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: 0.25rem;
+        padding: 0.25rem 0;
+    }
+
+    /* Dark Mode Styles */
+    body.dark-mode {
+        background-color: #1a1a1a;
+        color: #e0e0e0;
+    }
+
+    body.dark-mode .navbar {
+        background: #2d2d2d;
+        border-bottom-color: #404040;
+    }
+
+    body.dark-mode .card,
+    body.dark-mode .account-dropdown {
+        background: #2d2d2d;
+        border-color: #404040;
+    }
+</style>

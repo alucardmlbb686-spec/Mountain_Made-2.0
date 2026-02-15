@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Mountain Made 2.0</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .auth-container {
+            min-height: calc(100vh - 80px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+        .auth-card {
+            background: white;
+            padding: 3rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            max-width: 550px;
+            width: 100%;
+        }
+        .role-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .role-option {
+            padding: 1.5rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+        }
+        .role-option.active {
+            border-color: var(--primary);
+            background: var(--accent-light);
+            color: rgb(200, 0, 0);
+        }
+        .role-option:hover {
+            border-color: var(--primary-light);
+        }
+        .wholesale-fields {
+            display: none;
+        }
+        .wholesale-fields.active {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .auth-container {
+                padding: 1rem 0.5rem;
+            }
+            .auth-card {
+                padding: 1.5rem;
+                border-radius: var(--radius);
+            }
+            .auth-card h1 {
+                font-size: 1.5rem;
+            }
+            .auth-card p {
+                font-size: 0.9rem;
+            }
+            .role-selector {
+                gap: 0.75rem;
+            }
+            .role-option {
+                padding: 1rem;
+            }
+            .role-option i {
+                font-size: 1.5rem !important;
+            }
+            .role-option h4 {
+                font-size: 0.95rem;
+                margin: 0.5rem 0 0.25rem;
+            }
+            .role-option p {
+                font-size: 0.75rem !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .auth-card {
+                padding: 1.25rem;
+            }
+            .auth-card h1 {
+                font-size: 1.35rem;
+            }
+            .role-selector {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            .role-option {
+                padding: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">
+                <span class="logo-icon">🏔️</span>
+                Mountain Made 2.0
+            </a>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h1>Create Account</h1>
+                <p>Join Mountain Made today</p>
+            </div>
+
+            <div class="role-selector">
+                <div class="role-option active" data-role="customer">
+                    <i class="fas fa-user" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                    <h4>Customer</h4>
+                    <p style="font-size: 0.9rem;">Shop for yourself</p>
+                </div>
+                <div class="role-option" data-role="wholesale">
+                    <i class="fas fa-building" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                    <h4>Wholesale</h4>
+                    <p style="font-size: 0.9rem;">Buy in bulk</p>
+                </div>
+            </div>
+
+            <form id="register-form">
+                <input type="hidden" id="role" value="customer">
+                
+                <div class="form-group">
+                    <label class="form-label">Full Name *</label>
+                    <input type="text" id="full_name" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email Address *</label>
+                    <input type="email" id="email" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Phone Number *</label>
+                    <input type="tel" id="phone" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password * (min 6 characters)</label>
+                    <input type="password" id="password" class="form-input" required minlength="6">
+                </div>
+
+                <div class="wholesale-fields">
+                    <div class="form-group">
+                        <label class="form-label">Business Name *</label>
+                        <input type="text" id="business_name" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tax ID / Business License *</label>
+                        <input type="text" id="tax_id" class="form-input">
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Wholesale accounts require approval before you can place orders.</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+            </form>
+
+            <div style="text-align: center; margin-top: 1.5rem;">
+                <p>Already have an account? <a href="/login" id="login-link" style="color: var(--primary); font-weight: 500;">Sign in</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        const roleOptions = document.querySelectorAll('.role-option');
+        const wholesaleFields = document.querySelector('.wholesale-fields');
+        const roleInput = document.getElementById('role');
+
+        roleOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                roleOptions.forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                
+                const role = option.dataset.role;
+                roleInput.value = role;
+                
+                if (role === 'wholesale') {
+                    wholesaleFields.classList.add('active');
+                    document.getElementById('business_name').required = true;
+                    document.getElementById('tax_id').required = true;
+                } else {
+                    wholesaleFields.classList.remove('active');
+                    document.getElementById('business_name').required = false;
+                    document.getElementById('tax_id').required = false;
+                }
+            });
+        });
+
+        // Check URL params for type
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('redirect');
+        
+        // Update login link to include redirect parameter
+        if (redirectUrl) {
+            const loginLink = document.getElementById('login-link');
+            loginLink.href = `/login?redirect=${encodeURIComponent(redirectUrl)}`;
+        }
+        
+        if (urlParams.get('type') === 'wholesale') {
+            document.querySelector('[data-role="wholesale"]').click();
+        }
+
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userData = {
+                full_name: document.getElementById('full_name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                password: document.getElementById('password').value,
+                role: document.getElementById('role').value
+            };
+
+            if (userData.role === 'wholesale') {
+                userData.business_name = document.getElementById('business_name').value;
+                userData.tax_id = document.getElementById('tax_id').value;
+            }
+
+            try {
+                await auth.register(userData);
+                showAlert('Registration successful!', 'success');
+                
+                setTimeout(() => {
+                    if (userData.role === 'wholesale') {
+                        showAlert('Your account is pending approval.', 'info');
+                        setTimeout(() => window.location.href = '/', 2000);
+                    } else {
+                        // Redirect to the specified URL or home page
+                        window.location.href = redirectUrl || '/';
+                    }
+                }, 1000);
+            } catch (error) {
+                showAlert(error.message || 'Registration failed', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

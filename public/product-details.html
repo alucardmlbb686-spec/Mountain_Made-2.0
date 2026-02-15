@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details - Mountain Made 2.0</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .product-detail-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .product-detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 2rem;
+        }
+        
+        .product-image-section {
+            position: sticky;
+            top: 80px;
+            height: fit-content;
+        }
+        
+        .product-main-image {
+            width: 100%;
+            height: 500px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .product-thumbnails {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+        }
+        
+        .product-thumbnail {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.3s;
+        }
+        
+        .product-thumbnail:hover,
+        .product-thumbnail.active {
+            border-color: var(--primary);
+        }
+        
+        .product-info-section h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+        
+        .product-rating {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: #FFB800;
+        }
+        
+        .product-price-section {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border: 1px solid var(--border);
+        }
+        
+        .product-price {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .product-stock {
+            color: #22c55e;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .product-stock.low {
+            color: #f59e0b;
+        }
+        
+        .product-stock.out {
+            color: var(--error);
+        }
+        
+        .quantity-selector {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .quantity-selector label {
+            font-weight: 600;
+        }
+        
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+        
+        .quantity-controls button {
+            padding: 0.5rem 1rem;
+            background: var(--surface);
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        
+        .quantity-controls button:hover {
+            background: var(--hover);
+        }
+        
+        .quantity-controls input {
+            width: 60px;
+            text-align: center;
+            border: none;
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .product-actions .btn {
+            flex: 1;
+            padding: 1rem;
+            font-size: 1rem;
+        }
+        
+        .product-description {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .product-description h3 {
+            margin-bottom: 1rem;
+        }
+        
+        .product-specs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .spec-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: var(--surface);
+            border-radius: 4px;
+        }
+        
+        .spec-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        .delivery-info {
+            background: #f0fdf4;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border-left: 4px solid #22c55e;
+        }
+        
+        .delivery-info h4 {
+            color: #166534;
+            margin-bottom: 0.5rem;
+        }
+        
+        .delivery-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: #166534;
+        }
+
+        /* Address selection modal styling (make clearly visible) */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1050;
+            padding: 1.25rem;
+        }
+
+        .modal-content {
+            background: var(--bg-primary);
+            padding: 1.75rem 1.5rem 1.75rem;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 640px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+
+        .modal-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .modal-header-row h3 {
+            margin: 0;
+            font-size: 1.4rem;
+        }
+
+        .modal-close-btn {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0.25rem;
+            border-radius: 999px;
+        }
+
+        .modal-close-btn:hover {
+            background: rgba(148, 163, 184, 0.15);
+            color: var(--text-primary);
+        }
+
+        .address-option {
+            background: #ffffff;
+        }
+        
+        @media (max-width: 768px) {
+            .product-detail-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .product-image-section {
+                position: static;
+            }
+            
+            .product-main-image {
+                height: 300px;
+            }
+            
+            .product-specs {
+                grid-template-columns: 1fr;
+            }
+            
+            .product-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* Account Dropdown Styles */
+        .account-menu {
+            position: relative;
+        }
+
+        .account-dropdown {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.5rem);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            min-width: 280px;
+            z-index: 1000;
+            border: 1px solid var(--border-primary);
+        }
+
+        .account-dropdown.hidden {
+            display: none;
+        }
+
+        .account-section {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .account-section:last-child {
+            border-bottom: none;
+        }
+
+        .account-section strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .account-link {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            display: block;
+            text-align: left;
+            margin-top: 0.5rem;
+        }
+
+        .account-link:hover {
+            background: var(--primary-100);
+            border-color: var(--primary-400);
+        }
+
+        .account-link-danger {
+            background: var(--error-bg);
+            color: var(--error);
+            border-color: var(--error);
+        }
+
+        .account-link-danger:hover {
+            background: var(--error);
+            color: white;
+        }
+
+        .account-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            padding: 0.25rem 0;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .navbar {
+            background: #2d2d2d;
+            border-bottom-color: #404040;
+        }
+
+        body.dark-mode .card,
+        body.dark-mode .account-dropdown {
+            background: #2d2d2d;
+            border-color: #404040;
+        }
+
+        body.dark-mode .form-input,
+        body.dark-mode .form-select,
+        body.dark-mode .form-textarea {
+            background: #2d2d2d;
+            color: #e0e0e0;
+            border-color: #404040;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand"><span class="logo-icon">🏔️</span>Mountain Made 2.0</a>
+            <ul class="navbar-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li id="admin-link" class="hidden"><a href="/admin">Admin</a></li>
+            </ul>
+            <div class="navbar-actions">
+                <div id="auth-buttons"><a href="/login" class="btn btn-secondary btn-sm">Login</a></div>
+                <div id="user-menu" class="hidden flex gap-2" style="align-items: center;">
+                    <a href="/orders" class="icon-button" title="My Orders">
+                        <i class="fas fa-shopping-bag"></i>
+                    </a>
+                    <a href="/cart" class="icon-button"><i class="fas fa-shopping-cart"></i><span id="cart-badge" class="cart-badge hidden">0</span></a>
+                    <div class="account-menu">
+                        <button id="account-toggle" class="icon-button" title="Account">
+                            <i class="fas fa-user-circle"></i>
+                        </button>
+                        <div id="account-dropdown" class="account-dropdown hidden">
+                            <div class="account-section">
+                                <strong>Account</strong>
+                                <button class="account-link" onclick="openProfileModal()">Edit Profile</button>
+                            </div>
+                            <div class="account-section">
+                                <strong>Billing Management</strong>
+                                <div class="account-text">Payment methods: GPay / Cash on Delivery</div>
+                                <div class="account-text">UPI ID: <span id="billing-upi">mountainmade@upi</span></div>
+                                <div class="account-text">Bank: Mountain Made Foods</div>
+                            </div>
+                            <div class="account-section">
+                                <strong>Appearance</strong>
+                                <button id="theme-toggle" class="account-link">Toggle Dark / Light</button>
+                            </div>
+                            <div class="account-section">
+                                <button id="account-logout" class="account-link account-link-danger">Logout</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="product-detail-container">
+        <div id="product-content" class="loading">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        let product = null;
+        let selectedQuantity = 1;
+        let userAddresses = [];
+
+        async function loadProduct() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('id');
+            
+            if (!productId) {
+                window.location.href = '/products';
+                return;
+            }
+
+            try {
+                const data = await api.get(`/products/${productId}`);
+                product = data.product;
+                renderProduct();
+            } catch (error) {
+                console.error('Failed to load product:', error);
+                document.getElementById('product-content').innerHTML = 
+                    '<p class="text-center">Product not found</p>';
+            }
+        }
+
+        async function loadUserAddresses() {
+            if (!auth.isAuthenticated()) return;
+            
+            try {
+                const data = await api.get('/addresses');
+                userAddresses = data.addresses;
+            } catch (error) {
+                console.error('Failed to load addresses:', error);
+            }
+        }
+
+        function renderProduct() {
+            const isWholesale = auth.isWholesale();
+            const basePrice = parseFloat(product.price || 0);
+            const discount = product.discount_price != null ? parseFloat(product.discount_price) : null;
+            const retailPrice = discount != null && discount < basePrice ? discount : basePrice;
+            const salePrice = isWholesale && product.wholesale_price ? parseFloat(product.wholesale_price) : retailPrice;
+            const showDiscount = !isWholesale && discount != null && discount < basePrice;
+            const inStock = product.stock_quantity > 0;
+            const lowStock = product.stock_quantity > 0 && product.stock_quantity < 10;
+            
+            document.title = `${product.name} - Mountain Made 2.0`;
+            
+            const content = `
+                <div class="product-detail-grid">
+                    <div class="product-image-section">
+                        <img src="${product.image_url || '/images/placeholder.jpg'}" 
+                             alt="${product.name}" 
+                             class="product-main-image"
+                             onerror="this.src='/images/placeholder.jpg'">
+                    </div>
+                    
+                    <div class="product-info-section">
+                        <h1>${product.name}</h1>
+                        
+                        <div class="product-rating">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star-half-alt"></i>
+                            <span>(4.5 out of 5)</span>
+                        </div>
+                        
+                        <div class="product-price-section">
+                            <div class="product-price">
+                                ${showDiscount ? `<span style="text-decoration: line-through; color: #d14343; font-size: 0.9em; margin-right: 8px;">${formatCurrency(basePrice)}</span>` : ''}
+                                <span style="color: var(--primary); font-weight: 700;">${formatCurrency(salePrice)}</span>
+                            </div>
+                            ${isWholesale && product.wholesale_price ? 
+                                `<small style="color: var(--text-secondary);">Wholesale Price • Min Order: ${product.min_wholesale_qty} units</small>` : 
+                                `<small style="color: var(--text-secondary);">Per ${product.unit || 'unit'}</small>`
+                            }
+                            
+                            <div class="product-stock ${lowStock ? 'low' : ''} ${!inStock ? 'out' : ''}" style="margin-top: 1rem;">
+                                ${inStock ? 
+                                    (lowStock ? `⚠️ Only ${product.stock_quantity} left in stock` : '✓ In Stock') : 
+                                    '✗ Out of Stock'
+                                }
+                            </div>
+                            
+                            ${inStock ? `
+                                <div class="quantity-selector">
+                                    <label>Quantity:</label>
+                                    <div class="quantity-controls">
+                                        <button onclick="decrementQuantity()">-</button>
+                                        <input type="number" id="quantity" value="1" min="1" max="${product.stock_quantity}" 
+                                               onchange="updateQuantity(this.value)">
+                                        <button onclick="incrementQuantity()">+</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="product-actions">
+                                    <button class="btn btn-primary" onclick="handleAddToCart()">
+                                        <i class="fas fa-cart-plus"></i> Add to Cart
+                                    </button>
+                                    <button class="btn btn-success" onclick="handleBuyNow()">
+                                        <i class="fas fa-bolt"></i> Buy Now
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="delivery-info">
+                            <h4><i class="fas fa-truck"></i> Delivery Information</h4>
+                            <div class="delivery-option">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Free delivery on orders over $50</span>
+                            </div>
+                            <div class="delivery-option">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Standard delivery: 3-5 business days</span>
+                            </div>
+                            <div class="delivery-option">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Express delivery available</span>
+                            </div>
+                        </div>
+                        
+                        <div class="product-description">
+                            <h3>About this product</h3>
+                            <p>${product.description || 'No description available.'}</p>
+                        </div>
+                        
+                        <div class="product-specs">
+                            <div class="spec-item">
+                                <span class="spec-label">Category:</span>
+                                <span>${product.category_name || 'N/A'}</span>
+                            </div>
+                            <div class="spec-item">
+                                <span class="spec-label">Unit:</span>
+                                <span>${product.unit || 'N/A'}</span>
+                            </div>
+                            ${product.weight ? `
+                                <div class="spec-item">
+                                    <span class="spec-label">Weight:</span>
+                                    <span>${product.weight} ${product.unit}</span>
+                                </div>
+                            ` : ''}
+                            <div class="spec-item">
+                                <span class="spec-label">Stock:</span>
+                                <span>${product.stock_quantity} available</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('product-content').innerHTML = content;
+        }
+
+        function updateQuantity(value) {
+            const qty = parseInt(value);
+            if (qty > 0 && qty <= product.stock_quantity) {
+                selectedQuantity = qty;
+            } else {
+                document.getElementById('quantity').value = selectedQuantity;
+            }
+        }
+
+        function incrementQuantity() {
+            if (selectedQuantity < product.stock_quantity) {
+                selectedQuantity++;
+                document.getElementById('quantity').value = selectedQuantity;
+            }
+        }
+
+        function decrementQuantity() {
+            if (selectedQuantity > 1) {
+                selectedQuantity--;
+                document.getElementById('quantity').value = selectedQuantity;
+            }
+        }
+
+        async function handleAddToCart() {
+            if (!auth.isAuthenticated()) {
+                showAlert('Please login to add items to cart', 'error');
+                setTimeout(() => window.location.href = '/login', 1500);
+                return;
+            }
+
+            try {
+                await cart.add(product.id, selectedQuantity);
+                showAlert(`${selectedQuantity} ${product.name}(s) added to cart!`, 'success');
+            } catch (error) {
+                console.error('Add to cart error:', error);
+                showAlert('Failed to add to cart', 'error');
+            }
+        }
+
+        async function handleBuyNow() {
+            if (!auth.isAuthenticated()) {
+                showAlert('Please login to buy products', 'error');
+                setTimeout(() => window.location.href = '/login', 1500);
+                return;
+            }
+
+            // Load addresses if not loaded
+            if (userAddresses.length === 0) {
+                await loadUserAddresses();
+            }
+
+            // If user has addresses, show selection modal
+            if (userAddresses.length > 0) {
+                showAddressSelectionModal();
+            } else {
+                // No addresses, redirect to address management
+                if (confirm('You need to add a delivery address first. Go to address management?')) {
+                    window.location.href = '/addresses';
+                }
+            }
+        }
+
+        function showAddressSelectionModal() {
+            const defaultAddress = userAddresses.find(a => a.is_default) || userAddresses[0];
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header-row">
+                        <h3>Select Delivery Address</h3>
+                        <button type="button" class="modal-close-btn" onclick="this.closest('.modal-overlay').remove()" aria-label="Close">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="margin: 1.5rem 0;">
+                        ${userAddresses.map(addr => `
+                            <div class="address-option" style="margin-bottom: 1rem; padding: 1rem; border: 2px solid ${addr.id === defaultAddress.id ? 'var(--primary)' : 'var(--border)'}; border-radius: 8px; cursor: pointer;" 
+                                 onclick="selectAddress(${addr.id})">
+                                <input type="radio" name="address" value="${addr.id}" ${addr.id === defaultAddress.id ? 'checked' : ''}>
+                                <strong>${addr.label}</strong>
+                                <p style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
+                                    ${addr.full_name}<br>
+                                    ${addr.address_line1}${addr.address_line2 ? ', ' + addr.address_line2 : ''}<br>
+                                    ${addr.city}, ${addr.state} ${addr.postal_code}<br>
+                                    ${addr.phone}
+                                </p>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        <button class="btn btn-primary" onclick="confirmBuyNow()">Confirm Order</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            window.selectedAddressId = defaultAddress.id;
+        }
+
+        function selectAddress(addressId) {
+            window.selectedAddressId = addressId;
+            document.querySelectorAll('.address-option').forEach(el => {
+                el.style.borderColor = 'var(--border)';
+            });
+            event.currentTarget.style.borderColor = 'var(--primary)';
+        }
+
+        async function confirmBuyNow() {
+            const addressId = window.selectedAddressId;
+            const address = userAddresses.find(a => a.id === addressId);
+            
+            if (!address) {
+                showAlert('Please select an address', 'error');
+                return;
+            }
+
+            try {
+                const response = await api.post('/orders/quick-buy', {
+                    product_id: product.id,
+                    quantity: selectedQuantity,
+                    shipping_address: {
+                        address_id: address.id,
+                        full_name: address.full_name,
+                        phone: address.phone,
+                        address_line1: address.address_line1,
+                        address_line2: address.address_line2,
+                        city: address.city,
+                        state: address.state,
+                        postal_code: address.postal_code,
+                        country: address.country
+                    },
+                    payment_method: 'COD'
+                });
+                
+                document.querySelector('.modal-overlay').remove();
+                showAlert('Order placed successfully! Order #' + response.order.order_number, 'success');
+                setTimeout(() => window.location.href = '/orders', 2000);
+            } catch (error) {
+                console.error('Buy now error:', error);
+                showAlert(error.message || 'Failed to place order', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await auth.checkAuth();
+            await cart.fetch();
+            await loadProduct();
+            await loadUserAddresses();
+
+            // Account dropdown toggle
+            const accountToggle = document.getElementById('account-toggle');
+            const accountDropdown = document.getElementById('account-dropdown');
+
+            if (accountToggle && accountDropdown) {
+                accountToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    accountDropdown.classList.toggle('hidden');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.account-menu')) {
+                        accountDropdown.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Account logout handler
+            const accountLogout = document.getElementById('account-logout');
+            if (accountLogout) {
+                accountLogout.addEventListener('click', async () => {
+                    if (confirm('Are you sure you want to logout?')) {
+                        await auth.logout();
+                    }
+                });
+            }
+
+            // Theme toggle handler
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                // Load saved theme
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                if (savedTheme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                }
+
+                themeToggle.addEventListener('click', () => {
+                    document.body.classList.toggle('dark-mode');
+                    const isDark = document.body.classList.contains('dark-mode');
+                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
