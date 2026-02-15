@@ -286,6 +286,17 @@ const initializeDatabase = async () => {
       );
     `);
 
+    // Create Uploads table for storing images in DB (avoids lost files on redeploy)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS uploads (
+        id SERIAL PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL,
+        mimetype VARCHAR(100) NOT NULL,
+        data BYTEA NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Create indexes for better performance
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);

@@ -1,25 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const { authenticateToken } = require('../middleware/auth');
+const db = require('../config/database');
 
-// Configure multer for image uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, '../public/uploads');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname).toLowerCase();
-        cb(null, 'image-' + uniqueSuffix + ext);
-    }
-});
+// Use memory storage so we can persist to DB (avoids losing files on redeploy)
+const storage = multer.memoryStorage();
 
 // Dynamic file filter - accept only JPG/PNG
 const fileFilter = (req, file, cb) => {
@@ -43,21 +29,32 @@ const upload = multer({
     }
 });
 
+async function saveUploadToDb(file) {
+    const filename = file.originalname;
+    const mimetype = file.mimetype;
+    const data = file.buffer;
+    const result = await db.query(
+        'INSERT INTO uploads (filename, mimetype, data) VALUES ($1, $2, $3) RETURNING id',
+        [filename, mimetype, data]
+    );
+    return result.rows[0].id;
+}
+
 // Image upload endpoint - accepts only JPG/PNG
-router.post('/image', authenticateToken, upload.single('image'), (req, res) => {
+router.post('/image', authenticateToken, upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded or invalid file type.' });
         }
 
-        // Return the image URL
-        const imageUrl = `/uploads/${req.file.filename}`;
+        const id = await saveUploadToDb(req.file);
+        const imageUrl = `/uploads/${id}`;
         
         res.json({
             success: true,
             message: 'Image uploaded successfully',
-            imageUrl: imageUrl,
-            filename: req.file.filename
+            imageUrl,
+            id
         });
     } catch (error) {
         console.error('Upload error:', error);
@@ -66,19 +63,26 @@ router.post('/image', authenticateToken, upload.single('image'), (req, res) => {
 });
 
 // Multiple image upload endpoint
-router.post('/images', authenticateToken, upload.array('images', 10), (req, res) => {
+router.post('/images', authenticateToken, upload.array('images', 10), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No files uploaded or invalid file type.' });
         }
 
-        const imageUrls = req.files.map(file => `/uploads/${file.filename}`);
+        const ids = [];
+        for (const file of req.files) {
+            const id = await saveUploadToDb(file);
+            ids.push(id);
+        }
+
+        const imageUrls = ids.map(id => `/uploads/${id}`);
         
         res.json({
             success: true,
             message: 'Images uploaded successfully',
-            imageUrls: imageUrls,
-            count: req.files.length
+            imageUrls,
+            ids,
+            count: ids.length
         });
     } catch (error) {
         console.error('Upload error:', error);

@@ -6,7 +6,8 @@ const multer = require('multer');
 const fs = require('fs');
 require('dotenv').config();
 
-const { initializeDatabase } = require('./config/database');
+const database = require('./config/database');
+const { initializeDatabase } = database;
 const User = require('./models/User');
 
 const app = express();
@@ -64,6 +65,31 @@ app.use(cookieParser());
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
+
+// DB-backed upload fetch (survives redeploys)
+app.get('/uploads/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+      return res.status(400).send('Invalid id');
+    }
+
+    const result = await database.query('SELECT mimetype, data FROM uploads WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).send('Not found');
+    }
+
+    const row = result.rows[0];
+    res.setHeader('Content-Type', row.mimetype);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.send(row.data);
+  } catch (err) {
+    console.error('Serve upload error:', err);
+    return res.status(500).send('Failed to fetch upload');
+  }
+});
+
+// Static fallback for any legacy on-disk uploads
 app.use('/uploads', express.static(uploadDir));
 
 // Image upload endpoint for admin
