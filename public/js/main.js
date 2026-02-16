@@ -15,10 +15,23 @@ const api = {
         credentials: 'include'
       });
 
-      const data = await response.json();
+      // Try to parse JSON, but handle empty/non-JSON responses gracefully
+      let data = null;
+      const text = await response.text();
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          console.error('Failed to parse JSON response:', e, text);
+          if (!response.ok) {
+            throw new Error('Request failed');
+          }
+          return null;
+        }
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Request failed');
+        throw new Error((data && data.error) || 'Request failed');
       }
 
       return data;
