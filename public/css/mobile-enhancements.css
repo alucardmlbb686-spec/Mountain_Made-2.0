@@ -10,6 +10,16 @@
     font-size: 16px; /* Prevents iOS zoom on focus */
   }
   
+  /* Smaller profile avatar button on mobile (don't force 44px height) */
+  #account-toggle {
+    min-height: 30px;
+  }
+
+  #account-toggle.has-profile-photo {
+    width: 30px;
+    height: 30px;
+  }
+  
   /* Better form spacing on mobile */
   .form-group {
     margin-bottom: var(--space-4);

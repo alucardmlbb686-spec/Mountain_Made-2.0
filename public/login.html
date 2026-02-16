@@ -100,21 +100,14 @@
 
             <div style="text-align: center; margin-top: 1.5rem;">
                 <p>Don't have an account? <a href="/register" id="register-link" style="color: var(--primary); font-weight: 500;">Register here</a></p>
-                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border);">
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">Are you an administrator?</p>
-                    <a href="/login?admin=true" style="color: var(--accent); font-weight: 500; text-decoration: none;">
-                        <i class="fas fa-lock"></i> Go to Admin Login
-                    </a>
-                </div>
             </div>
         </div>
     </div>
 
     <script src="/js/main.js"></script>
     <script>
-        // Check if this is admin login
+        // Shared login for all roles (customer, wholesale, admin)
         const urlParams = new URLSearchParams(window.location.search);
-        const isAdminLogin = urlParams.has('admin');
         const redirectUrl = urlParams.get('redirect');
         
         // Update register link to include redirect parameter
@@ -123,11 +116,6 @@
             registerLink.href = `/register?redirect=${encodeURIComponent(redirectUrl)}`;
         }
         
-        if (isAdminLogin) {
-            document.getElementById('auth-title').textContent = 'Admin Login';
-            document.getElementById('auth-subtitle').textContent = 'Sign in to admin panel';
-        }
-
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -136,15 +124,18 @@
 
             try {
                 const result = await auth.login(email, password);
-                
-                // Check if user is admin
-                if (result.user.role === 'admin') {
+
+                // Dynamic redirect based on role
+                const role = result.user.role;
+
+                if (role === 'admin') {
+                    // Admins always go to admin panel
                     window.location.href = '/admin';
-                } else if (isAdminLogin) {
-                    showAlert('Only administrators can access the admin panel.', 'error');
+                } else if (redirectUrl) {
+                    // Public / wholesale users can be redirected to a specific page
+                    window.location.href = redirectUrl;
                 } else {
-                    // Redirect to the specified URL or home page
-                    window.location.href = redirectUrl || '/';
+                    window.location.href = '/';
                 }
             } catch (error) {
                 showAlert('Login failed: ' + error.message, 'error');
@@ -167,27 +158,14 @@
 
         // Check if already logged in
         auth.checkAuth().then(user => {
-            if (user && user.role === 'admin' && isAdminLogin) {
+            if (!user) return;
+
+            if (user.role === 'admin') {
                 window.location.href = '/admin';
-            } else if (user && !isAdminLogin) {
+            } else if (redirectUrl) {
+                window.location.href = redirectUrl;
+            } else {
                 window.location.href = '/';
-            }
-        });
-    </script>
-            
-            try {
-                await auth.login(email, password);
-                showAlert('Login successful!', 'success');
-                
-                setTimeout(() => {
-                    if (auth.isAdmin()) {
-                        window.location.href = '/admin';
-                    } else {
-                        window.location.href = '/';
-                    }
-                }, 1000);
-            } catch (error) {
-                showAlert(error.message || 'Login failed', 'error');
             }
         });
     </script>

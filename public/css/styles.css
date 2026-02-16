@@ -343,6 +343,20 @@ small {
   transform: translateY(-1px);
 }
 
+/* Account avatar button (profile photo) */
+#account-toggle {
+  overflow: hidden;
+}
+
+#account-toggle.has-profile-photo {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: var(--primary-600);
+  border: 2px solid #ffffff;
+  color: transparent;
+}
+
 .cart-badge {
   position: absolute;
   top: -4px;
@@ -467,6 +481,47 @@ small {
   font-size: var(--text-base);
 }
 
+/* Global back button (shown near top-left under navbar) */
+.page-back-button {
+  position: fixed;
+  top: 80px;
+  left: 16px;
+  z-index: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.78rem;
+  border-radius: 999px;
+  background: white;
+  color: var(--primary-700);
+  border: 1px solid var(--primary-300);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  cursor: pointer;
+}
+
+.page-back-button i {
+  font-size: 0.85rem;
+}
+
+@media (max-width: 767px) {
+  .page-back-button {
+    top: 72px;
+    left: 10px;
+    font-size: 0.8rem;
+    padding: 0.3rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    justify-content: center;
+  }
+
+  /* On mobile show icon-only back button */
+  .page-back-button span {
+    display: none;
+  }
+}
+
 /* ============================================================================
    HERO SECTION
    ============================================================================ */
@@ -567,7 +622,7 @@ small {
 }
 
 .grid-4 {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
 }
 
 /* ============================================================================
@@ -601,7 +656,10 @@ small {
 }
 
 .category-image {
-  height: 200px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
 }
 
 .card:hover .card-image {
@@ -1372,6 +1430,22 @@ small {
     display: none;
   }
 
+  /* Homepage categories - keep very small tiles on mobile */
+  #categories #categories-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  #categories #categories-grid .card {
+    max-width: 110px;
+    margin: 0 auto;
+    border-radius: 6px;
+  }
+
+  #categories #categories-grid .category-image {
+    height: 90px;
+  }
+
   .grid-2 .card-image,
   .grid-4 .card-image {
     height: 80px;
@@ -1397,6 +1471,36 @@ small {
 
   .card-footer {
     padding: 0 var(--space-2) var(--space-2);
+  }
+
+  /* Homepage categories - compact cards on desktop */
+  @media (min-width: 992px) {
+    #categories #categories-grid {
+      gap: var(--space-3);
+    }
+
+    #categories #categories-grid .card {
+      max-width: 180px;
+      margin: 0 auto;
+      border-radius: 10px;
+    }
+
+    #categories #categories-grid .category-image {
+      max-height: 90px;
+    }
+
+    #categories #categories-grid .card-content {
+      padding: 0.4rem 0.5rem 0.6rem;
+    }
+
+    #categories #categories-grid .card-title {
+      font-size: 0.8rem;
+      margin-bottom: 0.15rem;
+    }
+
+    #categories #categories-grid .card-description {
+      display: none;
+    }
   }
 
   .card-footer .btn {

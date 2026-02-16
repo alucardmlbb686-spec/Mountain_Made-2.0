@@ -449,9 +449,11 @@ function applyProfilePhotoFromStorage() {
       btn.style.backgroundSize = 'cover';
       btn.style.backgroundPosition = 'center';
       btn.style.borderRadius = '50%';
+      btn.classList.add('has-profile-photo');
       if (icon) icon.style.display = 'none';
     } else {
       btn.style.backgroundImage = '';
+      btn.classList.remove('has-profile-photo');
       if (icon) icon.style.display = '';
     }
   });
@@ -605,6 +607,33 @@ async function initApp() {
     mobileToggle.addEventListener('click', () => {
       navbarMenu.classList.toggle('mobile-active');
     });
+  }
+
+  // Global back button on non-home pages
+  try {
+    const existingBack = document.querySelector('.page-back-button');
+    const hasNavbar = document.querySelector('.navbar');
+    const path = window.location.pathname || '/';
+    const isHome = path === '/' || path === '/index.html';
+
+    if (!existingBack && hasNavbar && !isHome) {
+      const backBtn = document.createElement('button');
+      backBtn.className = 'page-back-button btn-sm';
+      backBtn.type = 'button';
+      backBtn.innerHTML = '<i class="fas fa-arrow-left"></i><span>Back</span>';
+
+      backBtn.addEventListener('click', () => {
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.href = document.referrer || '/';
+        }
+      });
+
+      document.body.appendChild(backBtn);
+    }
+  } catch (e) {
+    console.warn('Back button init failed:', e);
   }
 }
 
