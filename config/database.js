@@ -434,14 +434,8 @@ const initializeDatabase = async () => {
     `);
 
     await client.query(`
-      DO $$
-      BEGIN
-        BEGIN
-          ALTER TABLE orders ADD CONSTRAINT orders_order_number_unique UNIQUE (order_number);
-        EXCEPTION WHEN duplicate_object THEN
-          NULL;
-        END;
-      END $$;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_order_number_unique
+      ON orders (order_number);
     `);
 
     // Create Order Items table
