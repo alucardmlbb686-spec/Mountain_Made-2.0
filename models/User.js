@@ -72,19 +72,24 @@ class User {
   }
 
   static async findById(id) {
-    const queryWithProfilePhoto = 'SELECT id, email, full_name, phone, role, business_name, tax_id, is_approved, is_blocked, profile_photo, created_at FROM users WHERE id = $1';
-    try {
-      const result = await db.query(queryWithProfilePhoto, [id]);
-      return result.rows[0];
-    } catch (error) {
-      // Backward-compatibility for databases that do not yet have users.profile_photo
-      if (error?.code === '42703') {
-        const fallbackQuery = 'SELECT id, email, full_name, phone, role, business_name, tax_id, is_approved, is_blocked, created_at FROM users WHERE id = $1';
-        const result = await db.query(fallbackQuery, [id]);
-        return result.rows[0];
-      }
-      throw error;
-    }
+    const query = 'SELECT * FROM users WHERE id = $1';
+    const result = await db.query(query, [id]);
+    const user = result.rows[0];
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      phone: user.phone,
+      role: user.role,
+      business_name: user.business_name,
+      tax_id: user.tax_id,
+      is_approved: user.is_approved,
+      is_blocked: user.is_blocked,
+      profile_photo: user.profile_photo,
+      created_at: user.created_at
+    };
   }
 
   static async verifyPassword(plainPassword, hashedPassword) {
