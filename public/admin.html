@@ -7116,6 +7116,7 @@
 
             try {
                 await api.post('/auth/logout');
+                localStorage.removeItem('token');
                 if (window.auth) {
                     auth.currentUser = null;
                     auth.updateUI?.();
@@ -7149,6 +7150,28 @@
                 }
 
                 await auth.checkAuth();
+
+                if (!auth.isAuthenticated()) {
+                    try {
+                        const token = localStorage.getItem('token');
+                        if (token) {
+                            const fallbackResp = await fetch('/api/auth/check', {
+                                method: 'GET',
+                                headers: { Authorization: `Bearer ${token}` },
+                                credentials: 'include'
+                            });
+                            const fallbackData = await fallbackResp.json();
+                            if (fallbackData?.authenticated && fallbackData?.user) {
+                                auth.currentUser = fallbackData.user;
+                                if (typeof auth.updateUI === 'function') {
+                                    auth.updateUI();
+                                }
+                            }
+                        }
+                    } catch (fallbackAuthErr) {
+                        console.warn('Admin auth fallback failed:', fallbackAuthErr);
+                    }
+                }
 
                 const role = auth.currentUser?.role;
                 const isAdminLike = role === 'admin' || role === 'super_admin';
