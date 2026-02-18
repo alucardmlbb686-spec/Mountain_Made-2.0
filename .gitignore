@@ -32,9 +32,9 @@ desktop.ini
 .sublime-project
 .sublime-workspace
 
-# Uploads (if you want to exclude user uploads)
-# public/uploads/*
-# !public/uploads/.gitkeep
+# Uploads (exclude user uploads)
+public/uploads/*
+!public/uploads/.gitkeep
 
 # Build outputs
 dist/

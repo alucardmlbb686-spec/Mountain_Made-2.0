@@ -5,14 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2c5f2d">
     <link rel="manifest" href="/manifest.json">
-    <title>Mountain Made 2.0 - Premium Food E-Commerce</title>
+    <title>Mountain Made</title>
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/mobile-enhancements.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Search Section Styles */
         .search-section {
-            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%);
+            background-image: url('/images/search-bg.gif');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             padding: 2rem 1rem;
             margin-bottom: 2rem;
         }
@@ -23,13 +26,161 @@
             position: relative;
         }
 
+        .search-heading {
+            max-width: 900px;
+            margin: 0 auto 1rem;
+            text-align: center;
+        }
+
+        .search-heading.hidden {
+            display: none;
+        }
+
+        .search-heading h1 {
+            margin: 0 0 0.35rem;
+            font-size: 1.8rem;
+            line-height: 1.2;
+            color: var(--text-primary);
+        }
+
+        .search-heading p {
+            margin: 0;
+            color: var(--text-secondary);
+        }
+
+        .homepage-section-heading-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.85rem;
+            width: 100vw;
+            max-width: 100vw;
+            margin-left: calc(50% - 50vw);
+            margin-right: calc(50% - 50vw);
+        }
+
+        .homepage-section-heading-text {
+            text-align: center;
+            width: min(100%, 980px);
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .homepage-section-heading-text h2 {
+            margin: 0 0 0.4rem 0;
+        }
+
+        .homepage-section-heading-text p {
+            margin: 0;
+        }
+
+        .homepage-section-heading-image-box {
+            width: 100%;
+            aspect-ratio: 20 / 8;
+            max-height: 300px;
+            border-radius: 0;
+            overflow: hidden;
+            border: 1px solid var(--border-primary);
+            background: var(--bg-secondary);
+            box-shadow: var(--shadow);
+        }
+
+        .homepage-section-heading-image-box.hidden {
+            display: none;
+        }
+
+        .homepage-section-heading-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Homepage product cards - compact sizing + better image fit */
+        #homepage-sections-container .product-card .card-image {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 4 / 3;
+            max-height: 150px;
+            object-fit: cover;
+            display: block;
+        }
+
+        #homepage-sections-container .product-card .stock-info {
+            margin-top: 0.15rem;
+            font-size: 0.8rem;
+            line-height: 1.2;
+        }
+
+        #homepage-sections-container .product-card .card-content {
+            padding: 0.6rem 0.8rem 0.75rem;
+        }
+
+        #homepage-sections-container .product-card .card-description {
+            margin-bottom: var(--space-2);
+            -webkit-line-clamp: 1;
+            line-clamp: 1;
+        }
+
+        #homepage-sections-container .product-card .product-price {
+            font-size: 1.25rem;
+        }
+
+        #homepage-sections-container .product-card .card-footer {
+            padding: 0 0.8rem 0.8rem;
+            gap: 0.35rem;
+        }
+
+        #homepage-sections-container .product-card .card-footer .btn {
+            padding: 0.35rem 0.55rem;
+            font-size: 0.75rem;
+        }
+
+        #homepage-sections-container .product-card .card-footer .btn i {
+            font-size: 0.8em;
+        }
+
+        @media (max-width: 768px) {
+            #homepage-sections-container .product-card .card-image {
+                max-height: 110px;
+            }
+
+            #homepage-sections-container .product-card .card-content {
+                padding: 0.5rem 0.65rem 0.65rem;
+            }
+
+            #homepage-sections-container .product-card .card-footer {
+                padding: 0 0.65rem 0.65rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            #homepage-sections-container .product-card .card-description {
+                display: none;
+            }
+
+            #homepage-sections-container .product-card .product-qty-row {
+                display: none !important;
+            }
+
+            #homepage-sections-container .product-card .card-footer {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            #homepage-sections-container .product-card .card-footer .btn {
+                width: 100% !important;
+                margin-left: 0 !important;
+            }
+        }
+
         .search-input-wrapper {
             display: flex;
             gap: 0.75rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             border-radius: 8px;
             overflow: hidden;
-            background: white;
+            background: var(--bg-primary);
         }
 
         .search-input {
@@ -38,7 +189,8 @@
             font-size: 1rem;
             border: none;
             outline: none;
-            background: white;
+            background: var(--bg-primary);
+            color: var(--text-primary);
         }
 
         /* Search Suggestions */
@@ -48,7 +200,7 @@
             right: 0;
             top: 100%;
             margin-top: 0.5rem;
-            background: white;
+            background: var(--bg-primary);
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             max-height: 320px;
@@ -156,7 +308,7 @@
 
         .carousel-item {
             min-width: 280px;
-            background: white;
+            background: var(--bg-primary);
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -199,6 +351,23 @@
             margin-bottom: 0.75rem;
         }
 
+        .carousel-stock-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            margin-bottom: 0.45rem;
+            background: var(--warning);
+            color: #1f2937;
+        }
+
+        .carousel-stock-badge.out {
+            background: var(--error);
+            color: #ffffff;
+        }
+
         .carousel-item-footer {
             display: flex;
             gap: 0.5rem;
@@ -229,7 +398,7 @@
         }
 
         .carousel-nav:hover {
-            background: white;
+            background: var(--bg-primary);
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
@@ -250,6 +419,19 @@
         }
 
         @media (max-width: 768px) {
+            .homepage-section-heading-wrap {
+                width: 100vw;
+                max-width: 100vw;
+                margin-left: calc(50% - 50vw);
+                margin-right: calc(50% - 50vw);
+            }
+
+            .homepage-section-heading-image-box {
+                width: 100%;
+                aspect-ratio: 16 / 8;
+                max-height: 220px;
+            }
+
             .search-input-wrapper {
                 flex-direction: column;
                 gap: 0;
@@ -283,6 +465,41 @@
             }
         }
 
+        @media (min-width: 992px) {
+            #categories #categories-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 0.75rem;
+                max-width: 720px;
+                margin: 0 auto;
+            }
+
+            #categories #categories-grid .card {
+                max-width: 165px;
+                margin: 0 auto;
+            }
+
+            #categories #categories-grid .category-image {
+                aspect-ratio: 1 / 1;
+                width: 100%;
+                height: auto;
+                max-height: 165px;
+                object-fit: cover;
+            }
+
+            #categories #categories-grid .card-content {
+                padding: 0.4rem 0.5rem 0.55rem;
+            }
+
+            #categories #categories-grid .card-title {
+                font-size: 0.85rem;
+                margin-bottom: 0;
+            }
+
+            #categories #categories-grid .card-description {
+                display: none;
+            }
+        }
+
         /* Account Dropdown Styles */
         .account-menu {
             position: relative;
@@ -292,7 +509,7 @@
             position: absolute;
             right: 0;
             top: calc(100% + 0.5rem);
-            background: white;
+            background: var(--bg-primary);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-xl);
             min-width: 280px;
@@ -358,29 +575,6 @@
             margin-top: 0.25rem;
             padding: 0.25rem 0;
         }
-
-        /* Dark Mode Styles */
-        body.dark-mode {
-            background-color: #1a1a1a;
-            color: #e0e0e0;
-        }
-
-        body.dark-mode .navbar {
-            background: #2d2d2d;
-            border-bottom-color: #404040;
-        }
-
-        body.dark-mode .card,
-        body.dark-mode .account-dropdown {
-            background: #2d2d2d;
-            border-color: #404040;
-        }
-
-        body.dark-mode .search-input,
-        body.dark-mode .search-suggestions {
-            background: #2d2d2d;
-            color: #e0e0e0;
-        }
     </style>
 </head>
 <body>
@@ -397,6 +591,7 @@
                 <li><a href="/products">Products</a></li>
                 <li><a href="#categories">Categories</a></li>
                 <li><a href="#about">About</a></li>
+                <li><a href="/contact">Contact Us</a></li>
                 <li id="admin-link" class="hidden"><a href="/admin">Admin</a></li>
             </ul>
             
@@ -450,6 +645,10 @@
     <!-- Search Bar Section -->
     <section class="search-section">
         <div class="search-container">
+            <div id="search-hero-heading" class="search-heading hidden">
+                <h1 id="homepage-hero-title-text"></h1>
+                <p id="homepage-hero-subtitle-text"></p>
+            </div>
             <div class="search-input-wrapper">
                 <input type="text" id="home-search-input" class="search-input" placeholder="Search for products..." />
                 <button id="home-search-btn" class="search-button">
@@ -496,6 +695,8 @@
         </div>
     </section>
 
+    
+
     <!-- Dynamic Homepage Sections -->
     <div id="homepage-sections-container"></div>
 
@@ -524,7 +725,7 @@
                 <ul>
                     <li><a href="/orders">My Orders</a></li>
                     <li><a href="/cart">Shopping Cart</a></li>
-                    <li><a href="#">Contact Us</a></li>
+                    <li><a href="/contact">Contact Us</a></li>
                     <li><a href="#">FAQs</a></li>
                 </ul>
             </div>
@@ -585,29 +786,71 @@
         // Load dynamic homepage sections with products
         async function loadHomepageSections() {
             try {
-                const data = await api.get('/products/homepage-sections');
+                const [sectionsData, settingsData] = await Promise.all([
+                    api.get('/products/homepage-sections'),
+                    api.get('/products/settings')
+                ]);
+
+                const data = sectionsData || {};
+                const settings = (settingsData && settingsData.settings) || {};
+                const sections = Array.isArray(data.sections) ? data.sections : [];
+
+                // Apply "Homepage Headings" settings to the Search Bar section
+                const heroWrap = document.getElementById('search-hero-heading');
+                const heroTitleEl = document.getElementById('homepage-hero-title-text');
+                const heroSubtitleEl = document.getElementById('homepage-hero-subtitle-text');
+                const heroTitle = (settings.homepage_hero_title || '').trim();
+                const heroSubtitle = (settings.homepage_hero_subtitle || '').trim();
+
+                if (heroWrap && heroTitleEl && heroSubtitleEl) {
+                    if (heroTitle || heroSubtitle) {
+                        heroTitleEl.textContent = heroTitle;
+                        heroSubtitleEl.textContent = heroSubtitle;
+                        heroWrap.classList.remove('hidden');
+                    } else {
+                        heroWrap.classList.add('hidden');
+                    }
+                }
+
+                const headingImageUrl = (settings.homepage_hero_image_url || '').trim();
+                const safeHeadingImageUrl = headingImageUrl ? encodeURI(headingImageUrl) : '';
+                const headingSectionId = String(settings.homepage_hero_section_id || '').trim();
+                const fallbackSectionId = !headingSectionId && sections.length > 0
+                    ? String(sections[sections.length - 1].id)
+                    : '';
+                const targetHeadingSectionId = headingSectionId || fallbackSectionId;
                 const container = document.getElementById('homepage-sections-container');
                 
-                if (!data.sections || data.sections.length === 0) {
+                if (sections.length === 0) {
                     container.innerHTML = '<section class="container"><div class="section-title"><h2>Featured Products</h2><p>No homepage sections configured yet. Add a section in the admin panel and assign products to it to feature them here.</p></div></section>';
                     return;
                 }
                 
                 let html = '';
                 
-                data.sections.forEach(section => {
+                sections.forEach((section, index) => {
+                    const sectionProducts = Array.isArray(section.products) ? section.products : [];
+                    const matchesConfiguredSection = targetHeadingSectionId && String(section.id) === targetHeadingSectionId;
+                    const showHeadingImage = !!headingImageUrl && (matchesConfiguredSection || (!targetHeadingSectionId && index === 0));
                     html += `
                         <section class="container">
                             <div class="section-title">
-                                <h2>${section.name}</h2>
-                                ${section.description ? `<p>${section.description}</p>` : ''}
+                                <div class="homepage-section-heading-wrap">
+                                    <div class="homepage-section-heading-image-box ${showHeadingImage ? '' : 'hidden'}">
+                                        <img class="homepage-section-heading-image" src="${showHeadingImage ? safeHeadingImageUrl : ''}" alt="Section heading image" onerror="this.parentElement.classList.add('hidden')">
+                                    </div>
+                                    <div class="homepage-section-heading-text">
+                                        <h2>${section.name}</h2>
+                                        ${section.description ? `<p>${section.description}</p>` : ''}
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="grid grid-4">
                     `;
 
-                    if (section.products && section.products.length > 0) {
-                        section.products.forEach(product => {
+                    if (sectionProducts.length > 0) {
+                        sectionProducts.forEach(product => {
                             html += `
                                 <div class="card product-card">
                                     ${product.stock_quantity < 10 && product.stock_quantity > 0 ? 
@@ -633,18 +876,18 @@
                                                 const sale = useWholesale ? parseFloat(product.wholesale_price) : retail;
                                                 const showDiscount = !useWholesale && discount != null && discount < base;
                                                 if (useWholesale) {
-                                                    return `<div class="product-price">${formatCurrency(sale)} <small>/ ${product.unit || 'unit'}</small></div><p class="stock-info">Min order: ${product.min_wholesale_qty} units</p>`;
+                                                    return `<div class="product-price">${formatCurrency(sale)}</div><p class="stock-info">Min order: ${product.min_wholesale_qty} units</p>`;
                                                 }
                                                 if (showDiscount) {
-                                                    return `<div class="product-price"><span class="price-original">${formatCurrency(base)}</span><span class="price-discount">${formatCurrency(retail)}</span> <small>/ ${product.unit || 'unit'}</small></div>`;
+                                                    return `<div class="product-price"><span class="price-original">${formatCurrency(base)}</span><span class="price-discount">${formatCurrency(retail)}</span></div>`;
                                                 }
-                                                return `<div class="product-price">${formatCurrency(sale)} <small>/ ${product.unit || 'unit'}</small></div>`;
+                                                return `<div class="product-price">${formatCurrency(sale)}</div>`;
                                             })()}
                                         </div>
                                     </a>
                                     
                                     <div class="card-footer" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-                                        <div style="display:flex; align-items:center; gap:0.25rem;">
+                                        <div class="product-qty-row" style="display:flex; align-items:center; gap:0.25rem;">
                                             <label for="home-qty-${product.id}" style="font-size:0.8rem; color:var(--text-light);">Qty</label>
                                             <input type="number"
                                                    id="home-qty-${product.id}"
@@ -663,7 +906,7 @@
                                         <button class="btn btn-success btn-sm" 
                                                 onclick="buyNow(${product.id})"
                                                 ${product.stock_quantity === 0 ? 'disabled' : ''}
-                                                style="margin-left: 0.5rem;">
+                                                >
                                             <i class="fas fa-credit-card"></i> Buy Now
                                         </button>
                                     </div>
@@ -735,12 +978,33 @@
                 }
 
                 const quantity = getHomeQuantity(productId);
-                // Quick buy should only have this one product in checkout
+                
+                // Mark as direct buy before cart operations
+                sessionStorage.setItem('directBuy', 'true');
+                
+                // Clear cart and add product
                 await cart.clear();
-                await cart.add(productId, quantity);
-                window.location.href = '/checkout';
+                const addSuccess = await cart.add(productId, quantity);
+                
+                if (!addSuccess) {
+                    sessionStorage.removeItem('directBuy');
+                    showAlert('Failed to add product to cart. Please try again.', 'error');
+                    return;
+                }
+                
+                // Verify cart has items before redirecting
+                const cartCheck = await cart.fetch();
+                if (!cartCheck || !cartCheck.cartItems || cartCheck.cartItems.length === 0) {
+                    sessionStorage.removeItem('directBuy');
+                    showAlert('Failed to prepare checkout. Please try again.', 'error');
+                    return;
+                }
+                
+                // Redirect to checkout
+                window.location.replace('/checkout');
             } catch (error) {
                 console.error('Buy now error:', error);
+                sessionStorage.removeItem('directBuy');
                 showAlert(error.message || 'Failed to start checkout', 'error');
             }
         }
@@ -785,6 +1049,11 @@
                          onerror="this.src='/images/placeholder.jpg'">
                     <div class="carousel-item-content">
                         <h3 class="carousel-item-title">${product.name}</h3>
+                        ${product.stock_quantity === 0
+                            ? '<div class="carousel-stock-badge out">Out of Stock</div>'
+                            : (product.stock_quantity > 0 && product.stock_quantity < 10
+                                ? `<div class="carousel-stock-badge">Low Stock (${product.stock_quantity})</div>`
+                                : '')}
                         ${(() => {
                             const base = parseFloat(product.price || 0);
                             const discount = product.discount_price != null ? parseFloat(product.discount_price) : null;
@@ -826,6 +1095,15 @@
 
         let autoSlideInterval;
         function startAutoSlide() {
+            const autoSlideDelay = window.performanceTuning
+                ? window.performanceTuning.getAdaptiveInterval(4000, {
+                    lowMultiplier: 2,
+                    highMultiplier: 0.75,
+                    min: 3000,
+                    max: 9000
+                })
+                : 4000;
+
             autoSlideInterval = setInterval(() => {
                 const track = document.getElementById('carousel-track');
                 const itemWidth = 280 + 16;
@@ -839,7 +1117,7 @@
                 }
 
                 track.style.transform = `translateX(-${currentCarouselIndex * itemWidth}px)`;
-            }, 4000);
+            }, autoSlideDelay);
         }
 
         function stopAutoSlide() {
@@ -1036,25 +1314,9 @@
             const accountLogout = document.getElementById('account-logout');
             if (accountLogout) {
                 accountLogout.addEventListener('click', async () => {
-                    if (confirm('Are you sure you want to logout?')) {
+                    if (await showConfirmDialog('Are you sure you want to logout?', { title: 'Logout', confirmText: 'Logout' })) {
                         await auth.logout();
                     }
-                });
-            }
-
-            // Theme toggle handler
-            const themeToggle = document.getElementById('theme-toggle');
-            if (themeToggle) {
-                // Load saved theme
-                const savedTheme = localStorage.getItem('theme') || 'light';
-                if (savedTheme === 'dark') {
-                    document.body.classList.add('dark-mode');
-                }
-
-                themeToggle.addEventListener('click', () => {
-                    document.body.classList.toggle('dark-mode');
-                    const isDark = document.body.classList.contains('dark-mode');
-                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
                 });
             }
         });

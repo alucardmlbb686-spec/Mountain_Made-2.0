@@ -64,7 +64,7 @@ exports.getSearchSuggestions = async (req, res) => {
       db.query(
         `SELECT id, name, image_url, price, discount_price
          FROM products
-         WHERE is_active = true AND name ILIKE $1
+         WHERE COALESCE(is_active, true) = true AND name ILIKE $1
          ORDER BY created_at DESC
          LIMIT 5`,
         [term]
@@ -171,7 +171,7 @@ exports.getHomepageSections = async (req, res) => {
           ) ORDER BY p.created_at DESC
         ) FILTER (WHERE p.id IS NOT NULL) as products
       FROM homepage_sections hs
-      LEFT JOIN products p ON hs.id = p.homepage_section_id AND p.is_active = true
+      LEFT JOIN products p ON hs.id = p.homepage_section_id AND COALESCE(p.is_active, true) = true
       WHERE hs.is_active = true
       GROUP BY hs.id, hs.name, hs.description, hs.sort_order
       ORDER BY hs.sort_order ASC, hs.created_at ASC

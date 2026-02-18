@@ -11,7 +11,21 @@
         .product-detail-container {
             max-width: 1200px;
             margin: 2rem auto;
-            padding: 0 1rem;
+            padding: 0 1.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .product-detail-container {
+                margin: 1rem auto;
+                padding: 0 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .product-detail-container {
+                margin: 0.5rem auto;
+                padding: 0 0.75rem;
+            }
         }
         
         .product-detail-grid {
@@ -21,82 +35,284 @@
             margin-bottom: 2rem;
         }
         
+        @media (max-width: 968px) {
+            .product-detail-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .product-detail-grid {
+                gap: 1rem;
+                margin-bottom: 1rem;
+            }
+        }
+        
         .product-image-section {
-            position: sticky;
-            top: 80px;
+            position: static;
             height: fit-content;
         }
         
         .product-main-image {
             width: 100%;
-            height: 500px;
+            aspect-ratio: 1;
             object-fit: cover;
-            border-radius: 8px;
+            border-radius: 12px;
             margin-bottom: 1rem;
+            background: var(--bg-secondary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            cursor: zoom-in;
+        }
+        
+        @media (max-width: 768px) {
+            .product-main-image {
+                border-radius: 8px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .product-main-image {
+                margin-bottom: 0.75rem;
+            }
         }
         
         .product-thumbnails {
-            display: flex;
-            gap: 0.5rem;
-            overflow-x: auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+        
+        @media (max-width: 480px) {
+            .product-thumbnails {
+                gap: 0.5rem;
+            }
         }
         
         .product-thumbnail {
-            width: 80px;
-            height: 80px;
+            width: 100%;
+            aspect-ratio: 1;
             object-fit: cover;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
-            border: 2px solid transparent;
-            transition: border-color 0.3s;
+            border: 2px solid var(--border-primary);
+            transition: border-color 0.2s;
+        }
+        
+        @media (max-width: 480px) {
+            .product-thumbnail {
+                border-radius: 6px;
+            }
         }
         
         .product-thumbnail:hover,
         .product-thumbnail.active {
-            border-color: var(--primary);
+            border-color: var(--primary-500);
+        }
+
+        .image-lightbox {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.88);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            z-index: 2200;
+        }
+
+        .image-lightbox.hidden {
+            display: none;
+        }
+
+        .image-lightbox img {
+            max-width: min(96vw, 1400px);
+            max-height: 90vh;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+        }
+
+        .image-lightbox-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 42px;
+            height: 42px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.45);
+            color: #fff;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .image-lightbox-close:hover {
+            background: rgba(0, 0, 0, 0.7);
         }
         
         .product-info-section h1 {
             font-size: 2rem;
-            margin-bottom: 0.5rem;
-            color: var(--text);
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+            line-height: 1.3;
+        }
+        
+        @media (max-width: 768px) {
+            .product-info-section h1 {
+                font-size: 1.5rem;
+                margin-bottom: 0.5rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .product-info-section h1 {
+                font-size: 1.25rem;
+                line-height: 1.4;
+            }
         }
         
         .product-rating {
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
             gap: 0.5rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-primary);
             color: #FFB800;
         }
         
+        @media (max-width: 768px) {
+            .product-rating {
+                margin-bottom: 1rem;
+                padding-bottom: 1rem;
+                font-size: 0.9rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .product-rating {
+                gap: 0.35rem;
+                font-size: 0.85rem;
+            }
+        }
+        
         .product-price-section {
-            background: var(--surface);
+            background: var(--bg-secondary);
             padding: 1.5rem;
-            border-radius: 8px;
+            border-radius: 10px;
             margin: 1.5rem 0;
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-primary);
+        }
+        
+        @media (max-width: 768px) {
+            .product-price-section {
+                padding: 1.25rem;
+                margin: 1rem 0;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .product-price-section {
+                padding: 1rem;
+                border-radius: 8px;
+            }
         }
         
         .product-price {
             font-size: 2rem;
             font-weight: 700;
-            color: var(--primary);
+            color: var(--primary-600);
             margin-bottom: 0.5rem;
         }
         
+        @media (max-width: 768px) {
+            .product-price {
+                font-size: 1.75rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .product-price {
+                font-size: 1.5rem;
+            }
+        }
+        
         .product-stock {
-            color: #22c55e;
+            background: #d1fae5;
+            color: #065f46;
             font-weight: 600;
-            margin-bottom: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 1rem 0;
+        }
+        
+        @media (max-width: 480px) {
+            .product-stock {
+                padding: 0.4rem 0.85rem;
+                font-size: 0.9rem;
+            }
         }
         
         .product-stock.low {
-            color: #f59e0b;
+            background: #fed7aa;
+            color: #92400e;
         }
         
         .product-stock.out {
-            color: var(--error);
+            background: #fecaca;
+            color: #991b1b;
+        }
+        
+        .quantity-selector {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 768px) {
+            .quantity-selector {
+                margin: 1rem 0;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .quantity-selector {
+                gap: 0.75rem;
+                font-size: 0.9rem;
+            }
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        @media (max-width: 768px) {
+            .product-actions {
+                margin: 1rem 0;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .product-actions {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .product-actions .btn {
+                width: 100%;
+            }
         }
         
         .quantity-selector {
@@ -123,6 +339,15 @@
             border: none;
             cursor: pointer;
             font-size: 1.2rem;
+            color: var(--text-primary);
+            transition: background 0.2s;
+        }
+        
+        @media (max-width: 480px) {
+            .quantity-controls button {
+                padding: 0.4rem 0.85rem;
+                font-size: 1.1rem;
+            }
         }
         
         .quantity-controls button:hover {
@@ -135,6 +360,16 @@
             border: none;
             padding: 0.5rem;
             font-size: 1rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        @media (max-width: 480px) {
+            .quantity-controls input {
+                width: 50px;
+                padding: 0.4rem;
+                font-size: 0.95rem;
+            }
         }
         
         .product-actions {
@@ -147,6 +382,14 @@
             flex: 1;
             padding: 1rem;
             font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 480px) {
+            .product-actions .btn {
+                padding: 0.85rem;
+                font-size: 0.95rem;
+            }
         }
         
         .product-description {
@@ -155,8 +398,37 @@
             border-top: 1px solid var(--border);
         }
         
+        @media (max-width: 768px) {
+            .product-description {
+                margin-top: 1.5rem;
+                padding-top: 1.5rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .product-description {
+                margin-top: 1rem;
+                padding-top: 1rem;
+                font-size: 0.9rem;
+            }
+        }
+        
         .product-description h3 {
             margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+        
+        @media (max-width: 768px) {
+            .product-description h3 {
+                font-size: 1.15rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .product-description h3 {
+                font-size: 1.05rem;
+                margin-bottom: 0.75rem;
+            }
         }
         
         .product-specs {
@@ -166,16 +438,42 @@
             margin-top: 1.5rem;
         }
         
+        @media (max-width: 768px) {
+            .product-specs {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .product-specs {
+                gap: 0.5rem;
+                margin-top: 1rem;
+            }
+        }
+        
         .spec-item {
             display: flex;
             justify-content: space-between;
             padding: 0.75rem;
-            background: var(--surface);
-            border-radius: 4px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            border: 1px solid var(--border-primary);
+        }
+        
+        @media (max-width: 480px) {
+            .spec-item {
+                padding: 0.65rem;
+                font-size: 0.9rem;
+            }
         }
         
         .spec-label {
             font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .spec-value {
             color: var(--text-secondary);
         }
         
@@ -187,9 +485,30 @@
             border-left: 4px solid #22c55e;
         }
         
+        @media (max-width: 768px) {
+            .delivery-info {
+                padding: 1.25rem;
+                margin: 1rem 0;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .delivery-info {
+                padding: 1rem;
+                font-size: 0.9rem;
+            }
+        }
+        
         .delivery-info h4 {
             color: #166534;
             margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+        
+        @media (max-width: 480px) {
+            .delivery-info h4 {
+                font-size: 1rem;
+            }
         }
         
         .delivery-option {
@@ -198,6 +517,13 @@
             gap: 0.5rem;
             margin: 0.5rem 0;
             color: #166534;
+        }
+        
+        @media (max-width: 480px) {
+            .delivery-option {
+                gap: 0.4rem;
+                font-size: 0.9rem;
+            }
         }
 
         /* Address selection modal styling (make clearly visible) */
@@ -225,6 +551,20 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.25);
             border: 1px solid rgba(148, 163, 184, 0.4);
         }
+        
+        @media (max-width: 768px) {
+            .modal-content {
+                padding: 1.5rem 1.25rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .modal-content {
+                padding: 1.25rem 1rem;
+                border-radius: 10px;
+                max-height: 85vh;
+            }
+        }
 
         .modal-header-row {
             display: flex;
@@ -237,6 +577,12 @@
         .modal-header-row h3 {
             margin: 0;
             font-size: 1.4rem;
+        }
+        
+        @media (max-width: 480px) {
+            .modal-header-row h3 {
+                font-size: 1.2rem;
+            }
         }
 
         .modal-close-btn {
@@ -257,29 +603,6 @@
             background: #ffffff;
         }
         
-        @media (max-width: 768px) {
-            .product-detail-grid {
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
-            }
-            
-            .product-image-section {
-                position: static;
-            }
-            
-            .product-main-image {
-                height: 300px;
-            }
-            
-            .product-specs {
-                grid-template-columns: 1fr;
-            }
-            
-            .product-actions {
-                flex-direction: column;
-            }
-        }
-
         /* Account Dropdown Styles */
         .account-menu {
             position: relative;
@@ -436,6 +759,13 @@
         </div>
     </div>
 
+    <div id="image-lightbox" class="image-lightbox hidden" onclick="handleLightboxBackdropClick(event)">
+        <button type="button" class="image-lightbox-close" onclick="closeImageLightbox()" aria-label="Close fullscreen image">
+            <i class="fas fa-times"></i>
+        </button>
+        <img id="lightbox-image" src="" alt="Product image preview">
+    </div>
+
     <script src="/js/main.js"></script>
     <script>
         let product = null;
@@ -473,8 +803,20 @@
             }
         }
 
+        function getUnitInfo(p) {
+            const rawUnit = (p && typeof p.unit === 'string') ? p.unit.trim() : '';
+            if (rawUnit) return { unit: rawUnit, per: rawUnit };
+
+            const weightNum = p && p.weight != null ? parseFloat(p.weight) : NaN;
+            if (Number.isFinite(weightNum) && weightNum > 0) return { unit: 'kg', per: 'kg' };
+
+            // Friendly fallback so we never show "Unit: unit"
+            return { unit: 'pcs', per: 'piece' };
+        }
+
         function renderProduct() {
             const isWholesale = auth.isWholesale();
+            const unitInfo = getUnitInfo(product);
             const basePrice = parseFloat(product.price || 0);
             const discount = product.discount_price != null ? parseFloat(product.discount_price) : null;
             const retailPrice = discount != null && discount < basePrice ? discount : basePrice;
@@ -482,29 +824,61 @@
             const showDiscount = !isWholesale && discount != null && discount < basePrice;
             const inStock = product.stock_quantity > 0;
             const lowStock = product.stock_quantity > 0 && product.stock_quantity < 10;
+            const fallbackImage = '/images/placeholder.jpg';
+
+            let productImages = [];
+            if (Array.isArray(product.images)) {
+                productImages = product.images;
+            } else if (typeof product.images === 'string' && product.images.trim()) {
+                try {
+                    const parsedImages = JSON.parse(product.images);
+                    if (Array.isArray(parsedImages)) {
+                        productImages = parsedImages;
+                    }
+                } catch (_) {
+                    productImages = product.images.split(',').map(img => img.trim());
+                }
+            }
+
+            productImages = productImages
+                .filter(img => typeof img === 'string' && img.trim())
+                .map(img => img.trim());
+
+            if (product.image_url && !productImages.includes(product.image_url)) {
+                productImages.unshift(product.image_url);
+            }
+
+            if (productImages.length === 0) {
+                productImages = [fallbackImage];
+            }
             
             document.title = `${product.name} - Mountain Made 2.0`;
             
             const content = `
                 <div class="product-detail-grid">
                     <div class="product-image-section">
-                        <img src="${product.image_url || '/images/placeholder.jpg'}" 
+                        <img src="${productImages[0]}" 
                              alt="${product.name}" 
+                             id="product-main-image"
                              class="product-main-image"
+                                onclick="openImageLightbox(this.src, this.alt)"
                              onerror="this.src='/images/placeholder.jpg'">
+                        ${productImages.length > 1 ? `
+                            <div class="product-thumbnails" id="product-thumbnails">
+                                ${productImages.map((image, index) => `
+                                    <img src="${image}" 
+                                         alt="${product.name} image ${index + 1}" 
+                                         class="product-thumbnail ${index === 0 ? 'active' : ''}"
+                                         data-image="${image}"
+                                         onclick="selectProductImage(this)"
+                                         onerror="this.src='/images/placeholder.jpg'">
+                                `).join('')}
+                            </div>
+                        ` : ''}
                     </div>
                     
                     <div class="product-info-section">
                         <h1>${product.name}</h1>
-                        
-                        <div class="product-rating">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star-half-alt"></i>
-                            <span>(4.5 out of 5)</span>
-                        </div>
                         
                         <div class="product-price-section">
                             <div class="product-price">
@@ -513,7 +887,7 @@
                             </div>
                             ${isWholesale && product.wholesale_price ? 
                                 `<small style="color: var(--text-secondary);">Wholesale Price • Min Order: ${product.min_wholesale_qty} units</small>` : 
-                                `<small style="color: var(--text-secondary);">Per ${product.unit || 'unit'}</small>`
+                                `<small style="color: var(--text-secondary);">Per ${unitInfo.per}</small>`
                             }
                             
                             <div class="product-stock ${lowStock ? 'low' : ''} ${!inStock ? 'out' : ''}" style="margin-top: 1rem;">
@@ -573,12 +947,12 @@
                             </div>
                             <div class="spec-item">
                                 <span class="spec-label">Unit:</span>
-                                <span>${product.unit || 'N/A'}</span>
+                                <span>${unitInfo.unit}</span>
                             </div>
                             ${product.weight ? `
                                 <div class="spec-item">
                                     <span class="spec-label">Weight:</span>
-                                    <span>${product.weight} ${product.unit}</span>
+                                    <span>${product.weight} ${unitInfo.unit}</span>
                                 </div>
                             ` : ''}
                             <div class="spec-item">
@@ -591,6 +965,48 @@
             `;
             
             document.getElementById('product-content').innerHTML = content;
+        }
+
+        function selectProductImage(thumbnailElement) {
+            const mainImage = document.getElementById('product-main-image');
+            if (!mainImage || !thumbnailElement) return;
+
+            const newImage = thumbnailElement.getAttribute('data-image');
+            if (!newImage) return;
+
+            mainImage.src = newImage;
+            document.querySelectorAll('.product-thumbnail').forEach((thumbnail) => {
+                thumbnail.classList.remove('active');
+            });
+            thumbnailElement.classList.add('active');
+        }
+
+        function openImageLightbox(imageSrc, imageAlt = 'Product image') {
+            if (!imageSrc) return;
+            const lightbox = document.getElementById('image-lightbox');
+            const lightboxImage = document.getElementById('lightbox-image');
+            if (!lightbox || !lightboxImage) return;
+
+            lightboxImage.src = imageSrc;
+            lightboxImage.alt = imageAlt;
+            lightbox.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeImageLightbox() {
+            const lightbox = document.getElementById('image-lightbox');
+            const lightboxImage = document.getElementById('lightbox-image');
+            if (!lightbox || !lightboxImage) return;
+
+            lightbox.classList.add('hidden');
+            lightboxImage.src = '';
+            document.body.style.overflow = '';
+        }
+
+        function handleLightboxBackdropClick(event) {
+            if (event.target && event.target.id === 'image-lightbox') {
+                closeImageLightbox();
+            }
         }
 
         function updateQuantity(value) {
@@ -649,7 +1065,7 @@
                 showAddressSelectionModal();
             } else {
                 // No addresses, redirect to address management
-                if (confirm('You need to add a delivery address first. Go to address management?')) {
+                if (await showConfirmDialog('You need to add a delivery address first. Go to address management?', { title: 'Address Required', confirmText: 'Go to Addresses' })) {
                     window.location.href = '/addresses';
                 }
             }
@@ -683,6 +1099,31 @@
                             </div>
                         `).join('')}
                     </div>
+                    <div style="margin: 0 0 1.25rem; padding: 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-secondary);">
+                        <h4 style="margin: 0 0 0.75rem;">Payment Method</h4>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label class="form-label">Select Payment</label>
+                            <select id="quick_payment_method" class="form-select" required>
+                                <option value="cash_on_delivery">Cash on Delivery</option>
+                                <option value="gpay">Google Pay (UPI)</option>
+                            </select>
+                        </div>
+                        <div id="quick-gpay-details" class="hidden">
+                            <div class="form-group" style="margin-bottom: 0.75rem;">
+                                <label class="form-label">GPay detail to share</label>
+                                <select id="quick-gpay-detail-type" class="form-select">
+                                    <option value="upi">UPI ID</option>
+                                    <option value="phone">Phone Number</option>
+                                    <option value="qr">QR Code / Link</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label id="quick-gpay-detail-label" class="form-label">UPI ID</label>
+                                <input type="text" id="quick-gpay-detail-value" class="form-input" placeholder="e.g. name@upi">
+                                <div class="form-help">This is shared only with the owner for payment confirmation.</div>
+                            </div>
+                        </div>
+                    </div>
                     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                         <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
                         <button class="btn btn-primary" onclick="confirmBuyNow()">Confirm Order</button>
@@ -692,6 +1133,38 @@
             
             document.body.appendChild(modal);
             window.selectedAddressId = defaultAddress.id;
+
+            const paymentSelect = document.getElementById('quick_payment_method');
+            if (paymentSelect) {
+                paymentSelect.addEventListener('change', toggleQuickGpayDetails);
+            }
+            toggleQuickGpayDetails();
+        }
+
+        function formatQuickGpayLabel(type) {
+            if (type === 'phone') return 'Phone Number';
+            if (type === 'qr') return 'QR Code / Link';
+            return 'UPI ID';
+        }
+
+        function toggleQuickGpayDetails() {
+            const paymentSelect = document.getElementById('quick_payment_method');
+            const gpaySection = document.getElementById('quick-gpay-details');
+            const typeSelect = document.getElementById('quick-gpay-detail-type');
+            const labelEl = document.getElementById('quick-gpay-detail-label');
+            const valueInput = document.getElementById('quick-gpay-detail-value');
+            if (!paymentSelect || !gpaySection) return;
+
+            const isGpay = paymentSelect.value === 'gpay';
+            gpaySection.classList.toggle('hidden', !isGpay);
+
+            if (typeSelect && labelEl) {
+                labelEl.textContent = formatQuickGpayLabel(typeSelect.value);
+                typeSelect.onchange = () => {
+                    labelEl.textContent = formatQuickGpayLabel(typeSelect.value);
+                    if (valueInput) valueInput.placeholder = typeSelect.value === 'phone' ? 'e.g. +91 98765 43210' : (typeSelect.value === 'qr' ? 'e.g. link or description' : 'e.g. name@upi');
+                };
+            }
         }
 
         function selectAddress(addressId) {
@@ -712,6 +1185,19 @@
             }
 
             try {
+                const paymentMethod = document.getElementById('quick_payment_method')?.value || 'cash_on_delivery';
+                let notes = 'Quick Buy Order';
+
+                if (paymentMethod === 'gpay') {
+                    const type = document.getElementById('quick-gpay-detail-type')?.value || 'upi';
+                    const value = (document.getElementById('quick-gpay-detail-value')?.value || '').trim();
+                    if (!value) {
+                        showAlert(`Please enter your ${formatQuickGpayLabel(type)} for GPay.`, 'error');
+                        return;
+                    }
+                    notes = `GPay via ${formatQuickGpayLabel(type)}: ${value}`;
+                }
+
                 const response = await api.post('/orders/quick-buy', {
                     product_id: product.id,
                     quantity: selectedQuantity,
@@ -726,7 +1212,8 @@
                         postal_code: address.postal_code,
                         country: address.country
                     },
-                    payment_method: 'COD'
+                    payment_method: paymentMethod,
+                    notes
                 });
                 
                 document.querySelector('.modal-overlay').remove();
@@ -743,6 +1230,12 @@
             await cart.fetch();
             await loadProduct();
             await loadUserAddresses();
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    closeImageLightbox();
+                }
+            });
 
             // Account dropdown toggle
             const accountToggle = document.getElementById('account-toggle');
@@ -766,7 +1259,7 @@
             const accountLogout = document.getElementById('account-logout');
             if (accountLogout) {
                 accountLogout.addEventListener('click', async () => {
-                    if (confirm('Are you sure you want to logout?')) {
+                    if (await showConfirmDialog('Are you sure you want to logout?', { title: 'Logout', confirmText: 'Logout' })) {
                         await auth.logout();
                     }
                 });

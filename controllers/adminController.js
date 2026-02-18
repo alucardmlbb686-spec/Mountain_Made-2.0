@@ -2,12 +2,15 @@ const User = require('../models/User');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
 const db = require('../config/database');
+const { getLicenseState, LICENSE_EXPIRED_MESSAGE } = require('../middleware/adminLicense');
 
 // User Management
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.getAllUsers();
+    const includeSuperAdmin = req.user?.role === 'super_admin';
+    const users = await User.getAllUsers({ includeSuperAdmin });
     res.json({ users });
   } catch (error) {
     console.error('Get users error:', error);
@@ -47,9 +50,13 @@ exports.deleteUser = async (req, res) => {
     const { userId } = req.params;
     
     // Check if user exists
-    const userCheck = await db.query('SELECT id FROM users WHERE id = $1', [userId]);
+    const userCheck = await db.query('SELECT id, role FROM users WHERE id = $1', [userId]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (['admin', 'super_admin'].includes(userCheck.rows[0].role)) {
+      return res.status(400).json({ error: 'Cannot delete admin or super admin users.' });
     }
     
     // Delete user (CASCADE will handle related records)
@@ -72,9 +79,9 @@ exports.blockUser = async (req, res) => {
       return res.status(404).json({ error: 'User not found.' });
     }
 
-    // Prevent blocking admin users
-    if (userCheck.rows[0].role === 'admin') {
-      return res.status(400).json({ error: 'Cannot block admin users.' });
+    // Prevent blocking admin/super-admin users
+    if (['admin', 'super_admin'].includes(userCheck.rows[0].role)) {
+      return res.status(400).json({ error: 'Cannot block admin or super admin users.' });
     }
 
     // Update block status
@@ -196,7 +203,7 @@ exports.getUserActivities = async (req, res) => {
           u.full_name             AS full_name,
           u.email                 AS email
         FROM users u
-        WHERE u.role != 'admin'
+        WHERE u.role NOT IN ('admin', 'super_admin')
       ) activities
       ORDER BY created_at DESC
       LIMIT $1
@@ -277,6 +284,7 @@ exports.updateProduct = async (req, res) => {
       name: incoming.name ?? existing.name,
       description: incoming.description ?? existing.description,
       category_id: incoming.category_id ?? existing.category_id,
+      homepage_section_id: incoming.homepage_section_id !== undefined ? incoming.homepage_section_id : existing.homepage_section_id,
       price: incoming.price !== undefined ? parseFloat(incoming.price) : existing.price,
       wholesale_price: incoming.wholesale_price !== undefined ? parseFloat(incoming.wholesale_price) : existing.wholesale_price,
       discount_price: incoming.discount_price !== undefined ? parseFloat(incoming.discount_price) : existing.discount_price,
@@ -613,28 +621,65 @@ exports.updateOrderStatus = async (req, res) => {
 // Dashboard Statistics
 exports.getDashboardStats = async (req, res) => {
   try {
-    const orderStats = await Order.getStatistics();
-    
-    const userCountQuery = await db.query(
-      'SELECT COUNT(*) as total_customers FROM users WHERE role = $1',
-      ['customer']
+    const orderCountQuery = await db.query('SELECT COUNT(*) as total_orders FROM orders');
+    const revenueQuery = await db.query(
+      "SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders WHERE status != 'cancelled'"
     );
-    
+
+    // "Spent" = estimated cost of goods sold, using products.wholesale_price as cost price
+    // Profit = revenue - spent
+    const spentQuery = await db.query(
+      `
+        SELECT COALESCE(SUM(oi.quantity * COALESCE(p.wholesale_price, 0)), 0) as total_spent
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        LEFT JOIN products p ON p.id = oi.product_id
+        WHERE o.status != 'cancelled'
+      `
+    );
+
+    const userCountQuery = await db.query(
+      "SELECT COUNT(*) as total_customers FROM users WHERE role IN ('customer','wholesale')"
+    );
+
     const productCountQuery = await db.query(
       'SELECT COUNT(*) as total_products FROM products WHERE is_active = true'
     );
 
-    const totalOrders = parseInt(orderStats.total_orders) || 0;
-    const totalRevenue = parseFloat(orderStats.total_revenue) || 0;
-    const totalCustomers = parseInt(userCountQuery.rows[0].total_customers) || 0;
-    const totalProducts = parseInt(productCountQuery.rows[0].total_products) || 0;
+    const stockTotalsQuery = await db.query(
+      `
+        SELECT
+          COALESCE(SUM(stock_quantity), 0) as stock_units,
+          COALESCE(SUM(stock_quantity * price), 0) as stock_value,
+          COALESCE(SUM(stock_quantity * COALESCE(wholesale_price, 0)), 0) as stock_spent
+        FROM products
+        WHERE is_active = true
+      `
+    );
+
+    const totalOrders = parseInt(orderCountQuery.rows[0]?.total_orders, 10) || 0;
+    const totalRevenue = parseFloat(revenueQuery.rows[0]?.total_revenue) || 0;
+    const totalSpent = parseFloat(spentQuery.rows[0]?.total_spent) || 0;
+    const totalProfit = totalRevenue - totalSpent;
+    const totalCustomers = parseInt(userCountQuery.rows[0]?.total_customers, 10) || 0;
+    const totalProducts = parseInt(productCountQuery.rows[0]?.total_products, 10) || 0;
+    const stockUnits = parseInt(stockTotalsQuery.rows[0]?.stock_units, 10) || 0;
+    const stockValue = parseFloat(stockTotalsQuery.rows[0]?.stock_value) || 0;
+    const stockSpent = parseFloat(stockTotalsQuery.rows[0]?.stock_spent) || 0;
+    const stockProfit = stockValue - stockSpent;
 
     res.json({
       stats: {
         total_orders: totalOrders,
         total_revenue: totalRevenue,
+        total_spent: totalSpent,
+        total_profit: totalProfit,
         total_customers: totalCustomers,
-        total_products: totalProducts
+        total_products: totalProducts,
+        stock_units: stockUnits,
+        stock_value: stockValue,
+        stock_spent: stockSpent,
+        stock_profit: stockProfit
       }
     });
   } catch (error) {
@@ -992,6 +1037,90 @@ exports.getSiteSettings = async (req, res) => {
   }
 };
 
+exports.getAdminLicenseStatus = async (req, res) => {
+  try {
+    const license = await getLicenseState();
+    const expiresAtMs = license.expiresAt ? new Date(license.expiresAt).getTime() : null;
+    const remainingMs = expiresAtMs ? Math.max(0, expiresAtMs - Date.now()) : null;
+
+    res.json({
+      license: {
+        ...license,
+        remainingMs,
+        message: license.isBlocked ? LICENSE_EXPIRED_MESSAGE : 'License is active.'
+      }
+    });
+  } catch (error) {
+    console.error('Get admin license status error:', error);
+    res.status(500).json({ error: 'Failed to fetch admin license status.' });
+  }
+};
+
+exports.updateAdminLicense = async (req, res) => {
+  try {
+    const {
+      manual_blocked,
+      expires_at,
+      clear_expiry
+    } = req.body || {};
+
+    const updates = [];
+
+    if (manual_blocked !== undefined) {
+      const blockedValue =
+        typeof manual_blocked === 'boolean'
+          ? manual_blocked
+          : String(manual_blocked).toLowerCase() === 'true';
+      updates.push({ key: 'admin_license_blocked', value: blockedValue ? 'true' : 'false' });
+    }
+
+    if (clear_expiry === true || String(clear_expiry).toLowerCase() === 'true') {
+      updates.push({ key: 'admin_license_expires_at', value: '' });
+    } else if (expires_at !== undefined) {
+      const parsed = new Date(expires_at);
+      if (Number.isNaN(parsed.getTime())) {
+        return res.status(400).json({ error: 'Invalid expiry date/time.' });
+      }
+      updates.push({ key: 'admin_license_expires_at', value: parsed.toISOString() });
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No license fields were provided.' });
+    }
+
+    for (const setting of updates) {
+      await db.query(
+        `
+          INSERT INTO site_settings (setting_key, setting_value)
+          VALUES ($1, $2)
+          ON CONFLICT (setting_key)
+          DO UPDATE SET
+            setting_value = EXCLUDED.setting_value,
+            updated_at = CURRENT_TIMESTAMP
+        `,
+        [setting.key, setting.value]
+      );
+    }
+
+    const license = await getLicenseState();
+    const expiresAtMs = license.expiresAt ? new Date(license.expiresAt).getTime() : null;
+    const remainingMs = expiresAtMs ? Math.max(0, expiresAtMs - Date.now()) : null;
+
+    res.json({
+      success: true,
+      message: 'Admin license updated successfully.',
+      license: {
+        ...license,
+        remainingMs,
+        message: license.isBlocked ? LICENSE_EXPIRED_MESSAGE : 'License is active.'
+      }
+    });
+  } catch (error) {
+    console.error('Update admin license error:', error);
+    res.status(500).json({ error: 'Failed to update admin license.' });
+  }
+};
+
 exports.updateSiteSettings = async (req, res) => {
   try {
     // Temporary debug log to help trace incoming payload shape
@@ -1001,9 +1130,22 @@ exports.updateSiteSettings = async (req, res) => {
       logo_url,
       homepage_hero_title,
       homepage_hero_subtitle,
+      homepage_hero_image_url,
+      homepage_hero_section_id,
+      business_support_email,
+      admin_license_blocked,
+      admin_license_expires_at,
       fast_delivery_enabled,
       fast_delivery_charge
     } = req.body || {};
+
+    const hasLicenseChange =
+      admin_license_blocked !== undefined ||
+      admin_license_expires_at !== undefined;
+
+    if (hasLicenseChange && req.user?.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Only super admin can manage admin license settings.' });
+    }
 
     // Collect all provided settings so this endpoint can be reused
     // for logo and any homepage text headings.
@@ -1017,6 +1159,37 @@ exports.updateSiteSettings = async (req, res) => {
     }
     if (homepage_hero_subtitle !== undefined) {
       updates.push({ key: 'homepage_hero_subtitle', value: homepage_hero_subtitle });
+    }
+    if (homepage_hero_image_url !== undefined) {
+      updates.push({ key: 'homepage_hero_image_url', value: homepage_hero_image_url });
+    }
+    if (homepage_hero_section_id !== undefined) {
+      updates.push({ key: 'homepage_hero_section_id', value: homepage_hero_section_id });
+    }
+    if (business_support_email !== undefined) {
+      const emailValue = String(business_support_email || '').trim();
+      if (emailValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+        return res.status(400).json({ error: 'Business support email must be a valid email address.' });
+      }
+      updates.push({ key: 'business_support_email', value: emailValue });
+    }
+    if (admin_license_blocked !== undefined) {
+      const blockedValue =
+        typeof admin_license_blocked === 'boolean'
+          ? admin_license_blocked
+          : String(admin_license_blocked).toLowerCase() === 'true';
+      updates.push({ key: 'admin_license_blocked', value: blockedValue ? 'true' : 'false' });
+    }
+    if (admin_license_expires_at !== undefined) {
+      if (admin_license_expires_at === null || admin_license_expires_at === '') {
+        updates.push({ key: 'admin_license_expires_at', value: '' });
+      } else {
+        const parsedExpiry = new Date(admin_license_expires_at);
+        if (Number.isNaN(parsedExpiry.getTime())) {
+          return res.status(400).json({ error: 'Invalid admin license expiry date/time.' });
+        }
+        updates.push({ key: 'admin_license_expires_at', value: parsedExpiry.toISOString() });
+      }
     }
 
     // Fast delivery toggle (stored as 'true'/'false' string for simplicity)
@@ -1065,5 +1238,258 @@ exports.updateSiteSettings = async (req, res) => {
   } catch (error) {
     console.error('Update site settings error:', error);
     res.status(500).json({ error: 'Failed to update site settings.' });
+  }
+};
+
+// Support: Messages & Complaints
+exports.getContactMessages = async (req, res) => {
+  try {
+    const { unread, limit = 100 } = req.query;
+    const parsedLimit = parseInt(limit, 10);
+    const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 500) : 100;
+
+    const unreadFilter = String(unread || '').trim().toLowerCase();
+    const unreadOnly = unreadFilter === '1' || unreadFilter === 'true' || unreadFilter === 'yes';
+
+    const query = `
+      SELECT
+        cm.id,
+        cm.message_type,
+        cm.full_name,
+        cm.email,
+        cm.phone,
+        cm.subject,
+        cm.message,
+        cm.source_page,
+        cm.is_read,
+        cm.email_forwarded,
+        cm.email_forwarded_at,
+        cm.forwarded_to,
+        cm.email_forward_error,
+        cm.created_at,
+        u.id AS user_id,
+        u.role AS user_role,
+        u.email AS user_email
+      FROM contact_messages cm
+      LEFT JOIN users u ON cm.user_id = u.id
+      WHERE cm.message_type = 'message'
+        AND ($1::boolean IS FALSE OR cm.is_read = FALSE)
+      ORDER BY cm.created_at DESC
+      LIMIT $2
+    `;
+
+    const result = await db.query(query, [unreadOnly, safeLimit]);
+    res.json({ messages: result.rows });
+  } catch (error) {
+    console.error('Get contact messages error:', error);
+    res.status(500).json({ error: 'Failed to fetch contact messages.' });
+  }
+};
+
+exports.getContactUnreadCounts = async (req, res) => {
+  try {
+    const result = await db.query(
+      `
+        SELECT message_type, COUNT(*)::int AS unread_count
+        FROM contact_messages
+        WHERE is_read = FALSE
+        GROUP BY message_type
+      `
+    );
+
+    const counts = { message: 0, complaint: 0 };
+    for (const row of result.rows || []) {
+      const type = String(row.message_type || '').toLowerCase();
+      if (type === 'complaint' || type === 'message') {
+        counts[type] = Number.isFinite(Number(row.unread_count)) ? Number(row.unread_count) : 0;
+      }
+    }
+
+    res.json({ counts });
+  } catch (error) {
+    console.error('Get contact unread counts error:', error);
+    res.status(500).json({ error: 'Failed to fetch unread counts.' });
+  }
+};
+
+exports.markContactMessageRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const parsedId = parseInt(id, 10);
+    if (!Number.isFinite(parsedId)) {
+      return res.status(400).json({ error: 'Invalid message id.' });
+    }
+
+    const { is_read = true } = req.body || {};
+    const value = !!is_read;
+
+    const result = await db.query(
+      'UPDATE contact_messages SET is_read = $1 WHERE id = $2 RETURNING id, is_read',
+      [value, parsedId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Message not found.' });
+    }
+
+    res.json({ message: 'Updated.', record: result.rows[0] });
+  } catch (error) {
+    console.error('Mark contact message read error:', error);
+    res.status(500).json({ error: 'Failed to update message.' });
+  }
+};
+
+exports.sendContactMessageToBusinessEmail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const parsedId = parseInt(id, 10);
+    if (!Number.isFinite(parsedId)) {
+      return res.status(400).json({ error: 'Invalid message id.' });
+    }
+
+    const messageResult = await db.query(
+      `
+        SELECT id, full_name, email, phone, subject, message, created_at
+        FROM contact_messages
+        WHERE id = $1
+      `,
+      [parsedId]
+    );
+
+    if (!messageResult.rows.length) {
+      return res.status(404).json({ error: 'Message not found.' });
+    }
+
+    const messageRow = messageResult.rows[0];
+
+    const smtpHost = String(process.env.SMTP_HOST || '').trim();
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+    const smtpUser = String(process.env.SMTP_USER || '').trim();
+    const smtpPass = String(process.env.SMTP_PASS || '').trim();
+    const businessEmail = String(process.env.BUSINESS_SUPPORT_EMAIL || '').trim() || smtpUser;
+    const fromEmail = String(process.env.SMTP_FROM_EMAIL || '').trim() || smtpUser;
+
+    if (!smtpHost || !smtpUser || !smtpPass || !businessEmail || !fromEmail) {
+      return res.status(503).json({
+        error: 'Business email integration is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM_EMAIL, BUSINESS_SUPPORT_EMAIL.'
+      });
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: Number.isFinite(smtpPort) ? smtpPort : 587,
+      secure: Number(smtpPort) === 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass
+      }
+    });
+
+    const subjectLine = `Customer Message #${messageRow.id} - ${messageRow.subject || 'No Subject'}`;
+    const textBody = [
+      `Message ID: ${messageRow.id}`,
+      `Date: ${messageRow.created_at}`,
+      `From: ${messageRow.full_name || '-'}`,
+      `Customer Email: ${messageRow.email || '-'}`,
+      `Phone: ${messageRow.phone || '-'}`,
+      `Subject: ${messageRow.subject || '-'}`,
+      '',
+      'Message:',
+      messageRow.message || '-'
+    ].join('\n');
+
+    await transporter.sendMail({
+      from: fromEmail,
+      to: businessEmail,
+      replyTo: messageRow.email || undefined,
+      subject: subjectLine,
+      text: textBody
+    });
+
+    return res.json({
+      message: 'Message forwarded to business email successfully.',
+      recipient: businessEmail
+    });
+  } catch (error) {
+    console.error('Send contact message to business email error:', error);
+    return res.status(500).json({ error: 'Failed to send to business email.' });
+  }
+};
+
+// Danger Zone: delete (reset) all non-admin data
+exports.deleteAllData = async (req, res) => {
+  try {
+    const { confirmation } = req.body || {};
+
+    // Simple but strong confirmation phrase
+    if (confirmation !== 'DELETE ALL DATA') {
+      return res.status(400).json({
+        error: 'Invalid confirmation phrase.',
+      });
+    }
+
+    const client = await db.pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // Dynamically truncate all public tables except users, then remove non-admin users.
+      // This avoids missing any new tables added later.
+      const tablesResult = await client.query(`
+        SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = 'public'
+          AND tablename <> 'users'
+      `);
+
+      const tableNames = tablesResult.rows.map(r => r.tablename);
+      if (tableNames.length > 0) {
+        const tableList = tableNames
+          .map(name => `"public"."${name.replace(/"/g, '""')}"`)
+          .join(', ');
+
+        await client.query(`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE`);
+      }
+
+      // Delete all non-admin users (customers, wholesale, etc.)
+      await client.query(`DELETE FROM users WHERE role NOT IN ('admin', 'super_admin')`);
+
+      // Ensure any remaining admin/super-admin accounts stay active
+      await client.query(`
+        UPDATE users
+        SET is_approved = true,
+            is_blocked = false,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE role IN ('admin', 'super_admin')
+      `);
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    const verifyResult = await db.query(`
+      SELECT
+        current_database() AS database_name,
+        current_user AS database_user,
+        inet_server_addr()::text AS server_addr,
+        inet_server_port() AS server_port,
+        COUNT(*)::int AS users_total,
+        COUNT(*) FILTER (WHERE role = 'admin')::int AS admin_users,
+        COUNT(*) FILTER (WHERE role = 'super_admin')::int AS super_admin_users,
+        COUNT(*) FILTER (WHERE role NOT IN ('admin','super_admin'))::int AS non_admin_users
+      FROM users
+    `);
+
+    res.json({
+      message: 'All non-admin data has been permanently deleted.',
+      verification: verifyResult.rows[0]
+    });
+  } catch (error) {
+    console.error('Delete all data error:', error);
+    res.status(500).json({ error: 'Failed to delete all data.' });
   }
 };

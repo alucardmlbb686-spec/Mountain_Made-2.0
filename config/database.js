@@ -114,7 +114,7 @@ const initializeDatabase = async () => {
         password VARCHAR(255) NOT NULL,
         full_name VARCHAR(255) NOT NULL,
         phone VARCHAR(20),
-        role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('customer', 'wholesale', 'admin')),
+        role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('customer', 'wholesale', 'admin', 'super_admin')),
         business_name VARCHAR(255),
         tax_id VARCHAR(50),
         is_approved BOOLEAN DEFAULT false,
@@ -122,6 +122,36 @@ const initializeDatabase = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    // Ensure role constraint allows super_admin (for existing DBs created before this change)
+    await client.query(`
+      DO $$
+      DECLARE
+        constraint_to_drop TEXT;
+      BEGIN
+        SELECT c.conname INTO constraint_to_drop
+        FROM pg_constraint c
+        JOIN pg_class t ON t.oid = c.conrelid
+        JOIN pg_namespace n ON n.oid = t.relnamespace
+        WHERE n.nspname = 'public'
+          AND t.relname = 'users'
+          AND c.contype = 'c'
+          AND pg_get_constraintdef(c.oid) ILIKE '%role%'
+          AND pg_get_constraintdef(c.oid) ILIKE '%IN%'
+          AND pg_get_constraintdef(c.oid) ILIKE '%admin%'
+        LIMIT 1;
+
+        IF constraint_to_drop IS NOT NULL THEN
+          EXECUTE format('ALTER TABLE public.users DROP CONSTRAINT IF EXISTS %I', constraint_to_drop);
+        END IF;
+
+        BEGIN
+          EXECUTE 'ALTER TABLE public.users ADD CONSTRAINT users_role_check CHECK (role IN (''customer'',''wholesale'',''admin'',''super_admin''))';
+        EXCEPTION WHEN duplicate_object THEN
+          -- constraint already exists
+        END;
+      END $$;
     `);
 
     // Add is_blocked column if it doesn't exist (for existing databases)
@@ -297,6 +327,32 @@ const initializeDatabase = async () => {
       );
     `);
 
+    // Create Contact Messages table (Contact Us: messages + complaints)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS contact_messages (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        message_type VARCHAR(20) NOT NULL CHECK (message_type IN ('message', 'complaint')),
+        full_name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        phone VARCHAR(40),
+        subject VARCHAR(255),
+        message TEXT NOT NULL,
+        source_page VARCHAR(50) DEFAULT 'home',
+        is_read BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Add forwarding status fields for contact email integration (safe for existing DBs)
+    await client.query(`
+      ALTER TABLE contact_messages
+      ADD COLUMN IF NOT EXISTS email_forwarded BOOLEAN DEFAULT false,
+      ADD COLUMN IF NOT EXISTS email_forwarded_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS forwarded_to VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS email_forward_error TEXT;
+    `);
+
     // Create indexes for better performance
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
@@ -307,6 +363,8 @@ const initializeDatabase = async () => {
       CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
       CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
       CREATE INDEX IF NOT EXISTS idx_addresses_user ON addresses(user_id);
+      CREATE INDEX IF NOT EXISTS idx_contact_messages_type_created ON contact_messages(message_type, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_contact_messages_unread ON contact_messages(is_read, created_at DESC);
     `);
 
     // Create or replace a dynamic stock report VIEW that always reflects

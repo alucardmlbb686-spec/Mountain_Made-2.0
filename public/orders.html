@@ -139,7 +139,7 @@
             position: absolute;
             right: 0;
             top: calc(100% + 0.5rem);
-            background: white;
+            background: var(--bg-primary);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-xl);
             min-width: 280px;
@@ -204,31 +204,6 @@
             color: var(--text-secondary);
             margin-top: 0.25rem;
             padding: 0.25rem 0;
-        }
-
-        /* Dark Mode Styles */
-        body.dark-mode {
-            background-color: #1a1a1a;
-            color: #e0e0e0;
-        }
-
-        body.dark-mode .navbar {
-            background: #2d2d2d;
-            border-bottom-color: #404040;
-        }
-
-        body.dark-mode .card,
-        body.dark-mode .account-dropdown {
-            background: #2d2d2d;
-            border-color: #404040;
-        }
-
-        body.dark-mode .form-input,
-        body.dark-mode .form-select,
-        body.dark-mode .form-textarea {
-            background: #2d2d2d;
-            color: #e0e0e0;
-            border-color: #404040;
         }
     </style>
 
@@ -307,9 +282,19 @@
 
         function startOrdersAutoRefresh() {
             if (ordersRefreshInterval) return;
+
+            const refreshDelay = window.performanceTuning
+                ? window.performanceTuning.getAdaptiveInterval(15000, {
+                    lowMultiplier: 2,
+                    highMultiplier: 0.75,
+                    min: 10000,
+                    max: 45000
+                })
+                : 15000;
+
             ordersRefreshInterval = setInterval(() => {
                 loadOrders().catch(err => console.error('Auto-refresh orders error:', err));
-            }, 15000); // refresh every 15 seconds
+            }, refreshDelay);
         }
 
         window.addEventListener('beforeunload', () => {
@@ -352,25 +337,9 @@
             const accountLogout = document.getElementById('account-logout');
             if (accountLogout) {
                 accountLogout.addEventListener('click', async () => {
-                    if (confirm('Are you sure you want to logout?')) {
+                    if (await showConfirmDialog('Are you sure you want to logout?', { title: 'Logout', confirmText: 'Logout' })) {
                         await auth.logout();
                     }
-                });
-            }
-
-            // Theme toggle handler
-            const themeToggle = document.getElementById('theme-toggle');
-            if (themeToggle) {
-                // Load saved theme
-                const savedTheme = localStorage.getItem('theme') || 'light';
-                if (savedTheme === 'dark') {
-                    document.body.classList.add('dark-mode');
-                }
-
-                themeToggle.addEventListener('click', () => {
-                    document.body.classList.toggle('dark-mode');
-                    const isDark = document.body.classList.contains('dark-mode');
-                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
                 });
             }
         })();

@@ -26,6 +26,7 @@ class Product {
       min_wholesale_qty,
       image_url, 
       images,
+      is_active,
       weight,
       unit
     } = productData;
@@ -33,9 +34,9 @@ class Product {
     const query = `
       INSERT INTO products (
         name, description, category_id, homepage_section_id, price, wholesale_price, discount_price,
-        stock_quantity, min_wholesale_qty, image_url, images, weight, unit
+        stock_quantity, min_wholesale_qty, image_url, images, is_active, weight, unit
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *
     `;
 
@@ -51,6 +52,7 @@ class Product {
       min_wholesale_qty || 10,
       image_url, 
       JSON.stringify(images || []),
+      is_active !== undefined && is_active !== null ? !!is_active : true,
       weight,
       unit
     ];
@@ -61,12 +63,14 @@ class Product {
 
   static async findAll(filters = {}) {
     await this.ensureDiscountColumns();
+
     let query = `
       SELECT p.*, c.name as category_name 
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.is_active = true
+      WHERE COALESCE(p.is_active, true) = true
     `;
+
     const values = [];
     let paramCount = 1;
 
@@ -159,7 +163,7 @@ class Product {
           weight = COALESCE($13, weight),
           unit = COALESCE($14, unit),
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = $15
+        WHERE id = $15
       RETURNING *
     `;
 

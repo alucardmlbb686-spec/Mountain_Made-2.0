@@ -8,17 +8,17 @@ const db = require('../config/database');
 // Use memory storage so we can persist to DB (avoids losing files on redeploy)
 const storage = multer.memoryStorage();
 
-// Dynamic file filter - accept only JPG/PNG
+// Dynamic file filter - accept JPG/PNG/GIF
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    const allowedExtensions = ['.jpg', '.jpeg', '.png'];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
     const ext = path.extname(file.originalname).toLowerCase();
     
-    // Only accept JPG/PNG files
+    // Only accept JPG/PNG/GIF files
     if (allowedTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
         cb(null, true);
     } else {
-        cb(new Error('Invalid file type. Only JPG and PNG images are allowed.'), false);
+        cb(new Error('Invalid file type. Only JPG, PNG, and GIF images are allowed.'), false);
     }
 };
 
@@ -41,7 +41,7 @@ async function saveUploadToDb(file) {
     return result.rows[0].id;
 }
 
-// Image upload endpoint - accepts only JPG/PNG
+// Image upload endpoint - accepts JPG/PNG/GIF
 router.post('/image', authenticateToken, upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {

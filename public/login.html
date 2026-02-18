@@ -32,6 +32,53 @@
         .auth-header h1 {
             font-size: 2rem;
             margin-bottom: 0.5rem;
+            color: #1a1a1a;
+        }
+        .auth-header p {
+            color: #4b5563;
+        }
+
+        body.login-page {
+            background-color: #8fb7a2;
+        }
+
+        body.login-page .auth-card {
+            background:
+                linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)),
+                url('/images/login-box.png') center/cover no-repeat;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(2px);
+        }
+        
+        body.login-page .form-label {
+            color: #111827;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+        }
+        
+        body.login-page .form-input {
+            background: rgba(255, 255, 255, 0.98);
+            color: #1a1a1a;
+            border: 2px solid #d1d5db;
+        }
+        
+        body.login-page .form-input:focus {
+            background: white;
+            border-color: var(--primary-500);
+        }
+        
+        body.login-page .login-alt-buttons button {
+            background: white !important;
+            color: #1a1a1a;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        body.login-page .login-alt-buttons button:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        body.login-page p, body.login-page p a {
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
         }
         
         @media (max-width: 768px) {
@@ -60,7 +107,7 @@
         }
     </style>
 </head>
-<body>
+<body class="login-page">
     <nav class="navbar">
         <div class="navbar-container">
             <a href="/" class="navbar-brand">
@@ -74,7 +121,7 @@
         <div class="auth-card">
             <div class="auth-header">
                 <h1 id="auth-title">Welcome Back</h1>
-                <p id="auth-subtitle">Sign in to your account</p>
+                <p id="auth-subtitle" style="color: #374151; font-weight: 500; text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);">Sign in to your account</p>
             </div>
 
             <form id="login-form">
@@ -98,8 +145,17 @@
                 </button>
             </form>
 
+            <div class="login-alt-buttons" style="display: flex; gap: 8px; margin-top: 0.75rem; justify-content: center; flex-wrap: wrap;">
+              <button class="google-login-btn" style="display: flex; align-items: center; background: #fff; border: 1px solid #e0e0e0; border-radius: 20px; padding: 0.4rem 0.75rem; font-size: 0.8rem; font-weight: 500; box-shadow: 0 2px 8px rgba(60,64,67,0.08); cursor: pointer; transition: box-shadow 0.2s;">
+                <img src="images/google_logo.svg" alt="Google Logo" style="height:18px;width:18px;margin-right:6px;"> Log in with Google
+              </button>
+              <button class="phone-login-btn" style="display: flex; align-items: center; background: #fff; border: 1px solid #e0e0e0; border-radius: 20px; padding: 0.4rem 0.75rem; font-size: 0.8rem; font-weight: 500; box-shadow: 0 2px 8px rgba(60,64,67,0.08); cursor: pointer; transition: box-shadow 0.2s;">
+                                <img src="images/phone_icon.svg" alt="Phone Icon" style="height:18px;width:18px;margin-right:6px;"> Log in with Phone
+              </button>
+            </div>
+
             <div style="text-align: center; margin-top: 1.5rem;">
-                <p>Don't have an account? <a href="/register" id="register-link" style="color: var(--primary); font-weight: 500;">Register here</a></p>
+                <p style="color: #374151; font-weight: 500; text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);">Don't have an account? <a href="/register" id="register-link" style="color: #059669; font-weight: 600; text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);">Register here</a></p>
             </div>
         </div>
     </div>
@@ -109,6 +165,46 @@
         // Shared login for all roles (customer, wholesale, admin)
         const urlParams = new URLSearchParams(window.location.search);
         const redirectUrl = urlParams.get('redirect');
+
+        async function resolveFirstExistingImage(paths) {
+            for (const path of paths) {
+                const exists = await new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve(true);
+                    img.onerror = () => resolve(false);
+                    img.src = `${path}?v=${Date.now()}`;
+                });
+                if (exists) return path;
+            }
+            return null;
+        }
+
+        async function applyLoginBackgroundImages() {
+            const bgPath = await resolveFirstExistingImage([
+                '/images/login-bg.png',
+                '/images/login-bg.jpg',
+                '/images/login-bg.jpeg'
+            ]);
+
+            const boxPath = await resolveFirstExistingImage([
+                '/images/login-box.png',
+                '/images/login-box.jpg',
+                '/images/login-box.jpeg'
+            ]);
+
+            if (bgPath) {
+                document.body.style.background = `linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.18)), url('${bgPath}') center/cover no-repeat fixed`;
+            }
+
+            if (boxPath) {
+                const authCard = document.querySelector('.auth-card');
+                if (authCard) {
+                    authCard.style.background = `linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), url('${boxPath}') center/cover no-repeat`;
+                }
+            }
+        }
+
+        applyLoginBackgroundImages();
         
         // Update register link to include redirect parameter
         if (redirectUrl) {
@@ -127,15 +223,19 @@
 
                 // Dynamic redirect based on role
                 const role = result.user.role;
+                const isApproved = result.user.is_approved;
 
-                if (role === 'admin') {
+                if (role === 'admin' || role === 'super_admin') {
                     // Admins always go to admin panel
-                    window.location.href = '/admin';
+                    window.location.replace('/admin');
+                } else if (role === 'wholesale' && isApproved) {
+                    // Approved wholesale users go to wholesale hub
+                    window.location.replace('/wholesale');
                 } else if (redirectUrl) {
                     // Public / wholesale users can be redirected to a specific page
-                    window.location.href = redirectUrl;
+                    window.location.replace(redirectUrl);
                 } else {
-                    window.location.href = '/';
+                    window.location.replace('/');
                 }
             } catch (error) {
                 showAlert('Login failed: ' + error.message, 'error');
@@ -160,12 +260,14 @@
         auth.checkAuth().then(user => {
             if (!user) return;
 
-            if (user.role === 'admin') {
-                window.location.href = '/admin';
+            if (user.role === 'admin' || user.role === 'super_admin') {
+                window.location.replace('/admin');
+            } else if (user.role === 'wholesale' && user.is_approved) {
+                window.location.replace('/wholesale');
             } else if (redirectUrl) {
-                window.location.href = redirectUrl;
+                window.location.replace(redirectUrl);
             } else {
-                window.location.href = '/';
+                window.location.replace('/');
             }
         });
     </script>

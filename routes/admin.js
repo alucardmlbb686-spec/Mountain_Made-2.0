@@ -2,11 +2,21 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { authenticateToken } = require('../middleware/auth');
-const { adminCheck } = require('../middleware/adminCheck');
+const { adminCheck, superAdminCheck } = require('../middleware/adminCheck');
+const { enforceAdminLicense } = require('../middleware/adminLicense');
 
 // All admin routes require authentication and admin role
 router.use(authenticateToken);
 router.use(adminCheck);
+
+// License status is visible to admin/super admin even if blocked
+router.get('/license/status', adminController.getAdminLicenseStatus);
+
+// Super admin can manage admin license (manual block/unblock + expiry schedule)
+router.post('/license/manage', superAdminCheck, adminController.updateAdminLicense);
+
+// Block regular admin features when license is expired/blocked
+router.use(enforceAdminLicense);
 
 // Dashboard
 router.get('/dashboard/stats', adminController.getDashboardStats);
@@ -59,5 +69,14 @@ router.delete('/homepage-sections/:id', adminController.deleteHomepageSection);
 // Site Settings Management
 router.get('/settings', adminController.getSiteSettings);
 router.post('/settings', adminController.updateSiteSettings);
+
+// Support: Messages & Complaints
+router.get('/contact', adminController.getContactMessages);
+router.get('/contact/unread-counts', adminController.getContactUnreadCounts);
+router.put('/contact/:id/read', adminController.markContactMessageRead);
+router.post('/contact/:id/business-email', adminController.sendContactMessageToBusinessEmail);
+
+// Danger Zone - Delete all non-admin data
+router.post('/delete-all-data', superAdminCheck, adminController.deleteAllData);
 
 module.exports = router;

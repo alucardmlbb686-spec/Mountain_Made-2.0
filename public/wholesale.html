@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a8a">
+    <title>Wholesale Portal - Mountain Made 2.0</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/mobile-enhancements.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Wholesale-specific professional blue theme */
+        :root {
+            --wholesale-primary: #1e3a8a;
+            --wholesale-secondary: #3b82f6;
+            --wholesale-accent: #0ea5e9;
+            --wholesale-dark: #1e293b;
+            --wholesale-light: #f1f5f9;
+        }
+
+        .wholesale-hero {
+            background: linear-gradient(135deg, var(--wholesale-primary) 0%, var(--wholesale-dark) 100%);
+            color: white;
+            padding: 3rem 1rem 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .wholesale-hero-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .wholesale-hero h1 {
+            font-size: 2.75rem;
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+            color: var(--wholesale-light);
+        }
+
+        .wholesale-hero p {
+            font-size: 1.15rem;
+            color: var(--wholesale-light);
+            opacity: 0.98;
+            margin-bottom: 2rem;
+            max-width: 680px;
+        }
+
+        .wholesale-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .stat-card h3 {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            opacity: 0.85;
+            margin-bottom: 0.75rem;
+            color: var(--wholesale-light);
+        }
+
+        .stat-card p {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--wholesale-light);
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.75rem;
+            margin-bottom: 3rem;
+        }
+
+        .action-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid var(--wholesale-secondary);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .action-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .action-card h3 {
+            font-size: 1.35rem;
+            margin-bottom: 0.75rem;
+            color: var(--wholesale-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        .action-card p {
+            color: var(--text-light);
+            margin-bottom: 1.25rem;
+            font-size: 0.975rem;
+            line-height: 1.6;
+        }
+
+        .wholesale-section {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 2.25rem;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .wholesale-section h2 {
+            font-size: 1.85rem;
+            margin-bottom: 1.25rem;
+            color: var(--wholesale-primary);
+            border-bottom: 3px solid var(--wholesale-light);
+            padding-bottom: 0.85rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.75rem;
+            margin-top: 1.75rem;
+        }
+
+        .info-item {
+            padding: 1.25rem;
+            background: var(--wholesale-light);
+            border-radius: 10px;
+        }
+
+        .info-item h4 {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+            margin-bottom: 0.65rem;
+        }
+
+        .info-item p {
+            font-size: 1.05rem;
+            color: #1e293b;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .wholesale-badge {
+            display: inline-block;
+            background: var(--wholesale-secondary);
+            color: white;
+            padding: 0.3rem 0.85rem;
+            border-radius: 14px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .wholesale-catalog-toolbar {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr 1fr;
+            gap: 0.85rem;
+            margin: 1rem 0 1.25rem;
+        }
+
+        .wholesale-catalog-toolbar .form-input,
+        .wholesale-catalog-toolbar .form-select {
+            width: 100%;
+            min-height: 44px;
+            border: 1px solid var(--border-primary);
+            border-radius: 10px;
+            padding: 0.65rem 0.8rem;
+            font-size: 0.95rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .wholesale-catalog-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            color: #475569;
+            font-size: 0.92rem;
+        }
+
+        .wholesale-catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            gap: 1rem;
+        }
+
+        .wholesale-product-card {
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        }
+
+        .wholesale-product-media {
+            width: 100%;
+            height: 190px;
+            object-fit: cover;
+            background: #f8fafc;
+        }
+
+        .wholesale-product-body {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            flex: 1;
+        }
+
+        .wholesale-product-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.7rem;
+            align-items: flex-start;
+        }
+
+        .wholesale-product-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            line-height: 1.35;
+        }
+
+        .wholesale-moq-badge {
+            font-size: 0.72rem;
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+            border-radius: 999px;
+            padding: 0.22rem 0.58rem;
+            white-space: nowrap;
+            font-weight: 700;
+        }
+
+        .wholesale-category-label {
+            font-size: 0.78rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .wholesale-price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+        }
+
+        .wholesale-price-main {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #1d4ed8;
+        }
+
+        .wholesale-price-compare {
+            font-size: 0.86rem;
+            color: #94a3b8;
+            text-decoration: line-through;
+        }
+
+        .wholesale-stock-row {
+            font-size: 0.86rem;
+            color: #334155;
+        }
+
+        .wholesale-stock-row.low { color: #b45309; }
+        .wholesale-stock-row.out { color: #b91c1c; }
+
+        .wholesale-product-actions {
+            margin-top: auto;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .wholesale-product-actions .btn {
+            flex: 1;
+            min-height: 40px;
+            font-size: 0.85rem;
+            padding: 0.45rem 0.55rem;
+        }
+
+        .wholesale-catalog-empty {
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+            background: #f8fafc;
+            padding: 2rem;
+            text-align: center;
+            color: #475569;
+        }
+
+        .wholesale-guard {
+            max-width: 680px;
+            margin: 5rem auto;
+            padding: 3rem 2rem;
+            text-align: center;
+            border-radius: 12px;
+            border: 2px solid var(--wholesale-secondary);
+            background: var(--wholesale-light);
+        }
+
+        /* Mobile Navigation */
+        .navbar-container {
+            position: relative;
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 768px) {
+            .wholesale-hero h1 {
+                font-size: 2rem;
+            }
+
+            .wholesale-hero p {
+                font-size: 1rem;
+            }
+
+            .stat-card p {
+                font-size: 1.75rem;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .wholesale-section {
+                padding: 1.5rem;
+            }
+
+            .action-card {
+                padding: 1.5rem;
+            }
+
+            .wholesale-catalog-toolbar {
+                grid-template-columns: 1fr;
+            }
+
+            /* Mobile Navigation Menu */
+            .navbar-menu {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--bg-primary);
+                border-top: 1px solid var(--border-primary);
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                flex-direction: column;
+                padding: 0;
+                z-index: 1000;
+            }
+
+            .navbar-menu.mobile-active {
+                display: flex;
+            }
+
+            .navbar-menu li {
+                border-bottom: 1px solid var(--border);
+            }
+
+            .navbar-menu li:last-child {
+                border-bottom: none;
+            }
+
+            .navbar-menu li a {
+                display: block;
+                padding: 1rem 1.5rem;
+            }
+
+            .mobile-menu-toggle {
+                display: flex !important;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-menu-toggle {
+                display: none !important;
+            }
+
+            .navbar-menu {
+                display: flex !important;
+            }
+        }
+
+        /* Account Dropdown Styles */
+        .account-menu {
+            position: relative;
+        }
+
+        .account-dropdown {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.5rem);
+            background: var(--bg-primary);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            min-width: 280px;
+            z-index: 1000;
+            border: 1px solid var(--border-primary);
+        }
+
+        .account-dropdown.hidden {
+            display: none;
+        }
+
+        .account-section {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .account-section:last-child {
+            border-bottom: none;
+        }
+
+        .account-section strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .account-link {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            display: block;
+            text-align: left;
+            margin-top: 0.5rem;
+        }
+
+        .account-link:hover {
+            background: var(--primary-200);
+            border-color: var(--primary-400);
+        }
+
+        .account-link-danger {
+            background: var(--error-bg);
+            color: var(--error);
+            border-color: var(--error);
+        }
+
+        .account-link-danger:hover {
+            background: #dc2626;
+            color: white;
+        }
+
+        .account-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            padding: 0.25rem 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">
+                <span class="logo-icon">🏔️</span>
+                Mountain Made <span class="wholesale-badge">Wholesale</span>
+            </a>
+            
+            <ul class="navbar-menu">
+                <li><a href="#dashboard" class="active" id="wholesale-nav-dashboard" data-wholesale-view="dashboard">Dashboard</a></li>
+                <li><a href="#catalog" id="wholesale-nav-catalog" data-wholesale-view="catalog">Catalog</a></li>
+                <li><a href="/orders">Orders</a></li>
+                <li><a href="/contact">Contact Us</a></li>
+                <li id="admin-link" class="hidden"><a href="/admin">Admin</a></li>
+            </ul>
+            
+            <div class="navbar-actions">
+                <div id="auth-buttons" class="hidden">
+                    <a href="/login" class="btn btn-secondary btn-sm">Login</a>
+                    <a href="/register" class="btn btn-primary btn-sm">Register</a>
+                </div>
+                
+                <div id="user-menu" class="hidden flex gap-2" style="align-items: center;">
+                    <a href="/orders" class="icon-button" title="My Orders">
+                        <i class="fas fa-shopping-bag"></i>
+                    </a>
+                    <a href="/cart" class="icon-button" title="Shopping Cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span id="cart-badge" class="cart-badge hidden">0</span>
+                    </a>
+                    <div class="account-menu">
+                        <button id="account-toggle" class="icon-button" title="Account">
+                            <i class="fas fa-user-circle"></i>
+                        </button>
+                        <div id="account-dropdown" class="account-dropdown hidden">
+                            <div class="account-section">
+                                <strong>Account</strong>
+                                <button class="account-link" onclick="openProfileModal()">Edit Profile</button>
+                            </div>
+                            <div class="account-section">
+                                <strong>Billing Management</strong>
+                                <div class="account-text">Payment methods: GPay / Cash on Delivery</div>
+                                <div class="account-text">UPI ID: <span id="billing-upi">mountainmade@upi</span></div>
+                                <div class="account-text">Bank: Mountain Made Foods</div>
+                            </div>
+                            <div class="account-section">
+                                <strong>Appearance</strong>
+                                <button id="theme-toggle" class="account-link">Toggle Dark / Light</button>
+                            </div>
+                            <div class="account-section">
+                                <button id="account-logout" class="account-link account-link-danger">Logout</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="wholesale-main">
+        <!-- Wholesale Hero Section -->
+        <section class="wholesale-hero wholesale-dashboard-block">
+            <div class="wholesale-hero-content">
+                <h1>Welcome to Your Wholesale Portal</h1>
+                <p id="welcome-message">Manage your bulk orders, track shipments, and access exclusive wholesale pricing.</p>
+                
+                <div class="wholesale-stats">
+                    <div class="stat-card">
+                        <h3>Total Orders</h3>
+                        <p id="total-orders">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Pending Orders</h3>
+                        <p id="pending-orders">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>This Month</h3>
+                        <p id="month-total">₹0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Available Products</h3>
+                        <p id="product-count">0</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="container">
+            <!-- Quick Actions -->
+            <div class="quick-actions wholesale-dashboard-block">
+                <div class="action-card">
+                    <h3><i class="fas fa-box"></i> Browse Catalog</h3>
+                    <p>Explore our full range of products with wholesale pricing and minimum order quantities clearly displayed.</p>
+                    <a href="#catalog" class="btn btn-primary" data-wholesale-view="catalog">View Catalog</a>
+                </div>
+
+                <div class="action-card">
+                    <h3><i class="fas fa-shopping-cart"></i> Current Cart</h3>
+                    <p>Review and manage items in your cart before placing your bulk order with automatic pack quantities.</p>
+                    <a href="/cart" class="btn btn-secondary">View Cart</a>
+                </div>
+
+                <div class="action-card">
+                    <h3><i class="fas fa-history"></i> Order History</h3>
+                    <p>Track your past and current orders, download invoices, and manage returns with ease.</p>
+                    <a href="/orders" class="btn btn-outline">View Orders</a>
+                </div>
+            </div>
+
+            <section class="wholesale-section wholesale-catalog-block hidden" id="wholesale-catalog">
+                <h2>Wholesale Product Catalog</h2>
+                <p style="margin:0; color:#64748b;">Dedicated wholesale view with MOQ, stock readiness, and business pricing.</p>
+
+                <div class="wholesale-catalog-toolbar">
+                    <input id="wholesale-search" class="form-input" type="text" placeholder="Search by product name or description...">
+                    <select id="wholesale-category" class="form-select">
+                        <option value="">All Categories</option>
+                    </select>
+                    <select id="wholesale-sort" class="form-select">
+                        <option value="featured">Featured</option>
+                        <option value="price_asc">Wholesale Price: Low to High</option>
+                        <option value="price_desc">Wholesale Price: High to Low</option>
+                        <option value="min_qty_asc">MOQ: Low to High</option>
+                        <option value="stock_desc">Stock: High to Low</option>
+                        <option value="latest">Newest First</option>
+                    </select>
+                </div>
+
+                <div class="wholesale-catalog-summary">
+                    <span id="wholesale-catalog-count">Loading catalog...</span>
+                    <span id="wholesale-catalog-meta"></span>
+                </div>
+
+                <div id="wholesale-catalog-results" class="wholesale-catalog-grid"></div>
+            </section>
+
+            <!-- Important Information -->
+            <section class="wholesale-section wholesale-dashboard-block">
+                <h2>Wholesale Account Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <h4>Account Status</h4>
+                        <p style="color: var(--success); font-weight: 600;">✓ Approved & Active</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Pricing Tier</h4>
+                        <p>Wholesale - Bulk Discount Applied</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Minimum Order</h4>
+                        <p>Varies by product (see catalog)</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Payment Terms</h4>
+                        <p>Net 30 days / Advance payment</p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; padding: 1.25rem; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 10px;">
+                    <h4 style="margin: 0 0 0.75rem 0; color: #92400e; font-size: 1rem;">
+                        <i class="fas fa-info-circle"></i> Important Notes
+                    </h4>
+                    <ul style="margin: 0; padding-left: 1.5rem; color: #78350f; font-size: 0.95rem;">
+                        <li>All products display wholesale pricing when you're logged in</li>
+                        <li>Minimum order quantities are enforced automatically in the cart</li>
+                        <li>Bulk discounts may apply for larger quantities - contact support</li>
+                        <li>For custom orders or special requests, please contact our wholesale team</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Contact Us -->
+            <section class="wholesale-section" id="wholesale-contact">
+                <h2>Contact Us</h2>
+                <p style="margin: 0 0 1.25rem; color: var(--text-light);">Send a message to the admin team.</p>
+                <form id="wholesale-contact-form" style="max-width: 900px;">
+                    <div style="margin-bottom: 1rem; padding: 0.75rem 0.9rem; border: 1px solid var(--border); border-radius: 8px; background: #f8fafc; color: var(--text-primary); font-size: 0.95rem;">
+                        <i class="fas fa-paper-plane" style="margin-right: 0.45rem;"></i>
+                        Sent to: <strong id="wholesale-send-to-email">hello@mountain-made.com</strong>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <input id="wholesale-contact-name" type="text" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone (optional)</label>
+                            <input id="wholesale-contact-phone" type="tel" class="form-input">
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input id="wholesale-contact-email" type="email" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Subject (optional)</label>
+                            <input id="wholesale-contact-subject" type="text" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Message</label>
+                        <textarea id="wholesale-contact-message" class="form-textarea" required></textarea>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end;">
+                        <button id="wholesale-contact-submit" type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Send
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </main>
+
+    <!-- Access Guard (shown when not wholesale user) -->
+    <div id="wholesale-guard" class="wholesale-guard hidden">
+        <h2 style="color: var(--wholesale-primary); font-size: 2rem; margin-bottom: 1rem;">Wholesale Access Only</h2>
+        <p style="margin-top:0.5rem; margin-bottom:1.5rem; color: var(--text-light); font-size: 1.05rem;">
+            This page is reserved for approved wholesale partners. Please
+            login with your wholesale account, or register a new wholesale
+            account to request access.
+        </p>
+        <div style="display:flex; justify-content:center; gap:1rem; flex-wrap:wrap;">
+            <a href="/login?redirect=/wholesale" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Login</a>
+            <a href="/register?type=wholesale" class="btn btn-secondary"><i class="fas fa-user-plus"></i> Register as Wholesale</a>
+            <a href="/" class="btn btn-outline"><i class="fas fa-home"></i> Customer Homepage</a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer" id="wholesale-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Mountain Made Wholesale</h3>
+                <p>Premium organic food products from mountain farms to your business.</p>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Wholesale Services</h3>
+                <ul>
+                    <li><a href="#catalog" data-wholesale-view="catalog">Product Catalog</a></li>
+                    <li><a href="/orders">Order Management</a></li>
+                    <li><a href="/cart">Shopping Cart</a></li>
+                    <li><a href="#">Bulk Pricing</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Support</h3>
+                <ul>
+                    <li><a href="#">Wholesale FAQ</a></li>
+                    <li><a href="#">Contact Sales Team</a></li>
+                    <li><a href="#">Shipping & Returns</a></li>
+                    <li><a href="#">Payment Terms</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <ul>
+                    <li><i class="fas fa-envelope"></i> <span id="wholesale-support-email-display">hello@mountain-made.com</span></li>
+                    <li><i class="fas fa-phone"></i> (555) 123-4567</li>
+                    <li><i class="fas fa-map-marker-alt"></i> India, Manipur</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2026 Mountain Made 2.0 Wholesale Portal. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+    <script>
+        // Close mobile menu when clicking a link
+        document.addEventListener('DOMContentLoaded', () => {
+            const navbarMenu = document.querySelector('.navbar-menu');
+            const menuLinks = navbarMenu?.querySelectorAll('a');
+            
+            menuLinks?.forEach(link => {
+                link.addEventListener('click', () => {
+                    navbarMenu.classList.remove('mobile-active');
+                });
+            });
+
+            const contactForm = document.getElementById('wholesale-contact-form');
+            if (contactForm) {
+                contactForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const submitBtn = document.getElementById('wholesale-contact-submit');
+
+                    const payload = {
+                        type: 'message',
+                        full_name: (document.getElementById('wholesale-contact-name')?.value || '').trim(),
+                        phone: (document.getElementById('wholesale-contact-phone')?.value || '').trim() || null,
+                        email: (document.getElementById('wholesale-contact-email')?.value || '').trim(),
+                        subject: (document.getElementById('wholesale-contact-subject')?.value || '').trim() || null,
+                        message: (document.getElementById('wholesale-contact-message')?.value || '').trim(),
+                        source_page: 'wholesale'
+                    };
+
+                    try {
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                        }
+                        await api.post('/contact', payload);
+                        showAlert('Sent successfully!', 'success');
+                        contactForm.reset();
+                    } catch (err) {
+                        console.error('Wholesale contact send error:', err);
+                        showAlert(err.message || 'Failed to send message', 'error');
+                    } finally {
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+                        }
+                    }
+                });
+            }
+
+            (async () => {
+                try {
+                    const data = await api.get('/products/settings');
+                    const settings = data?.settings || {};
+                    const value = (settings.business_support_email || '').trim() || 'hello@mountain-made.com';
+                    const ids = ['wholesale-send-to-email', 'wholesale-support-email-display'];
+                    ids.forEach((id) => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = value;
+                    });
+                } catch (_) {
+                    const ids = ['wholesale-send-to-email', 'wholesale-support-email-display'];
+                    ids.forEach((id) => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = 'hello@mountain-made.com';
+                    });
+                }
+            })();
+        });
+
+        // Verify wholesale access
+        const wholesaleCatalogState = {
+            allProducts: [],
+            categories: [],
+            filteredProducts: []
+        };
+
+        function switchWholesaleView(view) {
+            const dashboardBlocks = document.querySelectorAll('.wholesale-dashboard-block');
+            const catalogBlocks = document.querySelectorAll('.wholesale-catalog-block');
+            const dashboardNav = document.getElementById('wholesale-nav-dashboard');
+            const catalogNav = document.getElementById('wholesale-nav-catalog');
+
+            const showCatalog = view === 'catalog';
+
+            dashboardBlocks.forEach(block => {
+                block.classList.toggle('hidden', showCatalog);
+            });
+
+            catalogBlocks.forEach(block => {
+                block.classList.toggle('hidden', !showCatalog);
+            });
+
+            if (dashboardNav) dashboardNav.classList.toggle('active', !showCatalog);
+            if (catalogNav) catalogNav.classList.toggle('active', showCatalog);
+        }
+
+        function initializeWholesaleViewRouting() {
+            const routeByHash = () => {
+                const hash = (window.location.hash || '').toLowerCase();
+                const view = hash === '#catalog' ? 'catalog' : 'dashboard';
+                switchWholesaleView(view);
+            };
+
+            document.querySelectorAll('[data-wholesale-view]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const targetView = link.getAttribute('data-wholesale-view');
+                    if (!targetView) return;
+
+                    if (targetView === 'catalog') {
+                        e.preventDefault();
+                        window.location.hash = 'catalog';
+                        switchWholesaleView('catalog');
+                    } else if (targetView === 'dashboard') {
+                        e.preventDefault();
+                        window.location.hash = 'dashboard';
+                        switchWholesaleView('dashboard');
+                    }
+                });
+            });
+
+            window.addEventListener('hashchange', routeByHash);
+            routeByHash();
+        }
+
+        function getPrimaryProductImage(product) {
+            if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+                return product.images[0];
+            }
+            return product.image_url || '/images/placeholder.jpg';
+        }
+
+        function getWholesaleUnitPrice(product) {
+            const wholesalePrice = parseFloat(product.wholesale_price || 0);
+            const discountPrice = parseFloat(product.discount_price || 0);
+            const regularPrice = parseFloat(product.price || 0);
+
+            if (wholesalePrice > 0) return wholesalePrice;
+            if (discountPrice > 0) return discountPrice;
+            return regularPrice;
+        }
+
+        function renderWholesaleCatalog(products) {
+            const container = document.getElementById('wholesale-catalog-results');
+            const countLabel = document.getElementById('wholesale-catalog-count');
+            const metaLabel = document.getElementById('wholesale-catalog-meta');
+
+            if (!container || !countLabel || !metaLabel) return;
+
+            const total = wholesaleCatalogState.allProducts.length;
+            countLabel.textContent = `${products.length} of ${total} products`;
+
+            const avgMOQ = products.length
+                ? Math.round(products.reduce((sum, product) => sum + (parseInt(product.min_wholesale_qty || 10, 10)), 0) / products.length)
+                : 0;
+
+            metaLabel.textContent = products.length ? `Average MOQ: ${avgMOQ} units` : '';
+
+            if (products.length === 0) {
+                container.innerHTML = `
+                    <div class="wholesale-catalog-empty">
+                        <h3 style="margin:0 0 .5rem; color:#1e293b;">No products match your filters</h3>
+                        <p style="margin:0;">Try a different search, category, or sort option.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = products.map(product => {
+                const minQty = parseInt(product.min_wholesale_qty || 10, 10);
+                const unitPrice = getWholesaleUnitPrice(product);
+                const basePrice = parseFloat(product.price || 0);
+                const inStock = parseInt(product.stock_quantity || 0, 10);
+                const stockClass = inStock <= 0 ? 'out' : inStock < minQty ? 'low' : '';
+                const stockText = inStock <= 0
+                    ? 'Out of stock'
+                    : inStock < minQty
+                        ? `Low stock (${inStock} available)`
+                        : `${inStock} units available`;
+
+                return `
+                    <article class="wholesale-product-card">
+                        <img class="wholesale-product-media" src="${getPrimaryProductImage(product)}" alt="${product.name}" onerror="this.src='/images/placeholder.jpg'">
+                        <div class="wholesale-product-body">
+                            <div class="wholesale-product-top">
+                                <h3 class="wholesale-product-name">${product.name}</h3>
+                                <span class="wholesale-moq-badge">MOQ ${minQty}</span>
+                            </div>
+
+                            <div class="wholesale-category-label">${product.category_name || 'General'}</div>
+
+                            <div class="wholesale-price-row">
+                                <span class="wholesale-price-main">${formatCurrency(unitPrice)}</span>
+                                ${basePrice > unitPrice ? `<span class="wholesale-price-compare">${formatCurrency(basePrice)}</span>` : ''}
+                            </div>
+
+                            <div class="wholesale-stock-row ${stockClass}">${stockText}</div>
+
+                            <div class="wholesale-product-actions">
+                                <a class="btn btn-outline" href="/product-details?id=${product.id}">Details</a>
+                                <button class="btn btn-primary" onclick="addWholesaleToCart(${product.id}, ${minQty})" ${inStock <= 0 ? 'disabled' : ''}>
+                                    Add MOQ
+                                </button>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function applyWholesaleCatalogFilters() {
+            const search = (document.getElementById('wholesale-search')?.value || '').trim().toLowerCase();
+            const category = document.getElementById('wholesale-category')?.value || '';
+            const sort = document.getElementById('wholesale-sort')?.value || 'featured';
+
+            let products = [...wholesaleCatalogState.allProducts];
+
+            if (search) {
+                products = products.filter(product => {
+                    const name = (product.name || '').toLowerCase();
+                    const description = (product.description || '').toLowerCase();
+                    const categoryName = (product.category_name || '').toLowerCase();
+                    return name.includes(search) || description.includes(search) || categoryName.includes(search);
+                });
+            }
+
+            if (category) {
+                products = products.filter(product => String(product.category_id || '') === category);
+            }
+
+            if (sort === 'price_asc') {
+                products.sort((a, b) => getWholesaleUnitPrice(a) - getWholesaleUnitPrice(b));
+            } else if (sort === 'price_desc') {
+                products.sort((a, b) => getWholesaleUnitPrice(b) - getWholesaleUnitPrice(a));
+            } else if (sort === 'min_qty_asc') {
+                products.sort((a, b) => (parseInt(a.min_wholesale_qty || 10, 10)) - (parseInt(b.min_wholesale_qty || 10, 10)));
+            } else if (sort === 'stock_desc') {
+                products.sort((a, b) => (parseInt(b.stock_quantity || 0, 10)) - (parseInt(a.stock_quantity || 0, 10)));
+            } else if (sort === 'latest') {
+                products.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+            }
+
+            wholesaleCatalogState.filteredProducts = products;
+            renderWholesaleCatalog(products);
+        }
+
+        async function loadWholesaleCatalog() {
+            try {
+                const [productsResponse, categoriesResponse] = await Promise.all([
+                    api.get('/products'),
+                    api.get('/products/categories')
+                ]);
+
+                wholesaleCatalogState.allProducts = productsResponse.products || [];
+                wholesaleCatalogState.categories = categoriesResponse.categories || [];
+
+                const categorySelect = document.getElementById('wholesale-category');
+                if (categorySelect) {
+                    categorySelect.innerHTML = '<option value="">All Categories</option>' +
+                        wholesaleCatalogState.categories
+                            .map(category => `<option value="${category.id}">${category.name}</option>`)
+                            .join('');
+                }
+
+                applyWholesaleCatalogFilters();
+            } catch (error) {
+                console.error('Failed to load wholesale catalog:', error);
+                const container = document.getElementById('wholesale-catalog-results');
+                if (container) {
+                    container.innerHTML = '<div class="wholesale-catalog-empty"><p>Failed to load wholesale catalog. Please refresh and try again.</p></div>';
+                }
+            }
+        }
+
+        window.addWholesaleToCart = async function(productId, minQty) {
+            try {
+                await cart.add(productId, minQty);
+                showAlert(`Added MOQ (${minQty}) to cart`, 'success');
+                await cart.fetch();
+            } catch (error) {
+                showAlert(error.message || 'Failed to add item to cart', 'error');
+            }
+        };
+
+        async function checkWholesaleAccess() {
+            try {
+                const user = await auth.checkAuth();
+                
+                if (!user) {
+                    showWholesaleGuard();
+                    return false;
+                }
+
+                if (!auth.isWholesale()) {
+                    showWholesaleGuard();
+                    return false;
+                }
+
+                // Update UI to show user menu and cart
+                auth.updateUI();
+                auth.updateNavigationLinks();
+                await cart.fetch();
+
+                // Update welcome message with user name
+                const welcomeMsg = document.getElementById('welcome-message');
+                if (welcomeMsg && user.full_name) {
+                    welcomeMsg.textContent = `Welcome back, ${user.full_name}. Manage your bulk orders and access exclusive wholesale pricing.`;
+                }
+
+                return true;
+            } catch (error) {
+                console.error('Access check failed:', error);
+                showWholesaleGuard();
+                return false;
+            }
+        }
+
+        function showWholesaleGuard() {
+            const main = document.getElementById('wholesale-main');
+            const guard = document.getElementById('wholesale-guard');
+            const footer = document.getElementById('wholesale-footer');
+            
+            if (main) main.classList.add('hidden');
+            if (guard) guard.classList.remove('hidden');
+            if (footer) footer.classList.add('hidden');
+        }
+
+        // Load wholesale statistics
+        async function loadStats() {
+            try {
+                const ordersData = await api.get('/orders');
+                const orders = ordersData.orders || [];
+                
+                const totalOrders = orders.length;
+                const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
+                
+                // Calculate this month's total
+                const now = new Date();
+                const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                const monthTotal = orders
+                    .filter(o => new Date(o.created_at) >= monthStart)
+                    .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+
+                document.getElementById('total-orders').textContent = totalOrders;
+                document.getElementById('pending-orders').textContent = pendingOrders;
+                document.getElementById('month-total').textContent = formatCurrency(monthTotal);
+
+                const productsData = await api.get('/products');
+                document.getElementById('product-count').textContent = (productsData.products || []).length;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async () => {
+            const hasAccess = await checkWholesaleAccess();
+            if (!hasAccess) return;
+
+            loadStats();
+            await loadWholesaleCatalog();
+            initializeWholesaleViewRouting();
+
+            document.getElementById('wholesale-search')?.addEventListener('input', applyWholesaleCatalogFilters);
+            document.getElementById('wholesale-category')?.addEventListener('change', applyWholesaleCatalogFilters);
+            document.getElementById('wholesale-sort')?.addEventListener('change', applyWholesaleCatalogFilters);
+
+            // Account dropdown toggle
+            const accountToggle = document.getElementById('account-toggle');
+            const accountDropdown = document.getElementById('account-dropdown');
+
+            if (accountToggle && accountDropdown) {
+                accountToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    accountDropdown.classList.toggle('hidden');
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.account-menu')) {
+                        accountDropdown.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Account logout handler
+            const accountLogout = document.getElementById('account-logout');
+            if (accountLogout) {
+                accountLogout.addEventListener('click', async () => {
+                    if (await showConfirmDialog('Are you sure you want to logout?', { title: 'Logout', confirmText: 'Logout' })) {
+                        await auth.logout();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

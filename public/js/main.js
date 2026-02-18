@@ -2,6 +2,64 @@
 
 const API_BASE = '/api';
 
+// Adaptive refresh tuning (auto-optimizes for low/high-end devices)
+const performanceTuning = {
+  STORAGE_KEY: 'refresh_rate_mode', // auto | low | high
+
+  getMode() {
+    const mode = (localStorage.getItem(performanceTuning.STORAGE_KEY) || 'auto').toLowerCase();
+    return ['auto', 'low', 'high'].includes(mode) ? mode : 'auto';
+  },
+
+  setMode(mode) {
+    const normalized = String(mode || '').toLowerCase();
+    if (['auto', 'low', 'high'].includes(normalized)) {
+      localStorage.setItem(performanceTuning.STORAGE_KEY, normalized);
+    }
+  },
+
+  detectTier() {
+    const mode = performanceTuning.getMode();
+    if (mode === 'low' || mode === 'high') return mode;
+
+    const hardwareConcurrency = Number(navigator.hardwareConcurrency || 4);
+    const deviceMemory = Number(navigator.deviceMemory || 4);
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const effectiveType = String(connection?.effectiveType || '').toLowerCase();
+    const saveData = !!connection?.saveData;
+
+    const lowNetwork = /2g|3g/.test(effectiveType);
+    const isLowEnd = saveData || lowNetwork || hardwareConcurrency <= 4 || deviceMemory <= 4;
+    const isHighEnd = !saveData && (effectiveType === '' || effectiveType === '4g') && hardwareConcurrency >= 8 && deviceMemory >= 8;
+
+    if (isLowEnd) return 'low';
+    if (isHighEnd) return 'high';
+    return 'mid';
+  },
+
+  getAdaptiveInterval(baseMs, options = {}) {
+    const {
+      lowMultiplier = 1.8,
+      highMultiplier = 0.8,
+      min = 1000,
+      max = 60000
+    } = options;
+
+    const tier = performanceTuning.detectTier();
+    let interval = Number(baseMs) || 1000;
+
+    if (tier === 'low') {
+      interval = Math.round(interval * lowMultiplier);
+    } else if (tier === 'high') {
+      interval = Math.round(interval * highMultiplier);
+    }
+
+    return Math.max(min, Math.min(max, interval));
+  }
+};
+
+window.performanceTuning = performanceTuning;
+
 // API Helper Functions
 const api = {
   async request(endpoint, options = {}) {
@@ -63,16 +121,16 @@ const api = {
     return this.request(endpoint, { method: 'DELETE' });
   },
 
-  // Upload image file (JPG/PNG only)
+  // Upload image file (JPG/PNG/GIF)
   async uploadImage(file) {
     try {
       // Validate file type on client side
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-      const allowedExtensions = ['.jpg', '.jpeg', '.png'];
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
       const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
       
       if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
-        throw new Error('Invalid file type. Only JPG and PNG images are allowed.');
+        throw new Error('Invalid file type. Only JPG, PNG, and GIF images are allowed.');
       }
 
       // Check file size (5MB max)
@@ -83,23 +141,107 @@ const api = {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch(`${API_BASE}/upload/image`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-      });
+      const token = localStorage.getItem('token');
+      const parseResponse = async (response) => {
+        const text = await response.text();
+        let data = null;
+        if (text) {
+          try {
+            data = JSON.parse(text);
+          } catch (_) {
+            data = { error: text };
+          }
+        }
+        return data;
+      };
 
-      const data = await response.json();
+      const tryUpload = async (url, includeAuthHeader = false) => {
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: includeAuthHeader && token ? { 'Authorization': `Bearer ${token}` } : {},
+          body: formData,
+          credentials: 'include'
+        });
+        const parsed = await parseResponse(resp);
+        if (!resp.ok) {
+          throw new Error((parsed && parsed.error) || 'Upload failed');
+        }
+        if (!parsed || !parsed.imageUrl) {
+          throw new Error('Upload failed: missing image URL');
+        }
+        return parsed;
+      };
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Upload failed');
+      try {
+        return await tryUpload(`${API_BASE}/upload/image`, true);
+      } catch (primaryError) {
+        const isNetworkLike =
+          primaryError instanceof TypeError ||
+          /Failed to fetch|ERR_CONNECTION_RESET|NetworkError/i.test(String(primaryError.message || primaryError));
+
+        if (!isNetworkLike) {
+          throw primaryError;
+        }
+
+        return await tryUpload(`${API_BASE}/upload`, false);
       }
-
-      return data;
     } catch (error) {
       console.error('Upload Error:', error);
       throw error;
     }
+  }
+};
+
+// Theme Management
+const theme = {
+  STORAGE_KEY: 'theme',
+  THEME_ATTR: 'data-theme',
+  
+  init() {
+    // Load saved theme or default to light
+    const savedTheme = this.get();
+    this.apply(savedTheme);
+    
+    // Set up toggle button listeners
+    this.setupToggleButtons();
+  },
+  
+  get() {
+    return localStorage.getItem(this.STORAGE_KEY) || 'light';
+  },
+  
+  set(themeName) {
+    localStorage.setItem(this.STORAGE_KEY, themeName);
+  },
+  
+  apply(themeName) {
+    document.documentElement.setAttribute(this.THEME_ATTR, themeName);
+    this.set(themeName);
+    this.updateToggleButtons(themeName);
+  },
+  
+  toggle() {
+    const current = this.get();
+    const next = current === 'light' ? 'dark' : 'light';
+    this.apply(next);
+  },
+  
+  setupToggleButtons() {
+    // Find all theme toggle buttons and attach listeners
+    document.addEventListener('click', (e) => {
+      if (e.target.id === 'theme-toggle' || e.target.closest('#theme-toggle')) {
+        e.preventDefault();
+        this.toggle();
+      }
+    });
+  },
+  
+  updateToggleButtons(themeName) {
+    const toggleButtons = document.querySelectorAll('#theme-toggle');
+    const text = themeName === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    toggleButtons.forEach(btn => {
+      btn.textContent = text;
+    });
   }
 };
 
@@ -112,6 +254,10 @@ const auth = {
       const data = await api.get('/auth/check');
       this.currentUser = data.authenticated ? data.user : null;
       this.updateUI();
+      // Apply profile photo from user data
+      if (this.currentUser && this.currentUser.profile_photo) {
+        applyProfilePhoto(this.currentUser.profile_photo);
+      }
       return this.currentUser;
     } catch (error) {
       this.currentUser = null;
@@ -146,11 +292,17 @@ const auth = {
   },
 
   isAdmin() {
-    return this.currentUser?.role === 'admin';
+    return this.currentUser?.role === 'admin' || this.currentUser?.role === 'super_admin';
   },
 
   isWholesale() {
     return this.currentUser?.role === 'wholesale' && this.currentUser?.is_approved;
+  },
+
+  getHomeUrl() {
+    if (this.isAdmin()) return '/admin';
+    if (this.isWholesale()) return '/wholesale';
+    return '/';
   },
 
   updateUI() {
@@ -174,6 +326,55 @@ const auth = {
       if (adminLink) {
         adminLink.classList.add('hidden');
       }
+    }
+
+    // Update all navigation links dynamically
+    this.updateNavigationLinks();
+  },
+
+  updateNavigationLinks() {
+    const homeUrl = this.getHomeUrl();
+
+    // Update navbar brand (logo)
+    const navbarBrand = document.querySelector('.navbar-brand');
+    if (navbarBrand) {
+      navbarBrand.setAttribute('href', homeUrl);
+    }
+
+    // Update "Home" / "Dashboard" menu links
+    const homeLinks = document.querySelectorAll('.navbar-menu a[href="/"], .navbar-menu a[href="/wholesale"]');
+    homeLinks.forEach(link => {
+      link.setAttribute('href', homeUrl);
+      const currentText = link.textContent.trim();
+      
+      // Update text based on role and current page
+      if (currentText !== 'Dashboard') {
+        if (this.isWholesale() || this.isAdmin()) {
+          link.textContent = 'Dashboard';
+        } else {
+          link.textContent = 'Home';
+        }
+      }
+    });
+
+    // Update catalog/products link for wholesale users on shared pages
+    const productLinks = document.querySelectorAll('.navbar-menu a[href="/products"], .navbar-menu a[href="/wholesale#catalog"], .navbar-menu a[href="/wholesale/#catalog"]');
+    productLinks.forEach(link => {
+      if (this.isWholesale()) {
+        link.setAttribute('href', '/wholesale#catalog');
+        link.textContent = 'Catalog';
+      } else {
+        link.setAttribute('href', '/products');
+        if (link.textContent.trim() === 'Catalog') {
+          link.textContent = 'Products';
+        }
+      }
+    });
+
+    // Update back button if it exists
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn && !backBtn.hasAttribute('data-custom-back')) {
+      backBtn.setAttribute('href', homeUrl);
     }
   }
 };
@@ -219,7 +420,7 @@ const cart = {
       
       if (!auth.isAuthenticated()) {
         showAlert('⚠️  Please login to add items to cart. Click the Login button in the top right.', 'error');
-        return;
+        return false;
       }
 
       console.log('Adding product to cart:', productId);
@@ -228,8 +429,11 @@ const cart = {
       
       if (response && response.success !== false) {
         await this.fetch();
-        showAlert('✓ Product added to cart!', 'success');
-        return response;
+        // Only show alert if not in direct buy flow
+        if (!sessionStorage.getItem('directBuy')) {
+          showAlert('✓ Product added to cart!', 'success');
+        }
+        return true;
       } else {
         throw new Error(response.error || 'Failed to add to cart');
       }
@@ -238,6 +442,7 @@ const cart = {
       if (!error.message.includes('Please login')) {
         showAlert('❌ ' + (error.message || 'Failed to add to cart'), 'error');
       }
+      return false;
     }
   },
 
@@ -279,13 +484,14 @@ const cart = {
 };
 
 // Image Upload Helper
-async function uploadProductImage(fileInput) {
+async function uploadProductImage(fileOrInput) {
   try {
-    if (!fileInput.files || !fileInput.files[0]) {
+    const file = fileOrInput instanceof File
+      ? fileOrInput
+      : fileOrInput?.files?.[0];
+    if (!file) {
       throw new Error('No file selected');
     }
-
-    const file = fileInput.files[0];
     
     showAlert('Uploading image...', 'info');
     const result = await api.uploadImage(file);
@@ -328,6 +534,278 @@ function createAlertContainer() {
   return container;
 }
 
+const APP_DIALOG_STYLE_ID = 'app-dialog-styles';
+
+function ensureAppDialogStyles() {
+  if (document.getElementById(APP_DIALOG_STYLE_ID)) return;
+
+  const style = document.createElement('style');
+  style.id = APP_DIALOG_STYLE_ID;
+  style.textContent = `
+    .app-dialog-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.55);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2500;
+      padding: 1rem;
+    }
+    .app-dialog {
+      width: min(100%, 460px);
+      background: var(--bg-primary, #ffffff);
+      border: 1px solid var(--border-primary, #e5e7eb);
+      border-radius: 14px;
+      box-shadow: 0 24px 48px rgba(15, 23, 42, 0.25);
+      overflow: hidden;
+    }
+    .app-dialog-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-primary, #e5e7eb);
+      background: var(--bg-secondary, #f8fafc);
+    }
+    .app-dialog-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .app-dialog-icon.warning { background: #fff7ed; color: #c2410c; }
+    .app-dialog-icon.danger { background: #fef2f2; color: #b91c1c; }
+    .app-dialog-icon.info { background: #eff6ff; color: #1d4ed8; }
+    .app-dialog-title {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary, #0f172a);
+    }
+    .app-dialog-body {
+      padding: 1rem 1.25rem;
+      color: var(--text-secondary, #334155);
+      line-height: 1.55;
+      font-size: 0.95rem;
+    }
+    .app-dialog-input {
+      width: 100%;
+      margin-top: 0.75rem;
+      border: 1px solid var(--border-primary, #cbd5e1);
+      border-radius: 8px;
+      padding: 0.65rem 0.75rem;
+      font-size: 0.95rem;
+      background: var(--bg-primary, #ffffff);
+      color: var(--text-primary, #0f172a);
+    }
+    .app-dialog-input:focus {
+      outline: none;
+      border-color: var(--primary-500, #22c55e);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+    }
+    .app-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      padding: 0 1.25rem 1rem;
+    }
+    .app-dialog-btn {
+      border: 1px solid var(--border-primary, #cbd5e1);
+      border-radius: 8px;
+      padding: 0.55rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .app-dialog-btn.cancel {
+      background: var(--bg-primary, #ffffff);
+      color: var(--text-primary, #0f172a);
+    }
+    .app-dialog-btn.cancel:hover { background: var(--bg-secondary, #f1f5f9); }
+    .app-dialog-btn.confirm {
+      background: var(--primary-500, #22c55e);
+      border-color: var(--primary-500, #22c55e);
+      color: #ffffff;
+    }
+    .app-dialog-btn.confirm:hover { filter: brightness(0.95); }
+    .app-dialog-btn.confirm.danger {
+      background: #dc2626;
+      border-color: #dc2626;
+    }
+    @media (max-width: 480px) {
+      .app-dialog { width: 100%; border-radius: 12px; }
+      .app-dialog-header, .app-dialog-body, .app-dialog-actions { padding-left: 1rem; padding-right: 1rem; }
+      .app-dialog-actions { flex-direction: column-reverse; }
+      .app-dialog-btn { width: 100%; }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function closeAppDialog(dialogOverlay) {
+  if (!dialogOverlay) return;
+  dialogOverlay.remove();
+  document.body.style.overflow = '';
+}
+
+function buildDialogIcon(iconType) {
+  if (iconType === 'danger') return '<i class="fas fa-triangle-exclamation"></i>';
+  if (iconType === 'warning') return '<i class="fas fa-circle-question"></i>';
+  return '<i class="fas fa-circle-info"></i>';
+}
+
+function showConfirmDialog(message, options = {}) {
+  ensureAppDialogStyles();
+
+  const {
+    title = 'Please Confirm',
+    confirmText = 'Confirm',
+    cancelText = 'Cancel',
+    danger = false,
+    icon = danger ? 'danger' : 'warning'
+  } = options;
+
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'app-dialog-overlay';
+    overlay.innerHTML = `
+      <div class="app-dialog" role="dialog" aria-modal="true" aria-label="${title}">
+        <div class="app-dialog-header">
+          <div class="app-dialog-icon ${icon}">${buildDialogIcon(icon)}</div>
+          <h3 class="app-dialog-title">${title}</h3>
+        </div>
+        <div class="app-dialog-body">${message}</div>
+        <div class="app-dialog-actions">
+          <button type="button" class="app-dialog-btn cancel" data-cancel>${cancelText}</button>
+          <button type="button" class="app-dialog-btn confirm ${danger ? 'danger' : ''}" data-confirm>${confirmText}</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    const confirmBtn = overlay.querySelector('[data-confirm]');
+    const cancelBtn = overlay.querySelector('[data-cancel]');
+
+    const onCancel = () => {
+      closeAppDialog(overlay);
+      resolve(false);
+    };
+
+    const onConfirm = () => {
+      closeAppDialog(overlay);
+      resolve(true);
+    };
+
+    confirmBtn?.addEventListener('click', onConfirm);
+    cancelBtn?.addEventListener('click', onCancel);
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) onCancel();
+    });
+
+    const keyHandler = (event) => {
+      if (!document.body.contains(overlay)) {
+        document.removeEventListener('keydown', keyHandler);
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCancel();
+      }
+    };
+    document.addEventListener('keydown', keyHandler);
+
+    setTimeout(() => cancelBtn?.focus(), 0);
+  });
+}
+
+function showPromptDialog(message, options = {}) {
+  ensureAppDialogStyles();
+
+  const {
+    title = 'Please Confirm',
+    placeholder = '',
+    confirmText = 'Submit',
+    cancelText = 'Cancel',
+    danger = false,
+    icon = danger ? 'danger' : 'warning'
+  } = options;
+
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'app-dialog-overlay';
+    overlay.innerHTML = `
+      <div class="app-dialog" role="dialog" aria-modal="true" aria-label="${title}">
+        <div class="app-dialog-header">
+          <div class="app-dialog-icon ${icon}">${buildDialogIcon(icon)}</div>
+          <h3 class="app-dialog-title">${title}</h3>
+        </div>
+        <div class="app-dialog-body">
+          <div>${message}</div>
+          <input class="app-dialog-input" type="text" data-input placeholder="${placeholder}">
+        </div>
+        <div class="app-dialog-actions">
+          <button type="button" class="app-dialog-btn cancel" data-cancel>${cancelText}</button>
+          <button type="button" class="app-dialog-btn confirm ${danger ? 'danger' : ''}" data-confirm>${confirmText}</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    const input = overlay.querySelector('[data-input]');
+    const confirmBtn = overlay.querySelector('[data-confirm]');
+    const cancelBtn = overlay.querySelector('[data-cancel]');
+
+    const onCancel = () => {
+      closeAppDialog(overlay);
+      resolve(null);
+    };
+
+    const onConfirm = () => {
+      const value = String(input?.value || '').trim();
+      closeAppDialog(overlay);
+      resolve(value);
+    };
+
+    confirmBtn?.addEventListener('click', onConfirm);
+    cancelBtn?.addEventListener('click', onCancel);
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) onCancel();
+    });
+
+    const keyHandler = (event) => {
+      if (!document.body.contains(overlay)) {
+        document.removeEventListener('keydown', keyHandler);
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCancel();
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        onConfirm();
+      }
+    };
+    document.addEventListener('keydown', keyHandler);
+
+    setTimeout(() => input?.focus(), 0);
+  });
+}
+
+window.showConfirmDialog = showConfirmDialog;
+window.showPromptDialog = showPromptDialog;
+
 // Modal System
 function openModal(modalId) {
   const modal = document.getElementById(modalId);
@@ -348,8 +826,6 @@ function closeModal(modalId) {
 // Profile management (name, phone, photo)
 const PROFILE_MODAL_ID = 'profile-modal';
 const PROFILE_STYLE_ID = 'profile-modal-styles';
-const PROFILE_PHOTO_KEY = 'mm_profile_photo_url';
-
 function ensureProfileModal() {
   if (document.getElementById(PROFILE_MODAL_ID)) return;
 
@@ -408,8 +884,20 @@ function ensureProfileModal() {
       try {
         const result = await api.uploadImage(file);
         if (result?.imageUrl) {
-          localStorage.setItem(PROFILE_PHOTO_KEY, result.imageUrl);
-          applyProfilePhotoFromStorage();
+          // Save to user profile in database
+          await api.put('/auth/profile', {
+            full_name: auth.currentUser?.full_name || '',
+            phone: auth.currentUser?.phone || '',
+            profile_photo: result.imageUrl
+          });
+          
+          // Update current user object
+          if (auth.currentUser) {
+            auth.currentUser.profile_photo = result.imageUrl;
+          }
+          
+          // Update UI
+          applyProfilePhoto(result.imageUrl);
           renderProfilePreview(result.imageUrl);
           showAlert('Profile picture updated.', 'success');
         }
@@ -439,8 +927,7 @@ function renderProfilePreview(url) {
   }
 }
 
-function applyProfilePhotoFromStorage() {
-  const url = localStorage.getItem(PROFILE_PHOTO_KEY) || '';
+function applyProfilePhoto(url) {
   const toggleButtons = document.querySelectorAll('#account-toggle');
   toggleButtons.forEach((btn) => {
     const icon = btn.querySelector('i');
@@ -457,7 +944,7 @@ function applyProfilePhotoFromStorage() {
       if (icon) icon.style.display = '';
     }
   });
-  renderProfilePreview(url);
+  renderProfilePreview(url || '');
 }
 
 async function openProfileModal() {
@@ -471,7 +958,7 @@ async function openProfileModal() {
   if (nameInput) nameInput.value = user.full_name || '';
   if (phoneInput) phoneInput.value = user.phone || '';
 
-  applyProfilePhotoFromStorage();
+  applyProfilePhoto(user.profile_photo || '');
   openModal(PROFILE_MODAL_ID);
 }
 
@@ -586,9 +1073,11 @@ function validateImageFile(file) {
 
 // Initialize app
 async function initApp() {
+  // Initialize theme before anything else
+  theme.init();
+  
   await auth.checkAuth();
   await cart.fetch();
-  applyProfilePhotoFromStorage();
   
   // Setup logout button
   const logoutBtn = document.getElementById('logout-btn');
@@ -609,14 +1098,16 @@ async function initApp() {
     });
   }
 
-  // Global back button on non-home pages
+  // Global back button on non-home pages (excluding wholesale dashboard)
   try {
     const existingBack = document.querySelector('.page-back-button');
+    const hasLocalBackButton = document.querySelector('[data-back-button], .section-back-button, #back-btn, button[onclick*="navigateBack"]');
     const hasNavbar = document.querySelector('.navbar');
     const path = window.location.pathname || '/';
     const isHome = path === '/' || path === '/index.html';
+    const isWholesaleDashboard = path === '/wholesale' || path === '/wholesale.html';
 
-    if (!existingBack && hasNavbar && !isHome) {
+    if (!existingBack && !hasLocalBackButton && hasNavbar && !isHome && !isWholesaleDashboard) {
       const backBtn = document.createElement('button');
       backBtn.className = 'page-back-button btn-sm';
       backBtn.type = 'button';
@@ -663,14 +1154,28 @@ async function loadSiteLogo() {
     
     if (response.ok) {
       const data = await response.json();
-      if (data.settings && data.settings.logo_url && data.settings.logo_url !== 'default') {
-        // Update all navbar brand elements with custom logo
-        const navbarBrands = document.querySelectorAll('.navbar-brand');
-        navbarBrands.forEach(brand => {
-          // Replace content with image
-          brand.innerHTML = `<img src="${data.settings.logo_url}" alt="Site Logo" style="max-height: 40px; max-width: 200px; object-fit: contain;">`;
-        });
-      }
+      const settings = data.settings || {};
+      const hasCustomLogo = settings.logo_url && settings.logo_url !== 'default';
+      const brandTextImagePath = '/images/brand-text.png';
+      const isAdminRoute = window.location.pathname.startsWith('/admin');
+
+      const navbarBrands = document.querySelectorAll('.navbar-brand');
+      navbarBrands.forEach(brand => {
+        const logoHtml = hasCustomLogo
+          ? `<img src="${settings.logo_url}" alt="Site Logo" style="max-height: ${isAdminRoute ? '28px' : '40px'}; max-width: ${isAdminRoute ? '110px' : '160px'}; object-fit: contain;">`
+          : `<span class="logo-icon">🏔️</span>`;
+
+        const textImageHtml = isAdminRoute
+          ? `<img src="${brandTextImagePath}" alt="Brand Text" style="height: 28px; max-width: 210px; width: auto; object-fit: contain; display: block;" onerror="this.style.display='none';">`
+          : `<img src="${brandTextImagePath}" alt="Brand Text" style="height: clamp(72px, 11vw, 110px); max-width: min(74vw, 760px); width: auto; object-fit: contain; display: block;" onerror="this.style.display='none';">`;
+
+        brand.innerHTML = `
+          <span style="display:inline-flex; align-items:center; gap:0.15rem; white-space:nowrap;">
+            ${logoHtml}
+            ${textImageHtml}
+          </span>
+        `;
+      });
     }
   } catch (error) {
     // Silently fail - keep default logo
@@ -701,3 +1206,37 @@ window.uploadProductImage = uploadProductImage;
 window.validateImageFile = validateImageFile;
 window.loadSiteLogo = loadSiteLogo;
 window.openProfileModal = openProfileModal;
+// Restore database handler for admin.html
+window.handleRestoreDatabase = async function(event) {
+  event.preventDefault();
+  const form = document.getElementById('restore-form');
+  const fileInput = document.getElementById('restore-sqlfile');
+  const file = fileInput.files[0];
+  if (!file) {
+    showAlert('Please select a .sql file to restore.', 'error');
+    return;
+  }
+  const formData = new FormData();
+  formData.append('sqlfile', file);
+  try {
+    showAlert('Restoring database...', 'info');
+    const response = await fetch('/api/restore', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include'
+    });
+    const data = await response.json();
+    if (response.ok) {
+      const restored = data?.verification?.usersCount;
+      const expected = data?.verification?.expectedUsersFromBackup;
+      const details = (typeof restored === 'number')
+        ? ` Restored users: ${restored}${typeof expected === 'number' ? ` (backup users: ${expected})` : ''}.`
+        : '';
+      window.showSuccessModal(`Database restored successfully!${details}`);
+    } else {
+      showAlert(data.error || 'Restore failed', 'error');
+    }
+  } catch (error) {
+    showAlert(error.message || 'Restore failed', 'error');
+  }
+};

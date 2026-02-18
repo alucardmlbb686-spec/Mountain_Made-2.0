@@ -136,6 +136,59 @@
 }
 
 /* ============================================================================
+   DARK MODE THEME
+   ============================================================================ */
+
+html[data-theme="dark"],
+html[data-theme="dark"] body {
+  /* Dark Mode Primary Colors - Keep readable on dark backgrounds */
+  --primary-100: #1e4a2f;
+  --primary-200: #2d5f3f;
+  --primary-300: #3a7850;
+  
+  /* Dark Mode Background Colors */
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #111111;
+  --bg-tertiary: #252525;
+  
+  /* Dark Mode Text Colors */
+  --text-primary: #f0f0f0;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #808080;
+  --text-inverse: #1a1a1a;
+  
+  /* Dark Mode Borders */
+  --border-primary: #333333;
+  --border-secondary: #404040;
+  
+  /* Dark Mode Gray Scale Adjustments */
+  --gray-50: #2d2d2d;
+  --gray-100: #333333;
+  --gray-200: #404040;
+  --gray-300: #525252;
+  --gray-400: #666666;
+  --gray-500: #808080;
+  --gray-600: #999999;
+  --gray-700: #b0b0b0;
+  --gray-800: #cccccc;
+  --gray-900: #e0e0e0;
+  
+  /* Adjusted Semantic Backgrounds for Dark Mode */
+  --success-bg: #0d4d34;
+  --warning-bg: #4d3300;
+  --error-bg: #4d1a1a;
+  --info-bg: #1a3d5c;
+  
+  /* Dark Mode Shadows */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================================================
    BASE & RESET
    ============================================================================ */
 
@@ -207,6 +260,60 @@ strong, b {
 small {
   font-size: var(--text-sm);
   color: var(--text-tertiary);
+}
+
+/* ============================================================================
+   CONTACT PAGE
+   ============================================================================ */
+
+.contact-form {
+  max-width: 100%;
+  margin: 0;
+}
+
+.contact-page.container {
+  max-width: 820px;
+}
+
+.contact-card {
+  max-width: 820px;
+  margin: 0 auto;
+  height: auto;
+}
+
+.contact-card:hover {
+  transform: none;
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-primary);
+}
+
+.contact-card .card-content {
+  padding: var(--space-8);
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.contact-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 767px) {
+  .contact-card .card-content {
+    padding: var(--space-5);
+  }
+
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-actions .btn {
+    width: 100%;
+  }
 }
 
 /* ============================================================================
@@ -438,7 +545,7 @@ small {
 }
 
 .btn-secondary {
-  background: white;
+  background: var(--bg-primary);
   color: var(--primary-600);
   border-color: var(--primary-600);
 }
@@ -489,19 +596,49 @@ small {
   z-index: 900;
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.35rem 0.6rem;
-  font-size: 0.78rem;
+  gap: 0.35rem;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
   border-radius: 999px;
-  background: white;
-  color: var(--primary-700);
-  border: 1px solid var(--primary-300);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
 .page-back-button i {
   font-size: 0.85rem;
+}
+
+.page-back-button:hover {
+  color: var(--primary-600);
+  border-color: var(--primary-300);
+  transform: translateY(-1px);
+}
+
+.section-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  line-height: 1;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.section-back-button:hover {
+  color: var(--primary-600);
+  border-color: var(--primary-300);
+  background: var(--bg-secondary);
 }
 
 @media (max-width: 767px) {
@@ -792,7 +929,7 @@ small {
   font-size: var(--text-base);
   line-height: var(--leading-normal);
   color: var(--text-primary);
-  background-color: white;
+  background-color: var(--bg-primary);
   border: 2px solid var(--border-primary);
   border-radius: var(--radius-lg);
   transition: all var(--transition-base);
@@ -924,7 +1061,7 @@ small {
   width: 100%;
   max-width: 640px;
   max-height: 90vh;
-  background: white;
+  background: var(--bg-primary);
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-2xl);
   overflow: hidden;
@@ -1595,5 +1732,53 @@ small {
   .hero h1,
   .hero p {
     color: black;
+  }
+}
+
+/* Register form compact override */
+.register-container {
+  width: 220px !important;
+  height: 220px !important;
+  min-height: 0 !important;
+  max-height: 220px !important;
+  padding: 4px 2px !important;
+  border-radius: 12px !important;
+  font-size: 11px !important;
+  box-shadow: 0 1px 2px rgba(60,64,67,0.04);
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  overflow-y: auto !important;
+  justify-content: flex-start !important;
+}
+.role-selection-row {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+.role-option {
+  min-width: 70px !important;
+  min-height: 40px !important;
+  font-size: 11px !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+}
+@media (max-width: 600px) {
+  .register-container {
+    width: 90vw !important;
+    height: 90vw !important;
+    max-height: 90vw !important;
+    font-size: 10px !important;
+    padding: 2px 1px !important;
+  }
+  .role-selection-row {
+    gap: 4px !important;
+  }
+  .role-option {
+    min-width: 40px !important;
+    font-size: 10px !important;
   }
 }

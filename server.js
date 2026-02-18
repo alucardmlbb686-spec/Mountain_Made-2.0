@@ -9,9 +9,14 @@ require('dotenv').config();
 const database = require('./config/database');
 const { initializeDatabase } = database;
 const User = require('./models/User');
+const { authenticateToken } = require('./middleware/auth');
+const { adminCheck } = require('./middleware/adminCheck');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const allowSetupEndpoints = process.env.ALLOW_SETUP_ENDPOINTS === 'true';
+
+app.disable('x-powered-by');
 
 // Ensure uploads directory exists
 const uploadDir = path.join(__dirname, 'public', 'uploads');
@@ -31,18 +36,18 @@ const storage = multer.diskStorage({
     }
 });
 
-// File filter - Only JPG/PNG allowed
+// File filter - Only JPG/PNG/GIF allowed
 const fileFilter = (req, file, cb) => {
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    const allowedExtensions = ['.jpg', '.jpeg', '.png'];
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
     const ext = path.extname(file.originalname).toLowerCase();
     const mimeType = file.mimetype.toLowerCase();
     
-    // Accept only if both mime type and extension are valid JPG or PNG
+    // Accept only if both mime type and extension are valid JPG, PNG, or GIF
     if (allowedMimeTypes.includes(mimeType) && allowedExtensions.includes(ext)) {
         cb(null, true);
     } else {
-        return cb(new Error('Invalid file type. Only JPG and PNG images are allowed.'), false);
+      return cb(new Error('Invalid file type. Only JPG, PNG, and GIF images are allowed.'), false);
     }
 };
 
@@ -57,8 +62,22 @@ const upload = multer({
 // Middleware
 app.use(cors({
   origin: true,
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -67,11 +86,11 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // DB-backed upload fetch (survives redeploys)
-app.get('/uploads/:id', async (req, res) => {
+app.get('/uploads/:id', async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) {
-      return res.status(400).send('Invalid id');
+      return next();
     }
 
     const result = await database.query('SELECT mimetype, data FROM uploads WHERE id = $1', [id]);
@@ -92,8 +111,8 @@ app.get('/uploads/:id', async (req, res) => {
 // Static fallback for any legacy on-disk uploads
 app.use('/uploads', express.static(uploadDir));
 
-// Image upload endpoint for admin
-app.post('/api/upload', upload.single('image'), (req, res) => {
+// Legacy image upload endpoint for admin (kept for backward compatibility)
+app.post('/api/upload', authenticateToken, adminCheck, upload.single('image'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -131,6 +150,9 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/addresses', require('./routes/addresses'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/upload', require('./routes/upload'));
+app.use('/api/backup', require('./routes/backup'));
+app.use('/api/restore', require('./routes/restore'));
+app.use('/api/contact', require('./routes/contact'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -139,6 +161,13 @@ app.get('/api/health', (req, res) => {
 
 // Setup endpoint to create admin user (one-time use)
 app.get('/api/setup-admin', async (req, res) => {
+  if (!allowSetupEndpoints) {
+    return res.status(403).json({
+      success: false,
+      error: 'Setup endpoints are disabled. Set ALLOW_SETUP_ENDPOINTS=true only for trusted setup.'
+    });
+  }
+
   try {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@mountainmade.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
@@ -155,6 +184,35 @@ app.get('/api/setup-admin', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: error.message 
+    });
+  }
+});
+
+// Setup endpoint to create super admin user (one-time use)
+app.get('/api/setup-super-admin', async (req, res) => {
+  if (!allowSetupEndpoints) {
+    return res.status(403).json({
+      success: false,
+      error: 'Setup endpoints are disabled. Set ALLOW_SETUP_ENDPOINTS=true only for trusted setup.'
+    });
+  }
+
+  try {
+    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'developer@mountainmade.com';
+    const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'SuperAdmin@123';
+
+    await User.ensureSuperAdmin(superAdminEmail, superAdminPassword);
+
+    res.json({
+      success: true,
+      message: 'Super admin user ensured successfully',
+      email: superAdminEmail
+    });
+  } catch (error) {
+    console.error('Setup super admin error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
@@ -200,6 +258,18 @@ app.get('/addresses', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'addresses.html'));
 });
 
+app.get('/wholesale', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'wholesale.html'));
+});
+
+app.get('/contact', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'contact.html'));
+});
+
+app.get('/wholesale', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'wholesale.html'));
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -224,6 +294,11 @@ const initializeApp = async () => {
 
     await User.ensureAdmin(adminEmail, adminPassword);
     console.log(`✓ Admin user ensured: ${adminEmail}`);
+
+    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'developer@mountainmade.com';
+    const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'SuperAdmin@123';
+    await User.ensureSuperAdmin(superAdminEmail, superAdminPassword);
+    console.log(`✓ Super admin user ensured: ${superAdminEmail}`);
 
     console.log('✓ Application initialized successfully');
   } catch (error) {
@@ -251,6 +326,7 @@ if (process.env.VERCEL !== '1' && require.main === module) {
 ║                                                       ║
 ║   Admin Panel: http://localhost:${PORT}/admin        ║
 ║   Admin Email: ${process.env.ADMIN_EMAIL || 'admin@mountainmade.com'}            ║
+║   Super Admin Email: ${process.env.SUPER_ADMIN_EMAIL || 'developer@mountainmade.com'}     ║
 ║                                                       ║
 ╚═══════════════════════════════════════════════════════╝
     `);

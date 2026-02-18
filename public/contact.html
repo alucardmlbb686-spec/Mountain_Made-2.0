@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2c5f2d">
+    <link rel="manifest" href="/manifest.json">
+    <title>Contact Us - Mountain Made</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/mobile-enhancements.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">
+                <span class="logo-icon">🏔️</span>
+                Mountain Made
+            </a>
+
+            <ul class="navbar-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="/#categories">Categories</a></li>
+                <li><a href="/#about">About</a></li>
+                <li><a href="/contact" class="active">Contact Us</a></li>
+                <li id="admin-link" class="hidden"><a href="/admin">Admin</a></li>
+            </ul>
+
+            <div class="navbar-actions">
+                <div id="auth-buttons">
+                    <a href="/login" class="btn btn-secondary btn-sm">Login</a>
+                    <a href="/register" class="btn btn-primary btn-sm">Register</a>
+                </div>
+
+                <div id="user-menu" class="hidden flex gap-2" style="align-items: center;">
+                    <a href="/orders" class="icon-button" title="My Orders">
+                        <i class="fas fa-shopping-bag"></i>
+                    </a>
+                    <a href="/cart" class="icon-button" title="Shopping Cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span id="cart-badge" class="cart-badge hidden">0</span>
+                    </a>
+                    <div class="account-menu">
+                        <button id="account-toggle" class="icon-button" title="Account">
+                            <i class="fas fa-user-circle"></i>
+                        </button>
+                        <div id="account-dropdown" class="account-dropdown hidden">
+                            <div class="account-section">
+                                <strong>Account</strong>
+                                <button class="account-link" onclick="openProfileModal()">Edit Profile</button>
+                            </div>
+                            <div class="account-section">
+                                <strong>Billing Management</strong>
+                                <div class="account-text">Payment methods: GPay / Cash on Delivery</div>
+                                <div class="account-text">UPI ID: <span id="billing-upi">mountainmade@upi</span></div>
+                                <div class="account-text">Bank: Mountain Made Foods</div>
+                            </div>
+                            <div class="account-section">
+                                <strong>Appearance</strong>
+                                <button id="theme-toggle" class="account-link">Toggle Dark / Light</button>
+                            </div>
+                            <div class="account-section">
+                                <button id="account-logout" class="account-link account-link-danger">Logout</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container contact-page" style="padding-top: 2rem; padding-bottom: 2rem;">
+        <div class="section-title">
+            <h2>Contact Us</h2>
+            <p>Send a message to the admin team.</p>
+        </div>
+
+        <div class="card contact-card">
+            <div class="card-content">
+                <form id="contact-form" class="contact-form">
+                    <div style="margin-bottom: 1rem; padding: 0.75rem 0.9rem; border: 1px solid var(--border-primary); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-secondary); font-size: 0.95rem;">
+                        <i class="fas fa-paper-plane" style="margin-right: 0.45rem;"></i>
+                        Sent to: <strong id="contact-send-to-email">hello@mountain-made.com</strong>
+                    </div>
+
+                    <div class="contact-grid">
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <input id="contact-name" type="text" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone (optional)</label>
+                            <input id="contact-phone" type="tel" class="form-input">
+                        </div>
+                    </div>
+
+                    <div class="contact-grid">
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input id="contact-email" type="email" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Subject (optional)</label>
+                            <input id="contact-subject" type="text" class="form-input">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Message</label>
+                        <textarea id="contact-message" class="form-textarea" required></textarea>
+                    </div>
+
+                    <div class="contact-actions">
+                        <button id="contact-submit" type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Send
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Mountain Made 2.0</h3>
+                <p>Premium organic food products from mountain farms to your table.</p>
+            </div>
+
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="/products">Products</a></li>
+                    <li><a href="/#categories">Categories</a></li>
+                    <li><a href="/#about">About Us</a></li>
+                    <li><a href="/register?type=wholesale">Wholesale</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3>Customer Service</h3>
+                <ul>
+                    <li><a href="/orders">My Orders</a></li>
+                    <li><a href="/cart">Shopping Cart</a></li>
+                    <li><a href="/contact">Contact Us</a></li>
+                    <li><a href="#">FAQs</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <ul>
+                    <li><i class="fas fa-envelope"></i> <span id="support-email-display">hello@mountain-made.com</span></li>
+                    <li><i class="fas fa-phone"></i> (555) 123-4567</li>
+                    <li><i class="fas fa-map-marker-alt"></i> India, Manipur</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 Mountain Made 2.0. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+    <script>
+        function initContactForm() {
+            const form = document.getElementById('contact-form');
+            if (!form) return;
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = document.getElementById('contact-submit');
+
+                const payload = {
+                    type: 'message',
+                    full_name: (document.getElementById('contact-name')?.value || '').trim(),
+                    phone: (document.getElementById('contact-phone')?.value || '').trim() || null,
+                    email: (document.getElementById('contact-email')?.value || '').trim(),
+                    subject: (document.getElementById('contact-subject')?.value || '').trim() || null,
+                    message: (document.getElementById('contact-message')?.value || '').trim(),
+                    source_page: 'contact'
+                };
+
+                try {
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                    }
+                    await api.post('/contact', payload);
+                    showAlert('Sent successfully!', 'success');
+                    form.reset();
+                } catch (err) {
+                    console.error('Contact send error:', err);
+                    showAlert(err.message || 'Failed to send message', 'error');
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+                    }
+                }
+            });
+        }
+
+        async function loadSupportEmailDisplay() {
+            try {
+                const data = await api.get('/products/settings');
+                const settings = data?.settings || {};
+                const value = (settings.business_support_email || '').trim() || 'hello@mountain-made.com';
+                const displayIds = ['support-email-display', 'contact-send-to-email'];
+                displayIds.forEach((id) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = value;
+                });
+            } catch (_) {
+                const displayIds = ['support-email-display', 'contact-send-to-email'];
+                displayIds.forEach((id) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = 'hello@mountain-made.com';
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await auth.checkAuth();
+            await cart.fetch();
+            await loadSupportEmailDisplay();
+            initContactForm();
+        });
+    </script>
+</body>
+</html>

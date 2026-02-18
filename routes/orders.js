@@ -53,7 +53,8 @@ router.get('/:id', async (req, res) => {
     }
 
     // Check if order belongs to user (unless admin)
-    if (order.user_id !== req.user.id && req.user.role !== 'admin') {
+    const isAdminLike = req.user.role === 'admin' || req.user.role === 'super_admin';
+    if (order.user_id !== req.user.id && !isAdminLike) {
       return res.status(403).json({ error: 'Access denied.' });
     }
 
@@ -67,7 +68,7 @@ router.get('/:id', async (req, res) => {
 // Quick buy - create order from single product
 router.post('/quick-buy', async (req, res) => {
   try {
-    const { product_id, quantity = 1, shipping_address, payment_method = 'COD' } = req.body;
+    const { product_id, quantity = 1, shipping_address, payment_method = 'cash_on_delivery', notes } = req.body;
     
     if (!product_id) {
       return res.status(400).json({ error: 'Product ID is required.' });
@@ -94,17 +95,28 @@ router.post('/quick-buy', async (req, res) => {
     }
 
     // Determine price based on user type
-    const isWholesale = req.user.is_wholesale_approved;
+    const isWholesale = req.user.role === 'wholesale' && req.user.is_approved;
     const price = isWholesale && product.wholesale_price ? product.wholesale_price : retailPrice;
     const subtotal = price * quantity;
+
+    const normalizedPaymentMethod = (() => {
+      const raw = (payment_method || '').toString().trim();
+      const lower = raw.toLowerCase();
+      if (lower === 'cod' || lower === 'cash' || lower === 'cashondelivery') return 'cash_on_delivery';
+      if (lower === 'cash_on_delivery') return 'cash_on_delivery';
+      if (lower === 'gpay') return 'gpay';
+      return raw || 'cash_on_delivery';
+    })();
+
+    const normalizedNotes = typeof notes === 'string' && notes.trim() ? notes.trim() : 'Quick Buy Order';
 
     // Create order
     const orderData = {
       user_id: req.user.id,
       total_amount: subtotal,
       shipping_address: shipping_address || {},
-      payment_method,
-      notes: 'Quick Buy Order',
+      payment_method: normalizedPaymentMethod,
+      notes: normalizedNotes,
       items: [{
         product_id: product.id,
         product_name: product.name,

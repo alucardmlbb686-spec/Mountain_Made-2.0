@@ -15,7 +15,7 @@ class User {
       RETURNING id, email, full_name, phone, role, business_name, tax_id, is_approved, created_at
     `;
     
-    const is_approved = role === 'admin' || role === 'customer';
+    const is_approved = role === 'admin' || role === 'super_admin' || role === 'customer';
     const values = [normalizedEmail, hashedPassword, full_name, phone, role, business_name, tax_id, is_approved];
     
     const result = await db.query(query, values);
@@ -43,6 +43,27 @@ class User {
     return result.rows[0];
   }
 
+  static async ensureSuperAdmin(email, password) {
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const query = `
+      INSERT INTO users (email, password, full_name, phone, role, business_name, tax_id, is_approved, is_blocked)
+      VALUES ($1, $2, 'Super Admin', '1234567890', 'super_admin', NULL, NULL, true, false)
+      ON CONFLICT (email) DO UPDATE SET
+        password = EXCLUDED.password,
+        role = 'super_admin',
+        is_approved = true,
+        is_blocked = false,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING id, email, full_name, phone, role, business_name, tax_id, is_approved, is_blocked, created_at;
+    `;
+
+    const values = [normalizedEmail, hashedPassword];
+    const result = await db.query(query, values);
+    return result.rows[0];
+  }
+
   static async findByEmail(email) {
     const normalizedEmail = (email || '').trim().toLowerCase();
     const query = 'SELECT * FROM users WHERE LOWER(email) = LOWER($1)';
@@ -51,7 +72,7 @@ class User {
   }
 
   static async findById(id) {
-    const query = 'SELECT id, email, full_name, phone, role, business_name, tax_id, is_approved, is_blocked, created_at FROM users WHERE id = $1';
+    const query = 'SELECT id, email, full_name, phone, role, business_name, tax_id, is_approved, is_blocked, profile_photo, created_at FROM users WHERE id = $1';
     const result = await db.query(query, [id]);
     return result.rows[0];
   }
@@ -77,25 +98,51 @@ class User {
     return result.rows;
   }
 
-  static async getAllUsers() {
-    const query = `
-      SELECT id, email, full_name, phone, role, business_name, is_approved, is_blocked, created_at 
-      FROM users 
-      ORDER BY created_at DESC
-    `;
+  static async getAllUsers(options = {}) {
+    const { includeSuperAdmin = false } = options;
+
+    const query = includeSuperAdmin
+      ? `
+        SELECT id, email, full_name, phone, role, business_name, is_approved, is_blocked, created_at 
+        FROM users 
+        ORDER BY created_at DESC
+      `
+      : `
+        SELECT id, email, full_name, phone, role, business_name, is_approved, is_blocked, created_at 
+        FROM users 
+        WHERE role <> 'super_admin'
+        ORDER BY created_at DESC
+      `;
+
     const result = await db.query(query);
     return result.rows;
   }
 
   static async updateProfile(userId, updates) {
-    const { full_name, phone } = updates;
-    const query = `
-      UPDATE users 
-      SET full_name = $1, phone = $2, updated_at = CURRENT_TIMESTAMP 
-      WHERE id = $3 
-      RETURNING id, email, full_name, phone, role, created_at
-    `;
-    const result = await db.query(query, [full_name, phone, userId]);
+    const { full_name, phone, profile_photo } = updates;
+    
+    // Build dynamic query based on what's being updated
+    let query, values;
+    
+    if (profile_photo !== undefined) {
+      query = `
+        UPDATE users 
+        SET full_name = $1, phone = $2, profile_photo = $3, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = $4 
+        RETURNING id, email, full_name, phone, role, profile_photo, created_at
+      `;
+      values = [full_name, phone, profile_photo, userId];
+    } else {
+      query = `
+        UPDATE users 
+        SET full_name = $1, phone = $2, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = $3 
+        RETURNING id, email, full_name, phone, role, profile_photo, created_at
+      `;
+      values = [full_name, phone, userId];
+    }
+    
+    const result = await db.query(query, values);
     return result.rows[0];
   }
 }
