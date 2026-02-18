@@ -64,10 +64,12 @@ window.performanceTuning = performanceTuning;
 const api = {
   async request(endpoint, options = {}) {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
+          ...(token && !options.headers?.Authorization ? { 'Authorization': `Bearer ${token}` } : {}),
           ...options.headers,
         },
         credentials: 'include'
@@ -253,6 +255,9 @@ const auth = {
     try {
       const data = await api.get('/auth/check');
       this.currentUser = data.authenticated ? data.user : null;
+      if (!data.authenticated) {
+        localStorage.removeItem('token');
+      }
       this.updateUI();
       // Apply profile photo from user data
       if (this.currentUser && this.currentUser.profile_photo) {
@@ -261,6 +266,7 @@ const auth = {
       return this.currentUser;
     } catch (error) {
       this.currentUser = null;
+      localStorage.removeItem('token');
       this.updateUI();
       return null;
     }
@@ -268,6 +274,9 @@ const auth = {
 
   async login(email, password) {
     const data = await api.post('/auth/login', { email, password });
+    if (data?.token) {
+      localStorage.setItem('token', data.token);
+    }
     this.currentUser = data.user;
     this.updateUI();
     return data;
@@ -275,6 +284,9 @@ const auth = {
 
   async register(userData) {
     const data = await api.post('/auth/register', userData);
+    if (data?.token) {
+      localStorage.setItem('token', data.token);
+    }
     this.currentUser = data.user;
     this.updateUI();
     return data;
@@ -282,6 +294,7 @@ const auth = {
 
   async logout() {
     await api.post('/auth/logout');
+    localStorage.removeItem('token');
     this.currentUser = null;
     this.updateUI();
     window.location.href = '/';

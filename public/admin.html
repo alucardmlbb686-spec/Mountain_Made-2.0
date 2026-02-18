@@ -5947,23 +5947,12 @@
                             return;
                         }
 
-                        const formData = new FormData();
-                        formData.append('image', imageFiles[i]);
-                        
                         try {
-                            const uploadResponse = await fetch('/api/upload', {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                },
-                                body: formData
-                            });
-                            
-                            const uploadData = await uploadResponse.json();
-                            if (uploadData.imageUrl) {
-                                images.push(uploadData.imageUrl);
+                            const uploadedImageUrl = await uploadProductImage(imageFiles[i]);
+                            if (uploadedImageUrl) {
+                                images.push(uploadedImageUrl);
                                 if (i === 0) {
-                                    image_url = uploadData.imageUrl; // First image is the main image
+                                    image_url = uploadedImageUrl;
                                 }
                             }
                         } catch (error) {
@@ -6040,23 +6029,12 @@
                             return;
                         }
 
-                        const formData = new FormData();
-                        formData.append('image', imageFiles[i]);
-
                         try {
-                            const uploadResponse = await fetch('/api/upload', {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                },
-                                body: formData
-                            });
-
-                            const uploadData = await uploadResponse.json();
-                            if (uploadData.imageUrl) {
-                                images.push(uploadData.imageUrl);
+                            const uploadedImageUrl = await uploadProductImage(imageFiles[i]);
+                            if (uploadedImageUrl) {
+                                images.push(uploadedImageUrl);
                                 if (i === 0) {
-                                    image_url = uploadData.imageUrl;
+                                    image_url = uploadedImageUrl;
                                 }
                             }
                         } catch (error) {
@@ -6580,23 +6558,12 @@
                             return;
                         }
 
-                        const formData = new FormData();
-                        formData.append('image', imageFiles[i]);
-                        
                         try {
-                            const uploadResponse = await fetch('/api/upload', {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                },
-                                body: formData
-                            });
-                            
-                            const uploadData = await uploadResponse.json();
-                            if (uploadData.imageUrl) {
-                                images.push(uploadData.imageUrl);
+                            const uploadedImageUrl = await uploadProductImage(imageFiles[i]);
+                            if (uploadedImageUrl) {
+                                images.push(uploadedImageUrl);
                                 if (i === 0) {
-                                    updateData.image_url = uploadData.imageUrl; // First image is main
+                                    updateData.image_url = uploadedImageUrl;
                                 }
                             }
                         } catch (error) {

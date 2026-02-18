@@ -113,13 +113,28 @@ app.use('/uploads', express.static(uploadDir));
 
 // Legacy image upload endpoint for admin (kept for backward compatibility)
 app.post('/api/upload', authenticateToken, adminCheck, upload.single('image'), (req, res) => {
-  try {
+  (async () => {
+    try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    
-    // Return the URL path to the uploaded image
-    const imageUrl = `/uploads/${req.file.filename}`;
+
+    let imageUrl = `/uploads/${req.file.filename}`;
+
+    try {
+      const fileBuffer = await fs.promises.readFile(req.file.path);
+      const saved = await database.query(
+        'INSERT INTO uploads (filename, mimetype, data) VALUES ($1, $2, $3) RETURNING id',
+        [req.file.originalname || req.file.filename, req.file.mimetype || 'application/octet-stream', fileBuffer]
+      );
+      const uploadId = saved.rows?.[0]?.id;
+      if (uploadId) {
+        imageUrl = `/uploads/${uploadId}`;
+      }
+    } catch (persistError) {
+      console.warn('Legacy upload DB persist warning:', persistError.message || persistError);
+    }
+
     res.json({ 
       success: true,
       imageUrl,
@@ -129,6 +144,7 @@ app.post('/api/upload', authenticateToken, adminCheck, upload.single('image'), (
     console.error('Upload error:', error);
     res.status(500).json({ error: error.message || 'Failed to upload image' });
   }
+  })();
 });
 
 // Handle upload errors

@@ -30,13 +30,22 @@ const generateToken = (user) => {
   );
 };
 
-const buildCookieOptions = () => ({
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
-  path: '/',
-  maxAge: 7 * 24 * 60 * 60 * 1000
-});
+const isHttpsRequest = (req) => {
+  const directSecure = !!req.secure;
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
+  return directSecure || forwardedProto === 'https';
+};
+
+const buildCookieOptions = (req) => {
+  const forceSecure = String(process.env.COOKIE_SECURE || '').toLowerCase() === 'true';
+  return {
+    httpOnly: true,
+    secure: forceSecure ? true : isHttpsRequest(req),
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  };
+};
 
 const normalizePhoneToE164 = (phone) => {
   const raw = String(phone || '').trim();
@@ -206,10 +215,11 @@ exports.register = async (req, res) => {
 
     const token = generateToken(user);
 
-    res.cookie('token', token, buildCookieOptions());
+    res.cookie('token', token, buildCookieOptions(req));
 
     res.status(201).json({
       message: 'Registration successful',
+      token,
       user: {
         id: user.id,
         email: user.email,
@@ -255,10 +265,11 @@ exports.login = async (req, res) => {
     // Generate token
     const token = generateToken(user);
 
-    res.cookie('token', token, buildCookieOptions());
+    res.cookie('token', token, buildCookieOptions(req));
 
     res.json({
       message: 'Login successful',
+      token,
       user: {
         id: user.id,
         email: user.email,
@@ -325,9 +336,10 @@ exports.googleAuth = async (req, res) => {
       }
 
       const token = generateToken(existingUser);
-      res.cookie('token', token, buildCookieOptions());
+      res.cookie('token', token, buildCookieOptions(req));
       return res.json({
         message: 'Login successful',
+        token,
         user: {
           id: existingUser.id,
           email: existingUser.email,
@@ -385,10 +397,11 @@ exports.googleAuth = async (req, res) => {
     }
 
     const token = generateToken(user);
-    res.cookie('token', token, buildCookieOptions());
+    res.cookie('token', token, buildCookieOptions(req));
 
     return res.status(201).json({
       message: 'Registration successful',
+      token,
       user: {
         id: user.id,
         email: user.email,
@@ -456,12 +469,7 @@ exports.verifyPhoneOtp = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/'
-  });
+  res.clearCookie('token', buildCookieOptions(req));
   res.json({ message: 'Logout successful' });
 };
 
