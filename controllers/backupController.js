@@ -65,6 +65,75 @@ async function countUsersRowsInSql(sqlFilePath) {
   }
 }
 
+async function countTableRowsInSql(sqlFilePath, tableName) {
+  try {
+    const stream = fsSync.createReadStream(sqlFilePath, { encoding: 'utf8' });
+    const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+
+    const markerRegex = new RegExp(`^--\\s*APP_${String(tableName || '').toUpperCase()}_TOTAL\\s*:\\s*(\\d+)\\s*$`);
+    const copyPrefix = `COPY public.${tableName} `;
+
+    let inCopyBlock = false;
+    let count = 0;
+    let markerCount = null;
+
+    for await (const line of rl) {
+      if (markerCount === null) {
+        const markerMatch = line.match(markerRegex);
+        if (markerMatch) {
+          markerCount = parseInt(markerMatch[1], 10);
+        }
+      }
+
+      if (!inCopyBlock) {
+        if (line.startsWith(copyPrefix) && line.includes(' FROM stdin;')) {
+          inCopyBlock = true;
+        }
+        continue;
+      }
+
+      if (line.trim() === '\\.') {
+        break;
+      }
+
+      if (line.trim().length > 0) {
+        count += 1;
+      }
+    }
+
+    if (typeof markerCount === 'number' && !Number.isNaN(markerCount)) {
+      return markerCount;
+    }
+
+    return inCopyBlock ? count : 0;
+  } catch (error) {
+    console.warn(`Could not inspect ${tableName} rows in SQL backup:`, error.message);
+    return null;
+  }
+}
+
+async function appendTableUpsertBlock(sqlFilePath, tableName, rows) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return;
+  }
+
+  const columns = Object.keys(rows[0]);
+  const quotedColumns = columns.map(col => `"${col}"`).join(', ');
+  const conflictTarget = columns.includes('id') ? 'id' : columns[0];
+  const updateCols = columns.filter(col => col !== conflictTarget);
+  const updateSet = updateCols.map(col => `"${col}" = EXCLUDED."${col}"`).join(', ');
+
+  let block = `\n\n-- APP_${String(tableName).toUpperCase()}_TOTAL:${rows.length}\n`;
+  block += `-- App-level ${tableName} backup (ensures all ${tableName} rows are restorable)\n`;
+
+  for (const row of rows) {
+    const values = columns.map(col => toSqlLiteral(row[col])).join(', ');
+    block += `INSERT INTO public.${tableName} (${quotedColumns}) VALUES (${values}) ON CONFLICT ("${conflictTarget}") DO UPDATE SET ${updateSet};\n`;
+  }
+
+  await fs.appendFile(sqlFilePath, block, 'utf8');
+}
+
 // Get available drives and their space (Windows)
 exports.getDrives = async (req, res) => {
   try {
@@ -202,37 +271,40 @@ const createBackupInternal = async ({ drive, folderPath, createdByUserId = null 
     try {
       await execAsync(pgDumpCommand, { env, windowsHide: true });
       
-      // Append app-level full users upsert block so users are always included even if pg_dump COPY is partial
+      // Append app-level critical table upsert blocks so data is restorable even if pg_dump COPY is partial
       const usersResult = await db.query('SELECT * FROM users ORDER BY id ASC');
       const usersRows = usersResult.rows || [];
+      const ordersResult = await db.query('SELECT * FROM orders ORDER BY id ASC');
+      const ordersRows = ordersResult.rows || [];
+      const orderItemsResult = await db.query('SELECT * FROM order_items ORDER BY id ASC');
+      const orderItemsRows = orderItemsResult.rows || [];
 
-      if (usersRows.length > 0) {
-        const columns = Object.keys(usersRows[0]);
-        const quotedColumns = columns.map(col => `"${col}"`).join(', ');
-        const conflictTarget = columns.includes('id') ? 'id' : 'email';
-        const updateCols = columns.filter(col => col !== conflictTarget);
-        const updateSet = updateCols.map(col => `"${col}" = EXCLUDED."${col}"`).join(', ');
-
-        let usersSql = '\n\n-- APP_USERS_TOTAL:' + usersRows.length + '\n';
-        usersSql += '-- App-level users backup (ensures all users are restorable)\n';
-
-        for (const row of usersRows) {
-          const values = columns.map(col => toSqlLiteral(row[col])).join(', ');
-          usersSql += `INSERT INTO public.users (${quotedColumns}) VALUES (${values}) ON CONFLICT ("${conflictTarget}") DO UPDATE SET ${updateSet};\n`;
-        }
-
-        await fs.appendFile(filePath, usersSql, 'utf8');
-      }
+      await appendTableUpsertBlock(filePath, 'users', usersRows);
+      await appendTableUpsertBlock(filePath, 'orders', ordersRows);
+      await appendTableUpsertBlock(filePath, 'order_items', orderItemsRows);
 
       // Get file size after append
       const stats = await fs.stat(filePath);
       const fileSizeBytes = stats.size;
       const fileSizeMB = (fileSizeBytes / (1024 ** 2)).toFixed(2);
 
-      // Verify backup file contains users rows (marker-aware)
+      // Verify backup file contains critical table rows (marker-aware)
       const usersRowsInDump = usersRows.length;
       if (usersRowsInDump < usersTotal) {
         throw new Error(`Backup verification failed: users in database=${usersTotal}, users in backup=${usersRowsInDump}`);
+      }
+
+      const ordersRowsInDump = await countTableRowsInSql(filePath, 'orders');
+      const orderItemsRowsInDump = await countTableRowsInSql(filePath, 'order_items');
+      const ordersTotal = ordersRows.length;
+      const orderItemsTotal = orderItemsRows.length;
+
+      if (typeof ordersRowsInDump === 'number' && ordersRowsInDump < ordersTotal) {
+        throw new Error(`Backup verification failed: orders in database=${ordersTotal}, orders in backup=${ordersRowsInDump}`);
+      }
+
+      if (typeof orderItemsRowsInDump === 'number' && orderItemsRowsInDump < orderItemsTotal) {
+        throw new Error(`Backup verification failed: order_items in database=${orderItemsTotal}, order_items in backup=${orderItemsRowsInDump}`);
       }
 
       // Save backup record to database
@@ -259,7 +331,11 @@ const createBackupInternal = async ({ drive, folderPath, createdByUserId = null 
           snapshot: {
             usersTotal,
             nonAdminUsers,
-            usersRowsInDump
+            usersRowsInDump,
+            ordersTotal,
+            orderItemsTotal,
+            ordersRowsInDump,
+            orderItemsRowsInDump
           }
         }
       };
