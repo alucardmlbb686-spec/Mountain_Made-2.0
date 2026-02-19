@@ -75,15 +75,28 @@
             flex-direction: column;
             border-radius: 14px;
             overflow: hidden;
+            transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .product-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-200);
         }
 
         .product-card .card-image {
             display: block;
             width: 100%;
             height: auto; /* override base fixed height */
-            aspect-ratio: 1 / 1; /* square image */
+            aspect-ratio: 4 / 3;
             object-fit: cover;
             background: #f5f5f5;
+            transition: transform 0.35s ease;
+        }
+
+        .product-card:hover .card-image {
+            transform: scale(1.04);
         }
 
         .product-card .card-footer {
@@ -92,6 +105,10 @@
             gap: 0.6rem;
             flex-wrap: wrap;
             padding: 0 1rem 1rem;
+        }
+
+        .product-card .add-cart-cta {
+            font-weight: 700;
         }
 
         /* Mobile filter toggle button (hidden on desktop) */
@@ -730,7 +747,7 @@
                     ${p.stock_quantity === 0 ? '<span class="product-badge" style="background: var(--error);">Out of Stock</span>' : ''}
                     ${p.stock_quantity > 0 && p.stock_quantity < 10 ? '<span class="product-badge">Low Stock</span>' : ''}
                     <a href="/product-details?id=${p.id}" style="text-decoration: none; color: inherit;">
-                        <img src="${p.image_url || '/images/placeholder.jpg'}" alt="${p.name}" class="card-image" onerror="this.src='/images/placeholder.jpg'">
+                        <img src="${p.image_url || '/images/placeholder.jpg'}" alt="${p.name}" class="card-image" loading="lazy" decoding="async" onerror="this.src='/images/placeholder.jpg'">
                         <div class="card-content">
                             <h3 class="card-title">${p.name}</h3>
                             <p class="card-description">${p.description || ''}</p>
@@ -759,7 +776,7 @@
                                    max="${p.stock_quantity || 99}"
                                    style="width:64px; padding:0.25rem 0.35rem; font-size:0.85rem;">
                         </div>
-                        <button class="btn btn-primary btn-sm" onclick="addToCart(${p.id})" ${p.stock_quantity === 0 ? 'disabled' : ''}>
+                        <button class="btn btn-primary btn-sm add-cart-cta" onclick="addToCart(${p.id})" ${p.stock_quantity === 0 ? 'disabled' : ''}>
                             <i class="fas fa-cart-plus"></i> ${p.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
                         </button>
                         <button class="btn btn-success btn-sm" onclick="buyNow(${p.id})" ${p.stock_quantity === 0 ? 'disabled' : ''} style="margin-left: 0.5rem;">
@@ -768,6 +785,10 @@
                     </div>
                 </div>
             `).join('');
+
+            if (window.optimizeDynamicImages) {
+                window.optimizeDynamicImages(grid);
+            }
 
             // After rendering, apply wholesale-specific quantity rules
             applyWholesaleQuantityRules();
