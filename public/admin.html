@@ -170,6 +170,8 @@
             padding: 2rem;
             background: var(--bg);
             overflow-x: auto;
+            min-width: 0;
+            max-width: 100%;
         }
 
         .admin-header {
@@ -1133,7 +1135,8 @@
             /* Slightly smaller base table width so it fits better on tablets */
             .data-table {
                 font-size: 0.85rem;
-                min-width: 520px;
+                min-width: 0;
+                width: 100%;
             }
 
             .data-table thead th,
@@ -1175,6 +1178,11 @@
             .admin-header {
                 flex-direction: column;
                 align-items: flex-start;
+            }
+
+            /* Keep horizontal scrolling scoped to tables, not the whole page */
+            .admin-main {
+                overflow-x: hidden;
             }
 
             .upload-area {
