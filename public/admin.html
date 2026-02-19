@@ -7321,6 +7321,10 @@
             return `${driveName}\\${effectiveFolder}`;
         }
 
+        function getBackupDownloadUrl(backupId) {
+            return `/api/backup/${backupId}/download`;
+        }
+
         window.loadDrives = async function loadDrives() {
             try {
                 const response = await api.get('/backup/drives');
@@ -7420,7 +7424,11 @@
 
                     const backupId = response?.backup?.id;
                     const backupPath = response?.backup?.filePath || basePath;
-                    window.showSuccessModal(`Backup created successfully!<br>File: <b>${response.backup.filename}</b><br>Size: <b>${response.backup.fileSizeMB} MB</b><br>Server path: <code>${backupPath}</code><br><br><button class="btn btn-primary btn-sm" onclick="downloadBackup(${backupId})"><i class='fas fa-download'></i> Download Backup</button>`);
+                    const downloadAction = backupId
+                        ? `<a class="btn btn-primary btn-sm" href="${getBackupDownloadUrl(backupId)}" target="_blank" rel="noopener"><i class='fas fa-download'></i> Download Backup</a>`
+                        : `<span style="color: var(--text-muted);">Download link unavailable. Check backup history.</span>`;
+
+                    window.showSuccessModal(`Backup created successfully!<br>File: <b>${response.backup.filename}</b><br>Size: <b>${response.backup.fileSizeMB} MB</b><br>Server path: <code>${backupPath}</code><br><br>${downloadAction}`);
                     // Refresh backup history
                     await loadBackupHistory();
 
@@ -7460,12 +7468,12 @@
                         <tr>
                             <td>${formattedDate}</td>
                             <td><code style="font-size: 0.875rem;">${backup.filename}</code></td>
-                            <td><small style="color: var(--text-muted);">${backup.drive}\\...</small></td>
+                            <td><small style="color: var(--text-muted);">${backup.drive}${backup.drive === '/' ? '...' : '\\...'}</small></td>
                             <td>${backup.fileSizeMB} MB</td>
                             <td>${statusBadge}</td>
                             <td>${backup.createdBy || '-'}</td>
                             <td>
-                                ${backup.canDownload ? `<button class="btn btn-secondary btn-sm" onclick="downloadBackup(${backup.id})" title="Download Backup"><i class="fas fa-download"></i></button>` : ''}
+                                ${backup.canDownload ? `<a class="btn btn-secondary btn-sm" href="${getBackupDownloadUrl(backup.id)}" target="_blank" rel="noopener" title="Download Backup"><i class="fas fa-download"></i></a>` : ''}
                                 <button class="btn btn-danger btn-sm" onclick="deleteBackupRecord(${backup.id})" title="Delete Record">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -7482,35 +7490,13 @@
 
         window.downloadBackup = async function downloadBackup(backupId) {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/backup/${backupId}/download`, {
-                    method: 'GET',
-                    headers: token ? { Authorization: `Bearer ${token}` } : {},
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    let message = 'Failed to download backup';
-                    try {
-                        const errorData = await response.json();
-                        message = errorData.error || message;
-                    } catch (_) {}
-                    throw new Error(message);
-                }
-
-                const disposition = response.headers.get('content-disposition') || '';
-                const filenameMatch = disposition.match(/filename="?([^\";]+)"?/i);
-                const filename = filenameMatch ? filenameMatch[1] : `backup-${backupId}.sql`;
-
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
                 const anchor = document.createElement('a');
-                anchor.href = url;
-                anchor.download = filename;
+                anchor.href = getBackupDownloadUrl(backupId);
+                anchor.target = '_blank';
+                anchor.rel = 'noopener';
                 document.body.appendChild(anchor);
                 anchor.click();
                 anchor.remove();
-                window.URL.revokeObjectURL(url);
             } catch (error) {
                 showAlert(error.message || 'Download failed', 'error');
             }
