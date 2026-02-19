@@ -8,6 +8,21 @@ const readline = require('readline');
 const path = require('path');
 const execAsync = promisify(exec);
 const isWindows = process.platform === 'win32';
+let autoBackupTimer = null;
+let isAutoBackupRunning = false;
+
+const toBool = (value) => String(value || '').trim().toLowerCase() === 'true';
+
+const getAutoBackupIntervalMs = () => {
+  const minutesRaw = Number(process.env.AUTO_BACKUP_INTERVAL_MINUTES || 0);
+  if (Number.isFinite(minutesRaw) && minutesRaw > 0) {
+    return Math.max(5, minutesRaw) * 60 * 1000;
+  }
+
+  const hoursRaw = Number(process.env.AUTO_BACKUP_INTERVAL_HOURS || 24);
+  const safeHours = Number.isFinite(hoursRaw) && hoursRaw > 0 ? hoursRaw : 24;
+  return safeHours * 60 * 60 * 1000;
+};
 
 function toSqlLiteral(value) {
   if (value === null || value === undefined) return 'NULL';
@@ -115,10 +130,7 @@ exports.getDrives = async (req, res) => {
   }
 };
 
-// Create database backup
-exports.createBackup = async (req, res) => {
-  try {
-    const { drive, folderPath } = req.body;
+const createBackupInternal = async ({ drive, folderPath, createdByUserId = null }) => {
     const driveInput = (drive || '').trim();
     const envBackupRoot = (process.env.BACKUP_DIR || '').trim();
 
@@ -128,7 +140,7 @@ exports.createBackup = async (req, res) => {
     let backupRoot;
     if (isWindows) {
       if (!driveInput && !envBackupRoot) {
-        return res.status(400).json({ error: 'Drive is required on Windows' });
+        throw new Error('Drive is required on Windows');
       }
       backupRoot = envBackupRoot || `${driveInput}\\`;
     } else {
@@ -145,7 +157,7 @@ exports.createBackup = async (req, res) => {
     try {
       await fs.mkdir(backupDir, { recursive: true });
     } catch (err) {
-      return res.status(500).json({ error: 'Failed to create backup directory: ' + err.message });
+      throw new Error('Failed to create backup directory: ' + err.message);
     }
 
     // Generate filename with timestamp
@@ -229,13 +241,13 @@ exports.createBackup = async (req, res) => {
         file_path: filePath,
         drive: driveLabel,
         file_size: fileSizeBytes,
-        created_by: req.user.id,
+        created_by: createdByUserId,
         status: 'completed'
       });
 
       console.log('✓ Backup completed successfully');
 
-      res.json({
+      return {
         message: 'Database backup created successfully',
         backup: {
           id: backupRecord.id,
@@ -250,7 +262,7 @@ exports.createBackup = async (req, res) => {
             usersRowsInDump
           }
         }
-      });
+      };
     } catch (pgError) {
       console.error('pg_dump error:', pgError);
       
@@ -260,7 +272,7 @@ exports.createBackup = async (req, res) => {
         file_path: filePath,
         drive: driveLabel,
         file_size: 0,
-        created_by: req.user.id,
+        created_by: createdByUserId,
         status: 'failed',
         error_message: pgError.message
       });
@@ -271,17 +283,84 @@ exports.createBackup = async (req, res) => {
         ? 'pg_dump executable not found. Set PG_DUMP_PATH in your .env to the full path of pg_dump.exe (e.g., C:/Program Files/PostgreSQL/16/bin/pg_dump.exe).'
         : 'Database backup failed: ' + pgError.message;
 
-      res.status(500).json({ 
-        error: errorMessage,
-        details: notRecognized
-          ? 'Install PostgreSQL (with pgAdmin) and point PG_DUMP_PATH to pg_dump.exe, or add the PostgreSQL bin directory to your system PATH.'
-          : 'Make sure PostgreSQL bin directory is in your system PATH'
-      });
+      const err = new Error(errorMessage);
+      err.details = notRecognized
+        ? 'Install PostgreSQL (with pgAdmin) and point PG_DUMP_PATH to pg_dump.exe, or add the PostgreSQL bin directory to your system PATH.'
+        : 'Make sure PostgreSQL bin directory is in your system PATH';
+      throw err;
     }
+};
+
+// Create database backup
+exports.createBackup = async (req, res) => {
+  try {
+    const { drive, folderPath } = req.body;
+    const response = await createBackupInternal({
+      drive,
+      folderPath,
+      createdByUserId: req.user?.id || null
+    });
+
+    res.json(response);
   } catch (error) {
     console.error('Create backup error:', error);
-    res.status(500).json({ error: 'Failed to create backup: ' + error.message });
+    res.status(500).json({
+      error: error.message,
+      details: error.details || 'Backup creation failed'
+    });
   }
+};
+
+exports.runAutomatedBackup = async () => {
+  const autoDrive = process.env.AUTO_BACKUP_DRIVE || (isWindows ? 'C:' : '/');
+  const autoFolder = process.env.AUTO_BACKUP_FOLDER || 'mountain_made_backups';
+  return createBackupInternal({
+    drive: autoDrive,
+    folderPath: autoFolder,
+    createdByUserId: null
+  });
+};
+
+exports.startAutoBackupScheduler = () => {
+  if (!toBool(process.env.AUTO_BACKUP_ENABLED)) {
+    return;
+  }
+
+  if (autoBackupTimer) {
+    return;
+  }
+
+  const intervalMs = getAutoBackupIntervalMs();
+
+  const runJob = async () => {
+    if (isAutoBackupRunning) {
+      return;
+    }
+
+    isAutoBackupRunning = true;
+    try {
+      const result = await exports.runAutomatedBackup();
+      const fileName = result?.backup?.filename || 'unknown';
+      console.log(`✓ Auto backup completed: ${fileName}`);
+    } catch (error) {
+      console.error('Auto backup failed:', error.message || error);
+    } finally {
+      isAutoBackupRunning = false;
+    }
+  };
+
+  autoBackupTimer = setInterval(runJob, intervalMs);
+
+  if (typeof autoBackupTimer.unref === 'function') {
+    autoBackupTimer.unref();
+  }
+
+  if (toBool(process.env.AUTO_BACKUP_RUN_ON_STARTUP)) {
+    runJob();
+  }
+
+  const intervalMinutes = Math.round(intervalMs / 60000);
+  console.log(`✓ Auto backup scheduler enabled (every ${intervalMinutes} minutes)`);
 };
 
 // Get all backups

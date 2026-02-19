@@ -12,6 +12,7 @@ const { initializeDatabase } = database;
 const User = require('./models/User');
 const { authenticateToken } = require('./middleware/auth');
 const { adminCheck } = require('./middleware/adminCheck');
+const backupController = require('./controllers/backupController');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -492,6 +493,8 @@ const initializeApp = async () => {
         console.warn('⚠️  ENABLE_TEST_ACCOUNTS=true but TEST_WHOLESALE_EMAIL/TEST_WHOLESALE_PASSWORD not fully set. Skipping test wholesale.');
       }
     }
+
+    backupController.startAutoBackupScheduler();
 
     console.log('✓ Application initialized successfully');
   } catch (error) {

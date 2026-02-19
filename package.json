@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "sync-backups-local": "node scripts/local_backup_sync.js"
   },
   "keywords": [
     "ecommerce",

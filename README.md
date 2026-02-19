@@ -190,6 +190,61 @@ Then you can log in normally from `/login`.
 - **Password**: Admin@123 (default)
 - **Features**: Full system access, user management, product management
 
+## 🔁 Automatic Backup (Render + Local Drive)
+
+Render cannot directly write files to your PC drive. To make this work dynamically, use 2 layers:
+
+1. **Render auto-backup scheduler** (server creates backups automatically)
+2. **Local sync worker** (your PC downloads new backups automatically into your drive folder)
+
+### A) Enable automatic backups on Render
+
+Set these environment variables in Render:
+
+```env
+AUTO_BACKUP_ENABLED=true
+AUTO_BACKUP_INTERVAL_HOURS=24
+AUTO_BACKUP_RUN_ON_STARTUP=true
+AUTO_BACKUP_FOLDER=mountain_made_backups
+
+# Optional (Linux/Render default is /tmp if BACKUP_DIR not set)
+BACKUP_DIR=/tmp
+```
+
+Notes:
+- On Render (Linux), backups are stored on server filesystem (typically `/tmp`).
+- If the service restarts/redeploys, old files may disappear from server storage.
+- Keep local sync enabled so backups are copied to your own drive permanently.
+
+### B) Auto-download Render backups to your Windows drive
+
+Create a local `.env` on your computer (not on Render) with:
+
+```env
+BACKUP_SYNC_BASE_URL=https://your-render-service.onrender.com
+BACKUP_SYNC_EMAIL=your_admin_or_super_admin_email
+BACKUP_SYNC_PASSWORD=your_admin_or_super_admin_password
+BACKUP_LOCAL_DIR=D:\Backups\MountainMade
+
+BACKUP_SYNC_INTERVAL_MINUTES=30
+BACKUP_SYNC_MAX_PER_RUN=3
+BACKUP_SYNC_RUN_ONCE=false
+```
+
+Then run on your PC:
+
+```bash
+npm run sync-backups-local
+```
+
+This worker will:
+- log in securely,
+- check backup history,
+- download new completed backups,
+- save them into your local folder (`BACKUP_LOCAL_DIR`).
+
+For full automation, run this command with Windows Task Scheduler at startup/logon.
+
 ### Customer Registration
 1. Go to http://localhost:3000/register
 2. Select "Customer" account type
