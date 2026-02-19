@@ -297,15 +297,9 @@ exports.restoreDatabase = async (req, res) => {
       console.warn('Post-restore verification warning:', verifyError.message);
     }
 
-    if (typeof expectedUsersFromBackup === 'number' && usersCount < expectedUsersFromBackup) {
-      return res.status(500).json({
-        error: 'Restore completed with missing users data.',
-        verification: {
-          expectedUsersFromBackup,
-          restoredUsersCount: usersCount
-        }
-      });
-    }
+    const hasUsersMismatch =
+      typeof expectedUsersFromBackup === 'number' &&
+      usersCount < expectedUsersFromBackup;
 
     if (typeof expectedUsersFromBackup === 'number' && expectedUsersFromBackup <= 1) {
       return res.json({
@@ -319,10 +313,15 @@ exports.restoreDatabase = async (req, res) => {
     }
 
     res.json({
-      message: 'Database restored successfully.',
+      message: hasUsersMismatch
+        ? 'Database restored successfully, but users verification found fewer users than expected from backup.'
+        : 'Database restored successfully.',
       verification: {
         usersCount,
-        expectedUsersFromBackup
+        expectedUsersFromBackup,
+        warning: hasUsersMismatch
+          ? `Expected users from backup: ${expectedUsersFromBackup}, restored users: ${usersCount}.`
+          : null
       }
     });
   } catch (error) {

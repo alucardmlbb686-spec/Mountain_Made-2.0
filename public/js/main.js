@@ -1276,15 +1276,37 @@ window.optimizeDynamicImages = optimizeDynamicImages;
 window.handleRestoreDatabase = async function(event) {
   event.preventDefault();
   const fileInput = document.getElementById('restore-sqlfile');
+  const restoreForm = document.getElementById('restore-form');
+  const statusEl = document.getElementById('restore-status');
+  const submitBtn = restoreForm?.querySelector('button[type="submit"]');
   const file = fileInput?.files?.[0];
   if (!file) {
     showAlert('Please select a .sql file to restore.', 'error');
     return;
   }
+
+  const setRestoreStatus = (message, type = 'info') => {
+    if (!statusEl) return;
+    const palette = {
+      info: '#2563eb',
+      success: '#15803d',
+      error: '#b91c1c'
+    };
+    statusEl.textContent = message;
+    statusEl.style.color = palette[type] || palette.info;
+  };
+
   const formData = new FormData();
   formData.append('sqlfile', file);
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Restoring...';
+  }
+
   try {
     showAlert('Restoring database...', 'info');
+    setRestoreStatus('Restoring database... Please wait.', 'info');
     const token = localStorage.getItem('token');
     const response = await fetch('/api/restore', {
       method: 'POST',
@@ -1304,18 +1326,33 @@ window.handleRestoreDatabase = async function(event) {
     if (response.ok) {
       const restored = data?.verification?.usersCount;
       const expected = data?.verification?.expectedUsersFromBackup;
+      const backendMessage = data?.message || 'Database restored successfully.';
       const details = (typeof restored === 'number')
         ? ` Restored users: ${restored}${typeof expected === 'number' ? ` (backup users: ${expected})` : ''}.`
         : '';
-      window.showSuccessModal(`Database restored successfully!${details}`);
+      const successMessage = `${backendMessage}${details}`;
+      if (typeof window.showSuccessModal === 'function') {
+        window.showSuccessModal(successMessage);
+      }
+      showAlert('Database restored successfully', 'success');
+      setRestoreStatus('Database restored successfully.', 'success');
+      if (fileInput) fileInput.value = '';
     } else {
       if (response.status === 401 || response.status === 403) {
         showAlert('Restore denied. Please login as Super Admin and try again.', 'error');
+        setRestoreStatus('Restore denied. Please login as Super Admin and try again.', 'error');
       } else {
         showAlert(data.error || 'Restore failed', 'error');
+        setRestoreStatus(data.error || 'Restore failed.', 'error');
       }
     }
   } catch (error) {
     showAlert(error.message || 'Restore failed', 'error');
+    setRestoreStatus(error.message || 'Restore failed.', 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fas fa-upload"></i> Restore';
+    }
   }
 };
