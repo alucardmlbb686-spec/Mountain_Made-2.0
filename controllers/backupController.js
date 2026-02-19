@@ -7,6 +7,7 @@ const fsSync = require('fs');
 const readline = require('readline');
 const path = require('path');
 const execAsync = promisify(exec);
+const isWindows = process.platform === 'win32';
 
 function toSqlLiteral(value) {
   if (value === null || value === undefined) return 'NULL';
@@ -52,27 +53,64 @@ async function countUsersRowsInSql(sqlFilePath) {
 // Get available drives and their space (Windows)
 exports.getDrives = async (req, res) => {
   try {
-    // Use PowerShell to get drive information
-    const { stdout } = await execAsync(
-      'powershell -Command "Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name=\'FreeSpace\';Expression={$_.Free}}, @{Name=\'TotalSpace\';Expression={$_.Used + $_.Free}} | ConvertTo-Json"',
-      { windowsHide: true }
-    );
+    if (isWindows) {
+      const { stdout } = await execAsync(
+        'powershell -Command "Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name=\'FreeSpace\';Expression={$_.Free}}, @{Name=\'TotalSpace\';Expression={$_.Used + $_.Free}} | ConvertTo-Json"',
+        { windowsHide: true }
+      );
 
-    const drives = JSON.parse(stdout);
-    const driveList = (Array.isArray(drives) ? drives : [drives])
-      .filter(drive => drive.FreeSpace !== null)
-      .map(drive => ({
-        name: drive.Name + ':',
-        freeSpaceGB: (drive.FreeSpace / (1024 ** 3)).toFixed(2),
-        totalSpaceGB: (drive.TotalSpace / (1024 ** 3)).toFixed(2),
-        usedSpaceGB: ((drive.TotalSpace - drive.FreeSpace) / (1024 ** 3)).toFixed(2),
-        freeSpaceBytes: drive.FreeSpace,
-        totalSpaceBytes: drive.TotalSpace
-      }));
+      const drives = JSON.parse(stdout);
+      const driveList = (Array.isArray(drives) ? drives : [drives])
+        .filter(drive => drive.FreeSpace !== null)
+        .map(drive => ({
+          name: drive.Name + ':',
+          freeSpaceGB: (drive.FreeSpace / (1024 ** 3)).toFixed(2),
+          totalSpaceGB: (drive.TotalSpace / (1024 ** 3)).toFixed(2),
+          usedSpaceGB: ((drive.TotalSpace - drive.FreeSpace) / (1024 ** 3)).toFixed(2),
+          freeSpaceBytes: drive.FreeSpace,
+          totalSpaceBytes: drive.TotalSpace
+        }));
 
-    res.json({ drives: driveList });
+      return res.json({ drives: driveList });
+    }
+
+    const { stdout } = await execAsync('df -kP /');
+    const lines = stdout.trim().split('\n');
+    const dataLine = lines[lines.length - 1] || '';
+    const parts = dataLine.trim().split(/\s+/);
+
+    const totalKB = Number(parts[1] || 0);
+    const usedKB = Number(parts[2] || 0);
+    const availableKB = Number(parts[3] || 0);
+
+    const totalBytes = totalKB * 1024;
+    const usedBytes = usedKB * 1024;
+    const freeBytes = availableKB * 1024;
+
+    return res.json({
+      drives: [{
+        name: '/',
+        freeSpaceGB: (freeBytes / (1024 ** 3)).toFixed(2),
+        totalSpaceGB: (totalBytes / (1024 ** 3)).toFixed(2),
+        usedSpaceGB: (usedBytes / (1024 ** 3)).toFixed(2),
+        freeSpaceBytes: freeBytes,
+        totalSpaceBytes: totalBytes
+      }]
+    });
   } catch (error) {
     console.error('Get drives error:', error);
+    if (!isWindows) {
+      return res.json({
+        drives: [{
+          name: '/',
+          freeSpaceGB: '0.00',
+          totalSpaceGB: '0.00',
+          usedSpaceGB: '0.00',
+          freeSpaceBytes: 0,
+          totalSpaceBytes: 0
+        }]
+      });
+    }
     res.status(500).json({ error: 'Failed to get drive information' });
   }
 };
@@ -81,20 +119,27 @@ exports.getDrives = async (req, res) => {
 exports.createBackup = async (req, res) => {
   try {
     const { drive, folderPath } = req.body;
-
-    if (!drive) {
-      return res.status(400).json({ error: 'Drive is required' });
-    }
+    const driveInput = (drive || '').trim();
+    const envBackupRoot = (process.env.BACKUP_DIR || '').trim();
 
     // Allow optional folderPath (can be empty string)
     const safeFolderPath = (folderPath || '').trim();
 
-    // Decide backup directory
-    // - If a folder path is provided, use drive + that folder
-    // - If empty, create/use a default "mountain_made_backups" folder on the selected drive
+    let backupRoot;
+    if (isWindows) {
+      if (!driveInput && !envBackupRoot) {
+        return res.status(400).json({ error: 'Drive is required on Windows' });
+      }
+      backupRoot = envBackupRoot || `${driveInput}\\`;
+    } else {
+      backupRoot = envBackupRoot || '/tmp';
+    }
+
     const backupDir = safeFolderPath
-      ? path.join(drive + '\\', safeFolderPath)
-      : path.join(drive + '\\', 'mountain_made_backups');
+      ? path.join(backupRoot, safeFolderPath)
+      : path.join(backupRoot, 'mountain_made_backups');
+
+    const driveLabel = driveInput || (isWindows ? backupRoot : '/');
     
     // Create directory if it doesn't exist
     try {
@@ -182,7 +227,7 @@ exports.createBackup = async (req, res) => {
       const backupRecord = await Backup.create({
         filename,
         file_path: filePath,
-        drive,
+        drive: driveLabel,
         file_size: fileSizeBytes,
         created_by: req.user.id,
         status: 'completed'
@@ -196,7 +241,7 @@ exports.createBackup = async (req, res) => {
           id: backupRecord.id,
           filename,
           filePath,
-          drive,
+          drive: driveLabel,
           fileSizeMB,
           createdAt: backupRecord.created_at,
           snapshot: {
@@ -213,7 +258,7 @@ exports.createBackup = async (req, res) => {
       await Backup.create({
         filename,
         file_path: filePath,
-        drive,
+        drive: driveLabel,
         file_size: 0,
         created_by: req.user.id,
         status: 'failed',
