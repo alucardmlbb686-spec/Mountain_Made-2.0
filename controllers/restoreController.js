@@ -187,6 +187,15 @@ const isPsqlMissingError = (error) => {
   );
 };
 
+const isNonCriticalPsqlPermissionError = (error) => {
+  const message = `${error?.message || ''} ${error?.stderr || ''}`.toLowerCase();
+  return (
+    message.includes('permission denied to change default privileges') ||
+    message.includes('must be member of role') ||
+    message.includes('role') && message.includes('does not exist')
+  );
+};
+
 const syncTableSequence = async (tableName, columnName = 'id') => {
   const sequenceResult = await db.query(
     `SELECT pg_get_serial_sequence($1, $2) AS seq`,
@@ -284,6 +293,39 @@ async function countUsersRowsInSql(sqlFilePath) {
   }
 }
 
+async function countTableRowsInSql(sqlFilePath, tableName) {
+  try {
+    const stream = fs.createReadStream(sqlFilePath, { encoding: 'utf8' });
+    const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+
+    const copyPrefix = `COPY public.${tableName} `;
+    let inCopyBlock = false;
+    let count = 0;
+
+    for await (const line of rl) {
+      if (!inCopyBlock) {
+        if (line.startsWith(copyPrefix) && line.includes(' FROM stdin;')) {
+          inCopyBlock = true;
+        }
+        continue;
+      }
+
+      if (line.trim() === '\\.') {
+        break;
+      }
+
+      if (line.trim().length > 0) {
+        count += 1;
+      }
+    }
+
+    return inCopyBlock ? count : null;
+  } catch (error) {
+    console.warn(`Could not inspect ${tableName} rows in SQL file:`, error.message);
+    return null;
+  }
+}
+
 // Restore database from uploaded SQL file
 exports.restoreDatabase = async (req, res) => {
   let sqlFilePath;
@@ -295,6 +337,8 @@ exports.restoreDatabase = async (req, res) => {
 
     // Inspect uploaded SQL so we know how many user rows are in the backup file itself
     const expectedUsersFromBackup = await countUsersRowsInSql(sqlFilePath);
+    const expectedOrdersFromBackup = await countTableRowsInSql(sqlFilePath, 'orders');
+    const expectedOrderItemsFromBackup = await countTableRowsInSql(sqlFilePath, 'order_items');
 
     // Get DB credentials
     const dbHost = process.env.DB_HOST || 'localhost';
@@ -315,13 +359,25 @@ exports.restoreDatabase = async (req, res) => {
       const restoreCmd = `"${psqlBinary}" -h ${dbHost} -p ${dbPort} -U ${dbUser} -d ${dbName} -v ON_ERROR_STOP=1 -f "${sqlFilePath}"`;
       await execAsync(restoreCmd, { env, windowsHide: true });
     } catch (psqlError) {
-      console.warn('psql restore failed. Falling back to pg client restore.', psqlError?.message || psqlError);
+      if (isPsqlMissingError(psqlError)) {
+        console.warn('psql not available. Falling back to pg client restore.');
 
-      // Reset again to avoid partial state from failed psql run.
-      await db.query('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;');
+        await db.query('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;');
+        restoreMethod = 'pg-fallback(no-psql)';
+        fallbackStats = await restoreWithPgClient(sqlFilePath);
+      } else if (isNonCriticalPsqlPermissionError(psqlError)) {
+        console.warn('psql restore hit non-critical permission errors. Retrying in tolerant mode.');
 
-      restoreMethod = isPsqlMissingError(psqlError) ? 'pg-fallback(no-psql)' : 'pg-fallback(psql-failed)';
-      fallbackStats = await restoreWithPgClient(sqlFilePath);
+        const tolerantCmd = `"${psqlBinary}" -h ${dbHost} -p ${dbPort} -U ${dbUser} -d ${dbName} -v ON_ERROR_STOP=0 -f "${sqlFilePath}"`;
+        await execAsync(tolerantCmd, { env, windowsHide: true });
+        restoreMethod = 'psql-tolerant';
+      } else {
+        console.warn('psql restore failed unexpectedly. Falling back to pg client restore.', psqlError?.message || psqlError);
+
+        await db.query('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;');
+        restoreMethod = 'pg-fallback(psql-failed)';
+        fallbackStats = await restoreWithPgClient(sqlFilePath);
+      }
     }
 
     // Step 3: Repair schema/defaults/sequences for compatibility with older dumps
@@ -329,9 +385,17 @@ exports.restoreDatabase = async (req, res) => {
 
     // Verify key data is present after restore
     let usersCount = 0;
+    let ordersCount = 0;
+    let orderItemsCount = 0;
     try {
       const result = await db.query('SELECT COUNT(*)::int AS count FROM users');
       usersCount = result.rows[0]?.count || 0;
+
+      const ordersResult = await db.query('SELECT COUNT(*)::int AS count FROM orders');
+      ordersCount = ordersResult.rows[0]?.count || 0;
+
+      const orderItemsResult = await db.query('SELECT COUNT(*)::int AS count FROM order_items');
+      orderItemsCount = orderItemsResult.rows[0]?.count || 0;
     } catch (verifyError) {
       console.warn('Post-restore verification warning:', verifyError.message);
     }
@@ -339,6 +403,23 @@ exports.restoreDatabase = async (req, res) => {
     const hasUsersMismatch =
       typeof expectedUsersFromBackup === 'number' &&
       usersCount < expectedUsersFromBackup;
+    const hasOrdersMismatch =
+      typeof expectedOrdersFromBackup === 'number' &&
+      ordersCount < expectedOrdersFromBackup;
+    const hasOrderItemsMismatch =
+      typeof expectedOrderItemsFromBackup === 'number' &&
+      orderItemsCount < expectedOrderItemsFromBackup;
+
+    const warnings = [];
+    if (hasUsersMismatch) {
+      warnings.push(`Expected users from backup: ${expectedUsersFromBackup}, restored users: ${usersCount}.`);
+    }
+    if (hasOrdersMismatch) {
+      warnings.push(`Expected orders from backup: ${expectedOrdersFromBackup}, restored orders: ${ordersCount}.`);
+    }
+    if (hasOrderItemsMismatch) {
+      warnings.push(`Expected order items from backup: ${expectedOrderItemsFromBackup}, restored order items: ${orderItemsCount}.`);
+    }
 
     if (typeof expectedUsersFromBackup === 'number' && expectedUsersFromBackup <= 1) {
       return res.json({
@@ -357,12 +438,14 @@ exports.restoreDatabase = async (req, res) => {
         : 'Database restored successfully.',
       verification: {
         usersCount,
+        ordersCount,
+        orderItemsCount,
         expectedUsersFromBackup,
+        expectedOrdersFromBackup,
+        expectedOrderItemsFromBackup,
         restoreMethod,
         skippedStatements: fallbackStats?.skippedStatements || 0,
-        warning: hasUsersMismatch
-          ? `Expected users from backup: ${expectedUsersFromBackup}, restored users: ${usersCount}.`
-          : null
+        warning: warnings.length > 0 ? warnings.join(' ') : null
       }
     });
   } catch (error) {
