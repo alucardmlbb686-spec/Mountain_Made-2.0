@@ -131,14 +131,50 @@ const splitSqlStatements = (sqlContent) => {
   return statements;
 };
 
+const shouldIgnoreRestoreStatement = (statement) => {
+  const normalized = statement.trim().replace(/\s+/g, ' ').toUpperCase();
+  return (
+    normalized.startsWith('ALTER DEFAULT PRIVILEGES') ||
+    normalized.startsWith('COMMENT ON EXTENSION')
+  );
+};
+
+const isIgnorableRestoreError = (error) => {
+  const message = `${error?.message || ''}`.toLowerCase();
+  return (
+    message.includes('permission denied to change default privileges') ||
+    message.includes('must be member of role')
+  );
+};
+
 const restoreWithPgClient = async (sqlFilePath) => {
   const originalSql = await fs.promises.readFile(sqlFilePath, 'utf8');
   const transformedSql = transformPlainSqlDump(originalSql);
   const statements = splitSqlStatements(transformedSql);
 
+  let executedStatements = 0;
+  let skippedStatements = 0;
+
   for (const statement of statements) {
-    await db.query(statement);
+    if (shouldIgnoreRestoreStatement(statement)) {
+      skippedStatements += 1;
+      continue;
+    }
+
+    try {
+      await db.query(statement);
+      executedStatements += 1;
+    } catch (error) {
+      if (isIgnorableRestoreError(error)) {
+        skippedStatements += 1;
+        continue;
+      }
+
+      throw error;
+    }
   }
+
+  return { executedStatements, skippedStatements };
 };
 
 const isPsqlMissingError = (error) => {
@@ -273,16 +309,19 @@ exports.restoreDatabase = async (req, res) => {
     await db.query('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;');
 
     // Step 2: Restore SQL
+    let restoreMethod = 'psql';
+    let fallbackStats = null;
     try {
       const restoreCmd = `"${psqlBinary}" -h ${dbHost} -p ${dbPort} -U ${dbUser} -d ${dbName} -v ON_ERROR_STOP=1 -f "${sqlFilePath}"`;
       await execAsync(restoreCmd, { env, windowsHide: true });
     } catch (psqlError) {
-      if (!isPsqlMissingError(psqlError)) {
-        throw psqlError;
-      }
+      console.warn('psql restore failed. Falling back to pg client restore.', psqlError?.message || psqlError);
 
-      console.warn('psql not available. Falling back to pg client restore.');
-      await restoreWithPgClient(sqlFilePath);
+      // Reset again to avoid partial state from failed psql run.
+      await db.query('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;');
+
+      restoreMethod = isPsqlMissingError(psqlError) ? 'pg-fallback(no-psql)' : 'pg-fallback(psql-failed)';
+      fallbackStats = await restoreWithPgClient(sqlFilePath);
     }
 
     // Step 3: Repair schema/defaults/sequences for compatibility with older dumps
@@ -319,6 +358,8 @@ exports.restoreDatabase = async (req, res) => {
       verification: {
         usersCount,
         expectedUsersFromBackup,
+        restoreMethod,
+        skippedStatements: fallbackStats?.skippedStatements || 0,
         warning: hasUsersMismatch
           ? `Expected users from backup: ${expectedUsersFromBackup}, restored users: ${usersCount}.`
           : null
