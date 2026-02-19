@@ -326,6 +326,29 @@ async function countTableRowsInSql(sqlFilePath, tableName) {
   }
 }
 
+async function inspectTableDataInSql(sqlFilePath, tableName) {
+  try {
+    const sqlText = await fs.promises.readFile(sqlFilePath, 'utf8');
+    const normalized = String(tableName || '').trim().toLowerCase();
+    if (!normalized) {
+      return { hasData: false, copyRows: null, insertStatements: 0 };
+    }
+
+    const copyRows = await countTableRowsInSql(sqlFilePath, normalized);
+    const insertRegex = new RegExp(`INSERT\\s+INTO\\s+(?:public\\.)?${normalized}\\b`, 'ig');
+    const insertStatements = (sqlText.match(insertRegex) || []).length;
+
+    return {
+      hasData: (typeof copyRows === 'number' && copyRows > 0) || insertStatements > 0,
+      copyRows,
+      insertStatements
+    };
+  } catch (error) {
+    console.warn(`Could not inspect table payload for ${tableName}:`, error.message);
+    return { hasData: false, copyRows: null, insertStatements: 0 };
+  }
+}
+
 // Restore database from uploaded SQL file
 exports.restoreDatabase = async (req, res) => {
   let sqlFilePath;
@@ -339,6 +362,8 @@ exports.restoreDatabase = async (req, res) => {
     const expectedUsersFromBackup = await countUsersRowsInSql(sqlFilePath);
     const expectedOrdersFromBackup = await countTableRowsInSql(sqlFilePath, 'orders');
     const expectedOrderItemsFromBackup = await countTableRowsInSql(sqlFilePath, 'order_items');
+    const ordersDataInSql = await inspectTableDataInSql(sqlFilePath, 'orders');
+    const orderItemsDataInSql = await inspectTableDataInSql(sqlFilePath, 'order_items');
 
     // Get DB credentials
     const dbHost = process.env.DB_HOST || 'localhost';
@@ -410,6 +435,39 @@ exports.restoreDatabase = async (req, res) => {
       typeof expectedOrderItemsFromBackup === 'number' &&
       orderItemsCount < expectedOrderItemsFromBackup;
 
+    const hasOrdersPayloadInBackup = !!ordersDataInSql.hasData;
+    const hasOrderItemsPayloadInBackup = !!orderItemsDataInSql.hasData;
+    const missingCriticalOrderData =
+      (hasOrdersPayloadInBackup && ordersCount === 0) ||
+      (hasOrderItemsPayloadInBackup && orderItemsCount === 0);
+
+    if (missingCriticalOrderData && !String(restoreMethod).startsWith('pg-fallback-recovery')) {
+      console.warn('Critical order data missing after restore. Running recovery restore with pg parser.');
+
+      await db.query('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;');
+      const recoveryStats = await restoreWithPgClient(sqlFilePath);
+      await runPostRestoreRepair();
+
+      restoreMethod = `pg-fallback-recovery(${restoreMethod})`;
+      fallbackStats = {
+        executedStatements: (fallbackStats?.executedStatements || 0) + (recoveryStats?.executedStatements || 0),
+        skippedStatements: (fallbackStats?.skippedStatements || 0) + (recoveryStats?.skippedStatements || 0)
+      };
+
+      try {
+        const result = await db.query('SELECT COUNT(*)::int AS count FROM users');
+        usersCount = result.rows[0]?.count || 0;
+
+        const ordersResult = await db.query('SELECT COUNT(*)::int AS count FROM orders');
+        ordersCount = ordersResult.rows[0]?.count || 0;
+
+        const orderItemsResult = await db.query('SELECT COUNT(*)::int AS count FROM order_items');
+        orderItemsCount = orderItemsResult.rows[0]?.count || 0;
+      } catch (verifyError) {
+        console.warn('Post-recovery verification warning:', verifyError.message);
+      }
+    }
+
     const warnings = [];
     if (hasUsersMismatch) {
       warnings.push(`Expected users from backup: ${expectedUsersFromBackup}, restored users: ${usersCount}.`);
@@ -419,6 +477,12 @@ exports.restoreDatabase = async (req, res) => {
     }
     if (hasOrderItemsMismatch) {
       warnings.push(`Expected order items from backup: ${expectedOrderItemsFromBackup}, restored order items: ${orderItemsCount}.`);
+    }
+    if (hasOrdersPayloadInBackup && ordersCount === 0) {
+      warnings.push('Backup file contains order payload, but restored orders are still zero.');
+    }
+    if (hasOrderItemsPayloadInBackup && orderItemsCount === 0) {
+      warnings.push('Backup file contains order_items payload, but restored order_items are still zero.');
     }
 
     if (typeof expectedUsersFromBackup === 'number' && expectedUsersFromBackup <= 1) {
