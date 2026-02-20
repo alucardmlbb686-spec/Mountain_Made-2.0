@@ -49,6 +49,35 @@ exports.getAllProducts = async (req, res) => {
   }
 };
 
+exports.getCarouselProducts = async (req, res) => {
+  try {
+    const rawLimit = parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 16) : 8;
+
+    const query = `
+      SELECT
+        id,
+        name,
+        price,
+        discount_price,
+        wholesale_price,
+        stock_quantity,
+        image_url,
+        created_at
+      FROM products
+      WHERE COALESCE(is_active, true) = true
+      ORDER BY created_at DESC
+      LIMIT $1
+    `;
+
+    const result = await db.query(query, [limit]);
+    return res.json({ products: result.rows || [] });
+  } catch (error) {
+    console.error('Get carousel products error:', error);
+    return res.status(500).json({ error: 'Failed to fetch carousel products.' });
+  }
+};
+
 // Search suggestions for homepage search bar (products + categories)
 exports.getSearchSuggestions = async (req, res) => {
   try {

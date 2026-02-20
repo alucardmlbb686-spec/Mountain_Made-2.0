@@ -8,6 +8,7 @@ router.get('/categories', productController.getAllCategories);
 router.get('/homepage-sections', productController.getHomepageSections);
 router.get('/settings', productController.getSiteSettings);
 router.get('/search-suggestions', productController.getSearchSuggestions);
+router.get('/carousel', productController.getCarouselProducts);
 router.get('/category/:id', productController.getProductsByCategory);
 router.get('/:id', productController.getProductById);
 

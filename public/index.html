@@ -8,7 +8,8 @@
     <title>Mountain Made</title>
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/mobile-enhancements.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
     <style>
         /* Search Section Styles */
         .search-section {
@@ -1088,7 +1089,7 @@
         
         async function loadCarouselProducts() {
             try {
-                const data = await api.get('/products');
+            const data = await api.get('/products/carousel?limit=8');
                 carouselProducts = data.products || [];
                 
                 if (carouselProducts.length === 0) {
@@ -1106,12 +1107,13 @@
 
         function renderCarousel() {
             const track = document.getElementById('carousel-track');
-            track.innerHTML = carouselProducts.map(product => `
+            track.innerHTML = carouselProducts.map((product, index) => `
                 <div class="carousel-item" onclick="location.href='/product-details?id=${product.id}'">
                     <img src="${product.image_url || '/images/placeholder.jpg'}" 
                          alt="${product.name}" 
                          class="carousel-item-image"
-                         loading="lazy"
+                         loading="${index === 0 ? 'eager' : 'lazy'}"
+                         fetchpriority="${index === 0 ? 'high' : 'auto'}"
                          decoding="async"
                          onerror="this.src='/images/placeholder.jpg'">
                     <div class="carousel-item-content">
