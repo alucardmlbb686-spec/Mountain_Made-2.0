@@ -1,8 +1,11 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+const DATABASE_URL = String(process.env.DATABASE_URL || '').trim();
+const hasDatabaseUrl = DATABASE_URL.length > 0;
+
 // Validate that DB_PASSWORD is set if PostgreSQL requires authentication
-if (!process.env.DB_PASSWORD && process.env.NODE_ENV !== 'development-no-auth') {
+if (!process.env.DB_PASSWORD && !hasDatabaseUrl && process.env.NODE_ENV !== 'development-no-auth') {
   console.warn('⚠️  WARNING: DB_PASSWORD is not set in .env file');
   console.warn('If your PostgreSQL server requires a password, the connection will fail.');
   console.warn('Update your .env file with: DB_PASSWORD=your_postgresql_password');
@@ -11,18 +14,25 @@ if (!process.env.DB_PASSWORD && process.env.NODE_ENV !== 'development-no-auth') 
 const dbName = process.env.DB_NAME || 'mountain_made';
 
 // Create pool config for the target database
-const poolConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  user: process.env.DB_USER || 'postgres',
-  database: dbName,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-};
+const poolConfig = hasDatabaseUrl
+  ? {
+      connectionString: DATABASE_URL,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    }
+  : {
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 5432,
+      user: process.env.DB_USER || 'postgres',
+      database: dbName,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    };
 
 // Add password if provided
-if (process.env.DB_PASSWORD) {
+if (!hasDatabaseUrl && process.env.DB_PASSWORD) {
   poolConfig.password = process.env.DB_PASSWORD;
 }
 
