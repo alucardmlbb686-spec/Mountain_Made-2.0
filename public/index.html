@@ -959,7 +959,7 @@
                                         </div>
                                     </a>
                                     
-                                    <div class="card-footer" style="display:flex; align-items:center; gap:0.25rem; flex-wrap:wrap;">
+                                    <div class="card-footer" style="display:flex; flex-direction:column; align-items:stretch; gap:0.35rem;">
                                         <div class="product-qty-row" style="display:flex; align-items:center; gap:0.25rem;">
                                             <label for="home-qty-${product.id}" style="font-size:0.8rem; color:var(--text-light);">Qty</label>
                                             <input type="number"
@@ -970,18 +970,21 @@
                                                    max="${product.stock_quantity || 99}"
                                                    style="width:64px; padding:0.25rem 0.35rem; font-size:0.85rem;">
                                         </div>
-                                        <button class="btn btn-primary btn-sm add-cart-cta" 
-                                                onclick="addToCart(${product.id})"
-                                                ${product.stock_quantity === 0 ? 'disabled' : ''}>
-                                            <i class="fas fa-cart-plus"></i>
-                                            ${product.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-                                        </button>
-                                        <button class="btn btn-success btn-sm" 
-                                                onclick="buyNow(${product.id})"
-                                                ${product.stock_quantity === 0 ? 'disabled' : ''}
-                                                >
-                                            <i class="fas fa-credit-card"></i> Buy Now
-                                        </button>
+                                        <div class="product-action-row" style="display:flex; align-items:center; gap:0.25rem; width:100%;">
+                                            <button class="btn btn-primary btn-sm add-cart-cta" 
+                                                    onclick="addToCart(${product.id})"
+                                                    ${product.stock_quantity === 0 ? 'disabled' : ''}
+                                                    style="flex:1; min-width:0; width:auto;">
+                                                <i class="fas fa-cart-plus"></i>
+                                                ${product.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+                                            </button>
+                                            <button class="btn btn-success btn-sm" 
+                                                    onclick="buyNow(${product.id})"
+                                                    ${product.stock_quantity === 0 ? 'disabled' : ''}
+                                                    style="flex:1; min-width:0; width:auto;">
+                                                <i class="fas fa-credit-card"></i> Buy Now
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             `;
