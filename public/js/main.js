@@ -1221,8 +1221,55 @@ if (document.readyState === 'loading') {
 }
 
 // Load and apply custom logo
+const SITE_LOGO_CACHE_KEY = 'site_logo_url_cache';
+
+function preloadLogoImage(logoUrl) {
+  if (!logoUrl) return;
+  const existing = document.querySelector(`link[rel="preload"][as="image"][href="${logoUrl}"]`);
+  if (existing) return;
+
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'image';
+  link.href = logoUrl;
+  document.head.appendChild(link);
+}
+
+function applySiteLogo(logoUrl) {
+  const normalizedLogo = (logoUrl && logoUrl !== 'default') ? logoUrl : null;
+  const brandTextImagePath = '/images/brand-text.png';
+  const isAdminRoute = window.location.pathname.startsWith('/admin');
+
+  if (normalizedLogo) {
+    preloadLogoImage(normalizedLogo);
+  }
+
+  const navbarBrands = document.querySelectorAll('.navbar-brand');
+  navbarBrands.forEach(brand => {
+    const logoHtml = normalizedLogo
+      ? `<img src="${normalizedLogo}" alt="Site Logo" style="max-height: ${isAdminRoute ? '28px' : '40px'}; max-width: ${isAdminRoute ? '110px' : '160px'}; object-fit: contain;" decoding="async">`
+      : `<span class="logo-icon">🏔️</span>`;
+
+    const textImageHtml = isAdminRoute
+      ? `<img src="${brandTextImagePath}" alt="Brand Text" style="height: 28px; max-width: 210px; width: auto; object-fit: contain; display: block;" onerror="this.style.display='none';">`
+      : `<img src="${brandTextImagePath}" alt="Brand Text" style="height: clamp(26px, 5.5vw, 36px); max-width: min(64vw, 340px); width: auto; object-fit: contain; display: block;" onerror="this.style.display='none';">`;
+
+    brand.innerHTML = `
+      <span style="display:inline-flex; align-items:center; gap:0.15rem; white-space:nowrap;">
+        ${logoHtml}
+        ${textImageHtml}
+      </span>
+    `;
+  });
+}
+
 async function loadSiteLogo() {
   try {
+    const cachedLogo = localStorage.getItem(SITE_LOGO_CACHE_KEY);
+    if (cachedLogo) {
+      applySiteLogo(cachedLogo);
+    }
+
     const response = await fetch('/api/products/settings', {
       method: 'GET',
       credentials: 'include'
@@ -1231,27 +1278,15 @@ async function loadSiteLogo() {
     if (response.ok) {
       const data = await response.json();
       const settings = data.settings || {};
-      const hasCustomLogo = settings.logo_url && settings.logo_url !== 'default';
-      const brandTextImagePath = '/images/brand-text.png';
-      const isAdminRoute = window.location.pathname.startsWith('/admin');
+      const logoUrl = settings.logo_url && settings.logo_url !== 'default' ? settings.logo_url : '';
 
-      const navbarBrands = document.querySelectorAll('.navbar-brand');
-      navbarBrands.forEach(brand => {
-        const logoHtml = hasCustomLogo
-          ? `<img src="${settings.logo_url}" alt="Site Logo" style="max-height: ${isAdminRoute ? '28px' : '40px'}; max-width: ${isAdminRoute ? '110px' : '160px'}; object-fit: contain;">`
-          : `<span class="logo-icon">🏔️</span>`;
+      if (logoUrl) {
+        localStorage.setItem(SITE_LOGO_CACHE_KEY, logoUrl);
+      } else {
+        localStorage.removeItem(SITE_LOGO_CACHE_KEY);
+      }
 
-        const textImageHtml = isAdminRoute
-          ? `<img src="${brandTextImagePath}" alt="Brand Text" style="height: 28px; max-width: 210px; width: auto; object-fit: contain; display: block;" onerror="this.style.display='none';">`
-          : `<img src="${brandTextImagePath}" alt="Brand Text" style="height: clamp(26px, 5.5vw, 36px); max-width: min(64vw, 340px); width: auto; object-fit: contain; display: block;" onerror="this.style.display='none';">`;
-
-        brand.innerHTML = `
-          <span style="display:inline-flex; align-items:center; gap:0.15rem; white-space:nowrap;">
-            ${logoHtml}
-            ${textImageHtml}
-          </span>
-        `;
-      });
+      applySiteLogo(logoUrl);
     }
   } catch (error) {
     // Silently fail - keep default logo
