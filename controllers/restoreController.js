@@ -31,6 +31,39 @@ const toSqlLiteral = (value) => {
   return `'${String(value).replace(/'/g, "''")}'`;
 };
 
+const sanitizeRestoreSqlContent = (sqlContent) => {
+  const lines = String(sqlContent || '').replace(/^\uFEFF/, '').split(/\r?\n/);
+  const sanitized = [];
+
+  for (const rawLine of lines) {
+    const line = String(rawLine || '');
+    const trimmed = line.trim();
+
+    // pg_restore list/comment style lines often begin with ';'
+    if (trimmed.startsWith(';')) {
+      continue;
+    }
+
+    // TOC / metadata lines that are not executable SQL
+    if (/^\d+;\s+\d+\s+\d+\s+/.test(trimmed)) {
+      continue;
+    }
+
+    // Some dumps may contain plain metadata rows without SQL comment prefixes
+    if (/^Name:\s+.*\bType:\s+/i.test(trimmed)) {
+      continue;
+    }
+
+    if (/^Type:\s+/i.test(trimmed)) {
+      continue;
+    }
+
+    sanitized.push(line);
+  }
+
+  return sanitized.join('\n');
+};
+
 const transformPlainSqlDump = (sqlContent) => {
   const lines = sqlContent.split(/\r?\n/);
   const transformed = [];
@@ -149,7 +182,8 @@ const isIgnorableRestoreError = (error) => {
 
 const restoreWithPgClient = async (sqlFilePath) => {
   const originalSql = await fs.promises.readFile(sqlFilePath, 'utf8');
-  const transformedSql = transformPlainSqlDump(originalSql);
+  const sanitizedSql = sanitizeRestoreSqlContent(originalSql);
+  const transformedSql = transformPlainSqlDump(sanitizedSql);
   const statements = splitSqlStatements(transformedSql);
 
   let executedStatements = 0;
