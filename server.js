@@ -26,9 +26,11 @@ app.set('trust proxy', 1);
 app.use((req, res, next) => {
   const pathname = req.path;
   const isAuthCriticalHtml = pathname === '/admin' || pathname === '/login' || pathname === '/register' || pathname.endsWith('.html');
-  const isAuthCriticalJs = pathname === '/js/main.js' || pathname === '/sw.js';
-  if (isAuthCriticalHtml || isAuthCriticalJs) {
+  const isServiceWorker = pathname === '/sw.js';
+  if (isAuthCriticalHtml) {
     res.setHeader('Cache-Control', 'no-store');
+  } else if (isServiceWorker) {
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
   }
   next();
 });
@@ -197,8 +199,29 @@ app.use((req, res, next) => {
   }
 });
 
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files with caching tuned for performance + safe updates
+app.use(express.static(path.join(__dirname, 'public'), {
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    const ext = path.extname(filePath).toLowerCase();
+
+    if (ext === '.html') {
+      res.setHeader('Cache-Control', 'no-store');
+      return;
+    }
+
+    if (ext === '.js' || ext === '.css') {
+      // Revalidate on navigation, but allow browser/proxy cache storage.
+      res.setHeader('Cache-Control', 'public, no-cache, must-revalidate');
+      return;
+    }
+
+    if (['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot'].includes(ext)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800');
+    }
+  }
+}));
 
 // DB-backed upload fetch (survives redeploys)
 app.get('/uploads/:id', async (req, res, next) => {
