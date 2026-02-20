@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/mobile-enhancements.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         .auth-container {
             min-height: calc(100vh - 80px);
@@ -151,7 +152,7 @@
             </form>
 
             <div class="login-alt-buttons" style="display: flex; gap: 8px; margin-top: 0.75rem; justify-content: center; flex-wrap: wrap;">
-              <button class="google-login-btn" style="display: flex; align-items: center; background: #fff; border: 1px solid #e0e0e0; border-radius: 20px; padding: 0.4rem 0.75rem; font-size: 0.8rem; font-weight: 500; box-shadow: 0 2px 8px rgba(60,64,67,0.08); cursor: pointer; transition: box-shadow 0.2s;">
+                            <button id="google-login-btn" class="google-login-btn" type="button" style="display: flex; align-items: center; background: #fff; border: 1px solid #e0e0e0; border-radius: 20px; padding: 0.4rem 0.75rem; font-size: 0.8rem; font-weight: 500; box-shadow: 0 2px 8px rgba(60,64,67,0.08); cursor: pointer; transition: box-shadow 0.2s;">
                 <img src="images/google_logo.svg" alt="Google Logo" style="height:18px;width:18px;margin-right:6px;"> Log in with Google
               </button>
               <button class="phone-login-btn" style="display: flex; align-items: center; background: #fff; border: 1px solid #e0e0e0; border-radius: 20px; padding: 0.4rem 0.75rem; font-size: 0.8rem; font-weight: 500; box-shadow: 0 2px 8px rgba(60,64,67,0.08); cursor: pointer; transition: box-shadow 0.2s;">
@@ -235,6 +236,83 @@
                 window.location.replace('/');
             }
         });
+
+        // Google login
+        const googleLoginBtn = document.getElementById('google-login-btn');
+        let googleClientConfig = { enabled: false, clientId: null };
+
+        async function loadGoogleClientConfig() {
+            try {
+                googleClientConfig = await api.get('/auth/google/config');
+                if (!googleClientConfig?.enabled || !googleClientConfig?.clientId) {
+                    if (googleLoginBtn) {
+                        googleLoginBtn.disabled = true;
+                        googleLoginBtn.style.opacity = '0.6';
+                        googleLoginBtn.title = 'Google login is not configured on server.';
+                    }
+                }
+            } catch (_) {
+                if (googleLoginBtn) {
+                    googleLoginBtn.disabled = true;
+                    googleLoginBtn.style.opacity = '0.6';
+                    googleLoginBtn.title = 'Google login config failed.';
+                }
+            }
+        }
+
+        async function handleGoogleCredentialResponse(response) {
+            try {
+                if (!response?.credential) {
+                    throw new Error('Google sign-in failed to return a token.');
+                }
+
+                const result = await api.post('/auth/google', { id_token: response.credential });
+
+                const role = result?.user?.role;
+                const isApproved = !!result?.user?.is_approved;
+                if (role === 'admin' || role === 'super_admin') {
+                    window.location.replace('/admin');
+                } else if (role === 'wholesale' && isApproved) {
+                    window.location.replace('/wholesale');
+                } else if (redirectUrl) {
+                    window.location.replace(redirectUrl);
+                } else {
+                    window.location.replace('/');
+                }
+            } catch (error) {
+                const msg = String(error?.message || error || 'Google login failed.');
+                const needsRegistration = /Phone verification is required before registration/i.test(msg);
+                showAlert(needsRegistration
+                    ? 'Google account not registered yet. Please register (OTP) then use Google sign-in.'
+                    : msg,
+                    'error');
+            }
+        }
+
+        async function startGoogleLogin() {
+            if (!window.google?.accounts?.id) {
+                showAlert('Google script is not loaded. Please refresh page.', 'error');
+                return;
+            }
+
+            if (!googleClientConfig?.enabled || !googleClientConfig?.clientId) {
+                showAlert('Google login is not configured on server.', 'error');
+                return;
+            }
+
+            google.accounts.id.initialize({
+                client_id: googleClientConfig.clientId,
+                callback: handleGoogleCredentialResponse
+            });
+
+            google.accounts.id.prompt();
+        }
+
+        if (googleLoginBtn) {
+            googleLoginBtn.addEventListener('click', startGoogleLogin);
+        }
+
+        loadGoogleClientConfig();
     </script>
 </body>
 </html>
