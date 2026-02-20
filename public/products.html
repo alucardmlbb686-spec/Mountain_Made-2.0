@@ -770,7 +770,7 @@
                             })()}
                         </div>
                     </a>
-                    <div class="card-footer" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                    <div class="card-footer" style="display:flex; align-items:center; gap:0.25rem; flex-wrap:wrap;">
                         <div class="product-qty-row" style="display:flex; align-items:center; gap:0.25rem;">
                             <label for="product-qty-${p.id}" style="font-size:0.8rem; color:var(--text-light);">Qty</label>
                             <input type="number"
@@ -784,7 +784,7 @@
                         <button class="btn btn-primary btn-sm add-cart-cta" onclick="addToCart(${p.id})" ${p.stock_quantity === 0 ? 'disabled' : ''}>
                             <i class="fas fa-cart-plus"></i> ${p.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
                         </button>
-                        <button class="btn btn-success btn-sm" onclick="buyNow(${p.id})" ${p.stock_quantity === 0 ? 'disabled' : ''} style="margin-left: 0.5rem;">
+                        <button class="btn btn-success btn-sm" onclick="buyNow(${p.id})" ${p.stock_quantity === 0 ? 'disabled' : ''}>
                             <i class="fas fa-credit-card"></i> Buy Now
                         </button>
                     </div>
