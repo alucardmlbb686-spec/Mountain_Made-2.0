@@ -139,6 +139,12 @@ const api = {
 
       return data;
     } catch (error) {
+      const isAbort = error && (error.name === 'AbortError' || /aborted/i.test(String(error.message || error)));
+      if (isAbort) {
+        // Fetch was intentionally aborted (usually due to a timeout).
+        throw new Error('Request timed out');
+      }
+
       console.error('API Error:', error);
       throw error;
     }
