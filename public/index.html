@@ -204,6 +204,10 @@
             border: 1px solid rgba(255,255,255,0.45);
         }
 
+        .search-input-zone {
+            position: relative;
+        }
+
         .search-input {
             flex: 1;
             padding: 1rem 1.25rem;
@@ -223,7 +227,7 @@
             position: absolute;
             left: 0;
             right: 0;
-            top: 100%;
+            top: calc(100% + 0.5rem);
             margin-top: 0.5rem;
             background: var(--bg-primary);
             border-radius: 8px;
@@ -484,6 +488,10 @@
                 padding: 0.875rem;
             }
 
+            .search-suggestions {
+                max-height: 260px;
+            }
+
             .carousel-item {
                 min-width: 240px;
             }
@@ -700,13 +708,15 @@
                 <h1 id="homepage-hero-title-text"></h1>
                 <p id="homepage-hero-subtitle-text"></p>
             </div>
-            <div class="search-input-wrapper">
-                <input type="text" id="home-search-input" class="search-input" placeholder="Search for products..." />
-                <button id="home-search-btn" class="search-button">
-                    <i class="fas fa-search"></i> Search
-                </button>
+            <div class="search-input-zone">
+                <div class="search-input-wrapper">
+                    <input type="text" id="home-search-input" class="search-input" placeholder="Search for products..." />
+                    <button id="home-search-btn" class="search-button">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+                <div id="home-search-suggestions" class="search-suggestions hidden"></div>
             </div>
-            <div id="home-search-suggestions" class="search-suggestions hidden"></div>
             <div class="home-trust-strip" aria-label="Store trust indicators">
                 <span class="home-trust-item"><i class="fas fa-shield-check"></i> Secure checkout</span>
                 <span class="home-trust-item"><i class="fas fa-leaf"></i> Fresh quality products</span>
