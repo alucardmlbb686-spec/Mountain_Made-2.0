@@ -288,8 +288,11 @@ const auth = {
 
   async login(email, password) {
     const data = await api.post('/auth/login', { email, password });
-    if (data?.token) {
+    const isAdminLike = data?.user?.role === 'admin' || data?.user?.role === 'super_admin';
+    if (data?.token && !isAdminLike) {
       localStorage.setItem('token', data.token);
+    } else {
+      localStorage.removeItem('token');
     }
     this.currentUser = data.user;
     this.updateUI();
@@ -298,8 +301,11 @@ const auth = {
 
   async register(userData) {
     const data = await api.post('/auth/register', userData);
-    if (data?.token) {
+    const isAdminLike = data?.user?.role === 'admin' || data?.user?.role === 'super_admin';
+    if (data?.token && !isAdminLike) {
       localStorage.setItem('token', data.token);
+    } else {
+      localStorage.removeItem('token');
     }
     this.currentUser = data.user;
     this.updateUI();

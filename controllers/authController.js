@@ -36,15 +36,23 @@ const isHttpsRequest = (req) => {
   return directSecure || forwardedProto === 'https';
 };
 
-const buildCookieOptions = (req) => {
+const isAdminLikeRole = (role) => role === 'admin' || role === 'super_admin';
+
+const buildCookieOptions = (req, userRole = null) => {
   const forceSecure = String(process.env.COOKIE_SECURE || '').toLowerCase() === 'true';
-  return {
+  const options = {
     httpOnly: true,
     secure: forceSecure ? true : isHttpsRequest(req),
     sameSite: 'lax',
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60 * 1000
+    path: '/'
   };
+
+  // Keep customer/wholesale login persistent, but make admin login session-only.
+  if (!isAdminLikeRole(userRole)) {
+    options.maxAge = 7 * 24 * 60 * 60 * 1000;
+  }
+
+  return options;
 };
 
 const normalizePhoneToE164 = (phone) => {
@@ -215,7 +223,7 @@ exports.register = async (req, res) => {
 
     const token = generateToken(user);
 
-    res.cookie('token', token, buildCookieOptions(req));
+    res.cookie('token', token, buildCookieOptions(req, user.role));
 
     res.status(201).json({
       message: 'Registration successful',
@@ -265,7 +273,7 @@ exports.login = async (req, res) => {
     // Generate token
     const token = generateToken(user);
 
-    res.cookie('token', token, buildCookieOptions(req));
+    res.cookie('token', token, buildCookieOptions(req, user.role));
 
     res.json({
       message: 'Login successful',
@@ -336,7 +344,7 @@ exports.googleAuth = async (req, res) => {
       }
 
       const token = generateToken(existingUser);
-      res.cookie('token', token, buildCookieOptions(req));
+      res.cookie('token', token, buildCookieOptions(req, existingUser.role));
       return res.json({
         message: 'Login successful',
         token,
@@ -397,7 +405,7 @@ exports.googleAuth = async (req, res) => {
     }
 
     const token = generateToken(user);
-    res.cookie('token', token, buildCookieOptions(req));
+    res.cookie('token', token, buildCookieOptions(req, user.role));
 
     return res.status(201).json({
       message: 'Registration successful',
