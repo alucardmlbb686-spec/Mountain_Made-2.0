@@ -27,8 +27,8 @@
         }
         
         .address-card {
-            background: var(--surface);
-            border: 2px solid var(--border);
+            background: var(--bg-primary);
+            border: 2px solid var(--border-primary);
             border-radius: 8px;
             padding: 1.5rem;
             position: relative;
@@ -36,18 +36,18 @@
         }
         
         .address-card.default {
-            border-color: var(--primary);
+            border-color: var(--primary-600);
         }
         
         .address-card:hover {
-            border-color: var(--primary);
+            border-color: var(--primary-600);
         }
         
         .address-badge {
             position: absolute;
             top: 1rem;
             right: 1rem;
-            background: var(--primary);
+            background: var(--primary-600);
             color: white;
             padding: 0.25rem 0.75rem;
             border-radius: 4px;
@@ -59,7 +59,7 @@
             font-size: 1.25rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
-            color: var(--text);
+            color: var(--text-primary);
         }
         
         .address-details {
@@ -81,15 +81,15 @@
             backdrop-filter: blur(3px);
             -webkit-backdrop-filter: blur(3px);
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: center;
             z-index: 1000;
-            padding: 0.75rem;
+            padding: 1rem;
             overflow-y: auto;
         }
         
         .modal-content {
-            background: var(--background);
+            background: var(--bg-primary);
             padding: 1.25rem 1.25rem 1.25rem;
             border-radius: 12px;
             width: 100%;
@@ -169,6 +169,7 @@
 
             .modal-overlay {
                 padding: 0.5rem;
+                align-items: flex-start;
             }
 
             .modal-content {
@@ -332,6 +333,14 @@
         let addresses = [];
         let editingAddressId = null;
 
+        function closeAddressModal() {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+            document.body.style.overflow = '';
+        }
+
         async function loadAddresses() {
             try {
                 const data = await api.get('/addresses');
@@ -404,14 +413,14 @@
             const modal = document.createElement('div');
             modal.className = 'modal-overlay';
             modal.onclick = (e) => {
-                if (e.target === modal) modal.remove();
+                if (e.target === modal) closeAddressModal();
             };
             
             modal.innerHTML = `
                 <div class="modal-content">
                     <div class="modal-header-row">
                         <h3>${address ? 'Edit Address' : 'Add New Address'}</h3>
-                        <button type="button" class="modal-close-btn" onclick="this.closest('.modal-overlay').remove()" aria-label="Close">
+                        <button type="button" class="modal-close-btn" onclick="closeAddressModal()" aria-label="Close">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -487,7 +496,7 @@
                         </div>
                         
                         <div class="address-form-actions">
-                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddressModal()">
                                 Cancel
                             </button>
                             <button type="submit" class="btn btn-primary">
@@ -499,6 +508,7 @@
             `;
             
             document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
         }
 
         async function handleSubmitAddress(event) {
@@ -527,7 +537,7 @@
                     showAlert('Address added successfully!', 'success');
                 }
                 
-                document.querySelector('.modal-overlay').remove();
+                closeAddressModal();
                 loadAddresses();
             } catch (error) {
                 console.error('Save address error:', error);
