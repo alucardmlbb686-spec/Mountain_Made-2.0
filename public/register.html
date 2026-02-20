@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Mountain Made 2.0</title>
+    <link rel="preload" as="image" href="/images/register-bg.png" fetchpriority="high">
+    <link rel="preload" as="image" href="/images/register-box.png" fetchpriority="high">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/mobile-enhancements.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -84,6 +86,9 @@
         }
 
         body.register-page {
+            background:
+                linear-gradient(rgba(9, 27, 18, 0.45), rgba(9, 27, 18, 0.45)),
+                url('/images/register-bg.png') center/cover no-repeat fixed;
             background-color: #0f3823;
         }
 
@@ -352,46 +357,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const redirectUrl = urlParams.get('redirect');
 
-        async function resolveFirstExistingImage(paths) {
-            for (const path of paths) {
-                const exists = await new Promise((resolve) => {
-                    const img = new Image();
-                    img.onload = () => resolve(true);
-                    img.onerror = () => resolve(false);
-                    img.src = `${path}?v=${Date.now()}`;
-                });
-                if (exists) return path;
-            }
-            return null;
-        }
-
-        async function applyRegisterBackgroundImages() {
-            const bgPath = await resolveFirstExistingImage([
-                '/images/register-bg.png',
-                '/images/register-bg.jpg',
-                '/images/register-bg.jpeg'
-            ]);
-
-            const boxPath = await resolveFirstExistingImage([
-                '/images/register-box.png',
-                '/images/register-box.jpg',
-                '/images/register-box.jpeg'
-            ]);
-
-            if (bgPath) {
-                document.body.style.background = `linear-gradient(rgba(9, 27, 18, 0.45), rgba(9, 27, 18, 0.45)), url('${bgPath}') center/cover no-repeat fixed`;
-            }
-
-            if (boxPath) {
-                const authCard = document.querySelector('.auth-card');
-                if (authCard) {
-                    authCard.style.background = `linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), url('${boxPath}') center/cover no-repeat`;
-                }
-            }
-        }
-
-        applyRegisterBackgroundImages();
-        
         // Update login link to include redirect parameter
         if (redirectUrl) {
             const loginLink = document.getElementById('login-link');
