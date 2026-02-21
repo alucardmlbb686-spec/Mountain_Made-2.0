@@ -396,8 +396,40 @@ const auth = {
       }
     }
 
+    this.updateAccountDropdownIdentity();
+
     // Update all navigation links dynamically
     this.updateNavigationLinks();
+  },
+
+  updateAccountDropdownIdentity() {
+    const dropdowns = document.querySelectorAll('#account-dropdown');
+    dropdowns.forEach((dropdown) => {
+      const accountSection = dropdown.querySelector('.account-section');
+      if (!accountSection) return;
+
+      let identityEl = accountSection.querySelector('.account-user-name');
+
+      if (!this.isAuthenticated()) {
+        if (identityEl) identityEl.remove();
+        return;
+      }
+
+      if (!identityEl) {
+        identityEl = document.createElement('div');
+        identityEl.className = 'account-text account-user-name';
+
+        const firstAction = accountSection.querySelector('.account-link');
+        if (firstAction) {
+          accountSection.insertBefore(identityEl, firstAction);
+        } else {
+          accountSection.appendChild(identityEl);
+        }
+      }
+
+      const name = String(this.currentUser?.full_name || this.currentUser?.email || 'User').trim();
+      identityEl.textContent = name;
+    });
   },
 
   updateNavigationLinks() {

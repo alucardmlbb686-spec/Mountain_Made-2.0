@@ -1398,6 +1398,8 @@ small {
     height: 60px;
     padding: 0 var(--space-3);
     gap: var(--space-2);
+    position: relative;
+    padding-left: 2.6rem;
   }
   
   .navbar-brand {
@@ -1415,6 +1417,11 @@ small {
   
   .mobile-menu-toggle {
     display: block;
+    position: absolute;
+    left: 0.35rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
   }
   
   .navbar-actions {
@@ -1759,6 +1766,7 @@ small {
   
   .navbar-container {
     padding: 0 var(--space-2);
+    padding-left: 2.4rem;
   }
   
   .navbar-brand {
