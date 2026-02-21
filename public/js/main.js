@@ -1,6 +1,9 @@
 // Mountain Made 2.0 - Main JavaScript Utilities
 
-const API_BASE = '/api';
+const APK_API_ORIGIN = 'https://mountain-made.onrender.com';
+const API_BASE = (window.location.protocol === 'file:')
+  ? `${APK_API_ORIGIN}/api`
+  : '/api';
 
 // Adaptive refresh tuning (auto-optimizes for low/high-end devices)
 const performanceTuning = {
@@ -1458,7 +1461,7 @@ async function loadSiteLogo() {
       applySiteLogo(cachedLogo);
     }
 
-    const response = await fetch('/api/products/settings', {
+    const response = await fetch(`${API_BASE}/products/settings`, {
       method: 'GET',
       credentials: 'include'
     });
@@ -1543,7 +1546,7 @@ window.handleRestoreDatabase = async function(event) {
     showAlert('Restoring database...', 'info');
     setRestoreStatus('Restoring database... Please wait.', 'info');
     const token = localStorage.getItem('token');
-    const response = await fetch('/api/restore', {
+    const response = await fetch(`${API_BASE}/restore`, {
       method: 'POST',
       body: formData,
       headers: token ? { Authorization: `Bearer ${token}` } : {},
