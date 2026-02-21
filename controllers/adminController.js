@@ -23,6 +23,7 @@ const WHATSAPP_SEND_TIMEOUT_MS = 20000;
 const SMS_CONCURRENCY = 8;
 const WHATSAPP_CONCURRENCY = 8;
 const EMAIL_BCC_CHUNK_SIZE = 40;
+let adminMessageHistoryTableReady = false;
 
 function canUseResendForAdmin() {
   const key = String(process.env.RESEND_API_KEY || '').trim();
@@ -275,6 +276,27 @@ async function getMessageRecipients({ audience, identifierType, identifier }) {
     `
   );
   return result.rows;
+}
+
+async function ensureAdminMessageHistoryTable() {
+  if (adminMessageHistoryTableReady) return;
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS admin_message_history (
+      id SERIAL PRIMARY KEY,
+      admin_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      audience VARCHAR(20) NOT NULL,
+      identifier_type VARCHAR(20),
+      identifier TEXT,
+      subject TEXT,
+      message_body TEXT NOT NULL,
+      channels JSONB NOT NULL DEFAULT '{}'::jsonb,
+      summary JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  adminMessageHistoryTableReady = true;
 }
 
 // User Management
@@ -1739,6 +1761,43 @@ exports.searchUsers = async (req, res) => {
   }
 };
 
+exports.getAdminMessageHistory = async (req, res) => {
+  try {
+    await ensureAdminMessageHistoryTable();
+
+    const rawLimit = parseInt(req.query.limit || '50', 10);
+    const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(rawLimit, 200)) : 50;
+
+    const result = await db.query(
+      `
+        SELECT
+          h.id,
+          h.admin_user_id,
+          h.audience,
+          h.identifier_type,
+          h.identifier,
+          h.subject,
+          h.message_body,
+          h.channels,
+          h.summary,
+          h.created_at,
+          u.full_name AS admin_name,
+          u.email AS admin_email
+        FROM admin_message_history h
+        LEFT JOIN users u ON u.id = h.admin_user_id
+        ORDER BY h.created_at DESC
+        LIMIT $1
+      `,
+      [limit]
+    );
+
+    return res.json({ history: result.rows || [] });
+  } catch (error) {
+    console.error('Get admin message history error:', error);
+    return res.status(500).json({ error: 'Failed to fetch sent message history.' });
+  }
+};
+
 // Send message to users (email and/or sms) - all customers / wholesale / all users / single
 exports.sendAdminMessage = async (req, res) => {
   try {
@@ -2007,6 +2066,30 @@ exports.sendAdminMessage = async (req, res) => {
       return res.status(502).json({
         error: firstEmailError || 'Failed to send emails. Check SMTP/Resend configuration and sender domain verification.'
       });
+    }
+
+    try {
+      await ensureAdminMessageHistoryTable();
+      await db.query(
+        `
+          INSERT INTO admin_message_history
+            (admin_user_id, audience, identifier_type, identifier, subject, message_body, channels, summary)
+          VALUES
+            ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb)
+        `,
+        [
+          req.user?.id || null,
+          audience,
+          identifierType || null,
+          identifier || null,
+          subject || null,
+          message,
+          JSON.stringify({ email: !!sendEmail, sms: !!sendSms, whatsapp: !!sendWhatsapp }),
+          JSON.stringify(summary)
+        ]
+      );
+    } catch (historyErr) {
+      console.error('Save admin message history error:', historyErr);
     }
 
     return res.json({

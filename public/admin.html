@@ -1652,6 +1652,18 @@
 
                 <div class="data-table-container">
                     <div class="table-header">
+                        <h3>Sent Message History</h3>
+                        <button class="btn btn-secondary btn-sm" type="button" onclick="loadAdminSentMessageHistory({ force: true })">
+                            <i class="fas fa-rotate"></i> Refresh
+                        </button>
+                    </div>
+                    <div id="admin-sent-history-wrap">
+                        <div class="empty-state"><p>Loading history...</p></div>
+                    </div>
+                </div>
+
+                <div class="data-table-container">
+                    <div class="table-header">
                         <h3>Customer Messages</h3>
                         <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
                             <label style="display:flex; align-items:center; gap:0.5rem; color: var(--text-muted); font-size: 0.9rem;">
@@ -2960,6 +2972,7 @@
                 case 'activities': loadActivities(); break;
                 case 'messages':
                     initAdminMessageSender();
+                    loadAdminSentMessageHistory({ force: true });
                     loadContactInbox('message', { force: true });
                     break;
                 case 'users': loadUsers(); break;
@@ -3281,6 +3294,75 @@
 
         window.initAdminMessageSender = initAdminMessageSender;
 
+        async function loadAdminSentMessageHistory(options = {}) {
+            const wrap = document.getElementById('admin-sent-history-wrap');
+            if (!wrap) return;
+
+            if (options.force) {
+                wrap.innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
+            }
+
+            try {
+                const resp = await api.get('/admin/messages/history?limit=60');
+                const rows = resp?.history || [];
+
+                if (!rows.length) {
+                    wrap.innerHTML = '<div class="empty-state"><p>No sent messages yet.</p></div>';
+                    return;
+                }
+
+                wrap.innerHTML = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Admin</th>
+                                <th>Audience</th>
+                                <th>Channels</th>
+                                <th>Result</th>
+                                <th>Subject</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.map(row => {
+                                const channels = row.channels || {};
+                                const summary = row.summary || {};
+                                const channelTags = [
+                                    channels.email ? '<span class="badge badge-info">Email</span>' : '',
+                                    channels.sms ? '<span class="badge badge-warning">SMS</span>' : '',
+                                    channels.whatsapp ? '<span class="badge badge-success">WhatsApp</span>' : ''
+                                ].filter(Boolean).join(' ');
+
+                                const resultText = [
+                                    summary?.email ? `E:${summary.email.sent || 0}/${summary.email.attempted || 0}` : '',
+                                    summary?.sms ? `S:${summary.sms.sent || 0}/${summary.sms.attempted || 0}` : '',
+                                    summary?.whatsapp ? `W:${summary.whatsapp.sent || 0}/${summary.whatsapp.attempted || 0}` : ''
+                                ].filter(Boolean).join(' | ');
+
+                                return `
+                                    <tr>
+                                        <td>${escapeHtml(formatContactDate(row.created_at))}</td>
+                                        <td>${escapeHtml(row.admin_name || row.admin_email || 'Admin')}</td>
+                                        <td>${escapeHtml(row.audience || '-')}</td>
+                                        <td>${channelTags || '-'}</td>
+                                        <td>${escapeHtml(resultText || '-')}</td>
+                                        <td>${escapeHtml(row.subject || '-')}</td>
+                                        <td style="max-width: 420px; white-space: normal;">${escapeHtml(row.message_body || '-')}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (err) {
+                console.error('Load sent history error:', err);
+                wrap.innerHTML = `<div class="empty-state"><p>Failed to load history: ${escapeHtml(err?.message || 'Unknown error')}</p></div>`;
+            }
+        }
+
+        window.loadAdminSentMessageHistory = loadAdminSentMessageHistory;
+
         window.sendAdminBroadcastMessage = async function() {
             const audienceEl = document.getElementById('admin-message-audience');
             const identifierTypeEl = document.getElementById('admin-message-identifier-type');
@@ -3346,6 +3428,8 @@
                     const totalText = `Recipients: ${summary.totalRecipients || 0}`;
                     resultEl.textContent = [totalText, emailText, smsText, whatsappText].filter(Boolean).join(' • ');
                 }
+
+                loadAdminSentMessageHistory({ force: true });
 
                 // keep subject/body; admin may want to send again
             } catch (err) {

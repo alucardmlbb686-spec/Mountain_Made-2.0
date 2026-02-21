@@ -78,6 +78,7 @@ router.post('/contact/:id/business-email', adminController.sendContactMessageToB
 
 // Admin outbound messaging (to customers/wholesale)
 router.get('/users/search', adminController.searchUsers);
+router.get('/messages/history', adminController.getAdminMessageHistory);
 router.post('/messages/send', adminController.sendAdminMessage);
 
 // Danger Zone - Delete all non-admin data
