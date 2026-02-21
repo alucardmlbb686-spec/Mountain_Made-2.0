@@ -1625,6 +1625,9 @@
                             <label style="display:flex; align-items:center; gap:0.5rem; color: var(--text-muted); font-size: 0.95rem;">
                                 <input type="checkbox" id="admin-message-channel-sms"> Send to Phone (SMS)
                             </label>
+                            <label style="display:flex; align-items:center; gap:0.5rem; color: var(--text-muted); font-size: 0.95rem;">
+                                <input type="checkbox" id="admin-message-channel-whatsapp"> Send to WhatsApp
+                            </label>
                         </div>
 
                         <div style="display:grid; grid-template-columns: 1fr; gap: 0.85rem; margin-top: 0.9rem;">
@@ -3286,20 +3289,21 @@
             const bodyEl = document.getElementById('admin-message-body');
             const emailEl = document.getElementById('admin-message-channel-email');
             const smsEl = document.getElementById('admin-message-channel-sms');
+            const whatsappEl = document.getElementById('admin-message-channel-whatsapp');
             const btn = document.getElementById('admin-message-send-btn');
             const resultEl = document.getElementById('admin-message-send-result');
 
-            if (!audienceEl || !subjectEl || !bodyEl || !emailEl || !smsEl || !btn) return;
+            if (!audienceEl || !subjectEl || !bodyEl || !emailEl || !smsEl || !whatsappEl || !btn) return;
 
             const audience = String(audienceEl.value || 'all');
             const identifierType = String(identifierTypeEl?.value || 'email');
             const identifier = String(identifierEl?.value || '').trim();
             const subject = String(subjectEl.value || '').trim();
             const message = String(bodyEl.value || '').trim();
-            const channels = { email: !!emailEl.checked, sms: !!smsEl.checked };
+            const channels = { email: !!emailEl.checked, sms: !!smsEl.checked, whatsapp: !!whatsappEl.checked };
 
-            if (!channels.email && !channels.sms) {
-                showAlert('Please select Email and/or SMS.', 'error');
+            if (!channels.email && !channels.sms && !channels.whatsapp) {
+                showAlert('Please select Email, SMS, and/or WhatsApp.', 'error');
                 return;
             }
 
@@ -3336,8 +3340,11 @@
                     const smsText = channels.sms
                         ? `SMS: ${summary.sms?.sent || 0} sent, ${summary.sms?.failed || 0} failed`
                         : '';
+                    const whatsappText = channels.whatsapp
+                        ? `WhatsApp: ${summary.whatsapp?.sent || 0} sent, ${summary.whatsapp?.failed || 0} failed`
+                        : '';
                     const totalText = `Recipients: ${summary.totalRecipients || 0}`;
-                    resultEl.textContent = [totalText, emailText, smsText].filter(Boolean).join(' • ');
+                    resultEl.textContent = [totalText, emailText, smsText, whatsappText].filter(Boolean).join(' • ');
                 }
 
                 // keep subject/body; admin may want to send again

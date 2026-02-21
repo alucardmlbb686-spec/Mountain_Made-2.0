@@ -11,6 +11,7 @@ const { getLicenseState, LICENSE_EXPIRED_MESSAGE } = require('../middleware/admi
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
 const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER || process.env.TWILIO_PHONE_NUMBER || '';
+const TWILIO_WHATSAPP_FROM_NUMBER = process.env.TWILIO_WHATSAPP_FROM_NUMBER || process.env.TWILIO_WHATSAPP_NUMBER || '';
 
 const twilioClient = (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN)
   ? twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -18,7 +19,9 @@ const twilioClient = (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN)
 
 const EMAIL_SEND_TIMEOUT_MS = 20000;
 const SMS_SEND_TIMEOUT_MS = 20000;
+const WHATSAPP_SEND_TIMEOUT_MS = 20000;
 const SMS_CONCURRENCY = 8;
+const WHATSAPP_CONCURRENCY = 8;
 const EMAIL_BCC_CHUNK_SIZE = 40;
 
 function canUseResendForAdmin() {
@@ -33,6 +36,28 @@ function normalizeEmail(value) {
 
 function normalizePhone(value) {
   return String(value || '').trim();
+}
+
+function toWhatsappAddress(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  if (raw.toLowerCase().startsWith('whatsapp:')) {
+    return raw;
+  }
+
+  const cleaned = raw.replace(/[\s()-]/g, '');
+  if (!cleaned) return '';
+
+  if (cleaned.startsWith('+')) {
+    return `whatsapp:${cleaned}`;
+  }
+
+  if (/^\d+$/.test(cleaned)) {
+    return `whatsapp:+${cleaned}`;
+  }
+
+  return '';
 }
 
 function getSmtpConfig() {
@@ -1726,6 +1751,7 @@ exports.sendAdminMessage = async (req, res) => {
     const channels = body.channels || {};
     const sendEmail = channels.email !== false; // default true
     const sendSms = !!channels.sms;
+    const sendWhatsapp = !!channels.whatsapp;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required.' });
@@ -1760,22 +1786,29 @@ exports.sendAdminMessage = async (req, res) => {
         fromEmail = getSmtpConfig().fromEmail;
       } catch (e) {
         // Only fail if email is the only requested channel and Resend is unavailable
-        if (!sendSms && !resendAvailable) {
+        if (!sendSms && !sendWhatsapp && !resendAvailable) {
           return res.status(503).json({ error: e.message || 'Email is not configured.' });
         }
       }
     }
 
     if (sendSms && (!twilioClient || !TWILIO_FROM_NUMBER)) {
-      if (!sendEmail) {
+      if (!sendEmail && !sendWhatsapp) {
         return res.status(503).json({ error: 'SMS is not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER.' });
+      }
+    }
+
+    if (sendWhatsapp && (!twilioClient || !TWILIO_WHATSAPP_FROM_NUMBER)) {
+      if (!sendEmail && !sendSms) {
+        return res.status(503).json({ error: 'WhatsApp is not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM_NUMBER.' });
       }
     }
 
     const summary = {
       totalRecipients: activeRecipients.length,
       email: { attempted: 0, sent: 0, skippedNoEmail: 0, failed: 0 },
-      sms: { attempted: 0, sent: 0, skippedNoPhone: 0, failed: 0 }
+      sms: { attempted: 0, sent: 0, skippedNoPhone: 0, failed: 0 },
+      whatsapp: { attempted: 0, sent: 0, skippedNoPhone: 0, invalidPhone: 0, failed: 0 }
     };
 
     if (sendEmail) {
@@ -1925,6 +1958,43 @@ exports.sendAdminMessage = async (req, res) => {
       }
     }
 
+    if (sendWhatsapp) {
+      const whatsappTargets = activeRecipients
+        .map((user) => normalizePhone(user.phone))
+        .filter((value) => !!value);
+      summary.whatsapp.skippedNoPhone = activeRecipients.length - whatsappTargets.length;
+
+      if (!twilioClient || !TWILIO_WHATSAPP_FROM_NUMBER) {
+        summary.whatsapp.failed += whatsappTargets.length;
+      } else if (whatsappTargets.length > 0) {
+        const whatsappBody = subject ? `${subject}\n${message}` : message;
+        const whatsappFrom = `whatsapp:${TWILIO_WHATSAPP_FROM_NUMBER.replace(/^whatsapp:/i, '')}`;
+        await runWithConcurrency(whatsappTargets, WHATSAPP_CONCURRENCY, async (rawPhone) => {
+          const toWhatsapp = toWhatsappAddress(rawPhone);
+          if (!toWhatsapp) {
+            summary.whatsapp.invalidPhone++;
+            return;
+          }
+
+          summary.whatsapp.attempted++;
+          try {
+            await withTimeout(
+              twilioClient.messages.create({
+                from: whatsappFrom,
+                to: toWhatsapp,
+                body: whatsappBody
+              }),
+              WHATSAPP_SEND_TIMEOUT_MS,
+              'WhatsApp sending timed out.'
+            );
+            summary.whatsapp.sent++;
+          } catch (_) {
+            summary.whatsapp.failed++;
+          }
+        });
+      }
+    }
+
     if (transporter && typeof transporter.close === 'function') {
       try {
         transporter.close();
@@ -1933,7 +2003,7 @@ exports.sendAdminMessage = async (req, res) => {
       }
     }
 
-    if (sendEmail && summary.email.attempted > 0 && summary.email.sent === 0 && !sendSms) {
+    if (sendEmail && summary.email.attempted > 0 && summary.email.sent === 0 && !sendSms && !sendWhatsapp) {
       return res.status(502).json({
         error: firstEmailError || 'Failed to send emails. Check SMTP/Resend configuration and sender domain verification.'
       });
