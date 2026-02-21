@@ -3,8 +3,120 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
+const twilio = require('twilio');
 const db = require('../config/database');
 const { getLicenseState, LICENSE_EXPIRED_MESSAGE } = require('../middleware/adminLicense');
+
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
+const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER || process.env.TWILIO_PHONE_NUMBER || '';
+
+const twilioClient = (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN)
+  ? twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+  : null;
+
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function normalizePhone(value) {
+  return String(value || '').trim();
+}
+
+function getSmtpConfig() {
+  const smtpHost = String(process.env.SMTP_HOST || '').trim();
+  const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+  const smtpUser = String(process.env.SMTP_USER || '').trim();
+  const smtpPass = String(process.env.SMTP_PASS || '').trim();
+  const fromEmail = String(process.env.SMTP_FROM_EMAIL || '').trim() || smtpUser;
+
+  return {
+    smtpHost,
+    smtpPort: Number.isFinite(smtpPort) ? smtpPort : 587,
+    smtpUser,
+    smtpPass,
+    fromEmail
+  };
+}
+
+function createSmtpTransporterOrThrow() {
+  const { smtpHost, smtpPort, smtpUser, smtpPass } = getSmtpConfig();
+  if (!smtpHost || !smtpUser || !smtpPass) {
+    throw new Error('Email is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM_EMAIL.');
+  }
+
+  return nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: Number(smtpPort) === 465,
+    auth: { user: smtpUser, pass: smtpPass }
+  });
+}
+
+async function getMessageRecipients({ audience, identifierType, identifier }) {
+  const safeAudience = String(audience || '').trim().toLowerCase();
+  const safeIdentifierType = String(identifierType || '').trim().toLowerCase();
+  const safeIdentifier = String(identifier || '').trim();
+
+  if (safeAudience === 'single') {
+    if (!safeIdentifier) {
+      throw new Error('Please provide a user email or id.');
+    }
+
+    if (safeIdentifierType === 'id') {
+      const parsedId = parseInt(safeIdentifier, 10);
+      if (!Number.isFinite(parsedId)) {
+        throw new Error('Invalid user id.');
+      }
+      const result = await db.query(
+        `
+          SELECT id, email, full_name, phone, role, is_blocked
+          FROM users
+          WHERE id = $1
+            AND role IN ('customer', 'wholesale')
+          LIMIT 1
+        `,
+        [parsedId]
+      );
+      return result.rows;
+    }
+
+    // default to email
+    const email = normalizeEmail(safeIdentifier);
+    if (!email) {
+      throw new Error('Invalid email.');
+    }
+
+    const result = await db.query(
+      `
+        SELECT id, email, full_name, phone, role, is_blocked
+        FROM users
+        WHERE LOWER(email) = LOWER($1)
+          AND role IN ('customer', 'wholesale')
+        LIMIT 1
+      `,
+      [email]
+    );
+    return result.rows;
+  }
+
+  const whereRole = (() => {
+    if (safeAudience === 'customers') return "role = 'customer'";
+    if (safeAudience === 'wholesale') return "role = 'wholesale'";
+    // all users
+    return "role IN ('customer', 'wholesale')";
+  })();
+
+  const result = await db.query(
+    `
+      SELECT id, email, full_name, phone, role, is_blocked
+      FROM users
+      WHERE ${whereRole}
+      ORDER BY id ASC
+    `
+  );
+  return result.rows;
+}
 
 // User Management
 exports.getAllUsers = async (req, res) => {
@@ -1415,6 +1527,176 @@ exports.sendContactMessageToBusinessEmail = async (req, res) => {
   } catch (error) {
     console.error('Send contact message to business email error:', error);
     return res.status(500).json({ error: 'Failed to send to business email.' });
+  }
+};
+
+// Search customers/wholesale users by email, name, or id (for admin messaging)
+exports.searchUsers = async (req, res) => {
+  try {
+    const query = String(req.query.query || req.query.q || '').trim();
+    const rawLimit = parseInt(req.query.limit || '10', 10);
+    const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(rawLimit, 20)) : 10;
+
+    if (!query) {
+      return res.json({ users: [] });
+    }
+
+    const maybeId = parseInt(query, 10);
+    const like = `%${query}%`;
+
+    let result;
+    if (Number.isFinite(maybeId)) {
+      result = await db.query(
+        `
+          SELECT id, email, full_name, phone, role
+          FROM users
+          WHERE role IN ('customer', 'wholesale')
+            AND is_blocked = false
+            AND (id = $1 OR email ILIKE $2 OR full_name ILIKE $2)
+          ORDER BY id ASC
+          LIMIT $3
+        `,
+        [maybeId, like, limit]
+      );
+    } else {
+      result = await db.query(
+        `
+          SELECT id, email, full_name, phone, role
+          FROM users
+          WHERE role IN ('customer', 'wholesale')
+            AND is_blocked = false
+            AND (email ILIKE $1 OR full_name ILIKE $1)
+          ORDER BY id ASC
+          LIMIT $2
+        `,
+        [like, limit]
+      );
+    }
+
+    return res.json({ users: result.rows || [] });
+  } catch (error) {
+    console.error('Search users error:', error);
+    return res.status(500).json({ error: 'Failed to search users.' });
+  }
+};
+
+// Send message to users (email and/or sms) - all customers / wholesale / all users / single
+exports.sendAdminMessage = async (req, res) => {
+  try {
+    const body = req.body || {};
+    const audience = String(body.audience || 'all').trim().toLowerCase();
+    const identifierType = String(body.identifierType || 'email').trim().toLowerCase();
+    const identifier = String(body.identifier || '').trim();
+    const subject = String(body.subject || '').trim();
+    const message = String(body.message || '').trim();
+    const channels = body.channels || {};
+    const sendEmail = channels.email !== false; // default true
+    const sendSms = !!channels.sms;
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required.' });
+    }
+
+    if (!['all', 'customers', 'wholesale', 'single'].includes(audience)) {
+      return res.status(400).json({ error: 'Invalid audience.' });
+    }
+
+    if (audience === 'single' && !['email', 'id'].includes(identifierType)) {
+      return res.status(400).json({ error: 'Invalid identifier type.' });
+    }
+
+    const recipients = await getMessageRecipients({ audience, identifierType, identifier });
+    if (!recipients || recipients.length === 0) {
+      return res.status(404).json({ error: 'No matching users found.' });
+    }
+
+    // Filter out blocked users
+    const activeRecipients = recipients.filter(r => !r.is_blocked);
+    if (!activeRecipients.length) {
+      return res.status(400).json({ error: 'All matched users are blocked.' });
+    }
+
+    let transporter = null;
+    let fromEmail = '';
+    if (sendEmail) {
+      try {
+        transporter = createSmtpTransporterOrThrow();
+        fromEmail = getSmtpConfig().fromEmail;
+      } catch (e) {
+        // Only fail if email is the only requested channel
+        if (!sendSms) {
+          return res.status(503).json({ error: e.message || 'Email is not configured.' });
+        }
+      }
+    }
+
+    if (sendSms && (!twilioClient || !TWILIO_FROM_NUMBER)) {
+      if (!sendEmail) {
+        return res.status(503).json({ error: 'SMS is not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER.' });
+      }
+    }
+
+    const summary = {
+      totalRecipients: activeRecipients.length,
+      email: { attempted: 0, sent: 0, skippedNoEmail: 0, failed: 0 },
+      sms: { attempted: 0, sent: 0, skippedNoPhone: 0, failed: 0 }
+    };
+
+    // Send one-by-one to avoid leaking addresses and to keep it simple
+    for (const user of activeRecipients) {
+      const toEmail = normalizeEmail(user.email);
+      const toPhone = normalizePhone(user.phone);
+
+      if (sendEmail) {
+        if (!toEmail) {
+          summary.email.skippedNoEmail++;
+        } else if (!transporter || !fromEmail) {
+          summary.email.failed++;
+        } else {
+          summary.email.attempted++;
+          try {
+            await transporter.sendMail({
+              from: fromEmail,
+              to: toEmail,
+              subject: subject || 'Message from Mountain Made',
+              text: message
+            });
+            summary.email.sent++;
+          } catch (e) {
+            summary.email.failed++;
+          }
+        }
+      }
+
+      if (sendSms) {
+        if (!toPhone) {
+          summary.sms.skippedNoPhone++;
+        } else if (!twilioClient || !TWILIO_FROM_NUMBER) {
+          summary.sms.failed++;
+        } else {
+          summary.sms.attempted++;
+          try {
+            const smsBody = subject ? `${subject}\n${message}` : message;
+            await twilioClient.messages.create({
+              from: TWILIO_FROM_NUMBER,
+              to: toPhone,
+              body: smsBody
+            });
+            summary.sms.sent++;
+          } catch (e) {
+            summary.sms.failed++;
+          }
+        }
+      }
+    }
+
+    return res.json({
+      message: 'Message send attempt completed.',
+      summary
+    });
+  } catch (error) {
+    console.error('Send admin message error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to send message.' });
   }
 };
 

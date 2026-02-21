@@ -1582,6 +1582,71 @@
                         <i class="fas fa-rotate"></i> Refresh
                     </button>
                 </div>
+
+                <div class="data-table-container">
+                    <div class="table-header">
+                        <h3>Send Message</h3>
+                    </div>
+                    <div style="padding: 1.25rem 1.5rem;">
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items:end;">
+                            <div>
+                                <label class="form-label" for="admin-message-audience">Send To</label>
+                                <select id="admin-message-audience" class="form-input">
+                                    <option value="all">All Users (Customers + Wholesale)</option>
+                                    <option value="customers">All Customers</option>
+                                    <option value="wholesale">All Wholesale Users</option>
+                                    <option value="single">Single User</option>
+                                </select>
+                            </div>
+
+                            <div id="admin-message-single-wrap" style="display:none;">
+                                <div style="display:flex; gap:0.5rem; align-items:end;">
+                                    <div style="min-width: 140px;">
+                                        <label class="form-label" for="admin-message-identifier-type">Find By</label>
+                                        <select id="admin-message-identifier-type" class="form-input">
+                                            <option value="email">Email</option>
+                                            <option value="id">User ID</option>
+                                        </select>
+                                    </div>
+                                    <div style="flex:1; min-width: 220px;">
+                                        <label class="form-label" for="admin-message-identifier">Customer Email / ID</label>
+                                        <input id="admin-message-identifier" class="form-input" placeholder="Type email or id" list="admin-user-suggestions" autocomplete="off">
+                                        <datalist id="admin-user-suggestions"></datalist>
+                                    </div>
+                                </div>
+                                <div style="margin-top:0.35rem; color: var(--text-muted); font-size: 0.85rem;">Search includes wholesale users too.</div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-top: 0.9rem;">
+                            <label style="display:flex; align-items:center; gap:0.5rem; color: var(--text-muted); font-size: 0.95rem;">
+                                <input type="checkbox" id="admin-message-channel-email" checked> Send to Email
+                            </label>
+                            <label style="display:flex; align-items:center; gap:0.5rem; color: var(--text-muted); font-size: 0.95rem;">
+                                <input type="checkbox" id="admin-message-channel-sms"> Send to Phone (SMS)
+                            </label>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: 1fr; gap: 0.85rem; margin-top: 0.9rem;">
+                            <div>
+                                <label class="form-label" for="admin-message-subject">Subject (Email)</label>
+                                <input type="text" id="admin-message-subject" class="form-input" placeholder="Subject">
+                            </div>
+                            <div>
+                                <label class="form-label" for="admin-message-body">Message</label>
+                                <textarea id="admin-message-body" class="form-input" rows="5" placeholder="Write your message..."></textarea>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:0.75rem; align-items:center; margin-top: 1rem; flex-wrap:wrap;">
+                            <button class="btn btn-primary" id="admin-message-send-btn" type="button" onclick="sendAdminBroadcastMessage()">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                            <div id="admin-message-send-result" style="color: var(--text-muted); font-size: 0.9rem;"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="data-table-container">
                     <div class="table-header">
                         <h3>Customer Messages</h3>
@@ -2890,7 +2955,10 @@
                 case 'customers-orders': loadCustomerOrders(); break;
                 case 'customers': loadCustomers(); break;
                 case 'activities': loadActivities(); break;
-                case 'messages': loadContactInbox('message', { force: true }); break;
+                case 'messages':
+                    initAdminMessageSender();
+                    loadContactInbox('message', { force: true });
+                    break;
                 case 'users': loadUsers(); break;
                 case 'wholesale': loadWholesaleRequests(); break;
                 case 'admin-license': loadAdminLicenseStatus({ silent: true }); break;
@@ -3148,6 +3216,130 @@
         window.openContactMessageModal = openContactMessageModal;
         window.closeContactMessageModal = closeContactMessageModal;
         window.sendActiveMessageToBusinessEmail = sendActiveMessageToBusinessEmail;
+
+        function initAdminMessageSender() {
+            if (window._adminMessageSenderInitialized) return;
+
+            const audienceEl = document.getElementById('admin-message-audience');
+            const singleWrap = document.getElementById('admin-message-single-wrap');
+            const identifierTypeEl = document.getElementById('admin-message-identifier-type');
+            const identifierEl = document.getElementById('admin-message-identifier');
+            const suggestionsEl = document.getElementById('admin-user-suggestions');
+
+            if (!audienceEl || !singleWrap || !identifierTypeEl || !identifierEl || !suggestionsEl) {
+                return;
+            }
+
+            window._adminMessageSenderInitialized = true;
+
+            function syncSingleVisibility() {
+                const mode = String(audienceEl.value || 'all');
+                singleWrap.style.display = mode === 'single' ? '' : 'none';
+            }
+
+            audienceEl.addEventListener('change', syncSingleVisibility);
+            syncSingleVisibility();
+
+            let searchTimer = null;
+            identifierEl.addEventListener('input', () => {
+                const mode = String(audienceEl.value || 'all');
+                if (mode !== 'single') return;
+
+                const q = String(identifierEl.value || '').trim();
+                if (searchTimer) clearTimeout(searchTimer);
+                searchTimer = setTimeout(async () => {
+                    try {
+                        if (q.length < 2) {
+                            suggestionsEl.innerHTML = '';
+                            return;
+                        }
+
+                        const data = await api.get(`/admin/users/search?query=${encodeURIComponent(q)}&limit=10`);
+                        const users = data?.users || [];
+                        const type = String(identifierTypeEl.value || 'email');
+
+                        suggestionsEl.innerHTML = users.map(u => {
+                            const value = type === 'id' ? String(u.id) : String(u.email || '');
+                            const label = `${u.full_name || ''} (${u.role || ''})`;
+                            return `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
+                        }).join('');
+                    } catch (e) {
+                        // Silent; do not spam alerts while typing
+                        suggestionsEl.innerHTML = '';
+                    }
+                }, 250);
+            });
+        }
+
+        window.initAdminMessageSender = initAdminMessageSender;
+
+        window.sendAdminBroadcastMessage = async function() {
+            const audienceEl = document.getElementById('admin-message-audience');
+            const identifierTypeEl = document.getElementById('admin-message-identifier-type');
+            const identifierEl = document.getElementById('admin-message-identifier');
+            const subjectEl = document.getElementById('admin-message-subject');
+            const bodyEl = document.getElementById('admin-message-body');
+            const emailEl = document.getElementById('admin-message-channel-email');
+            const smsEl = document.getElementById('admin-message-channel-sms');
+            const btn = document.getElementById('admin-message-send-btn');
+            const resultEl = document.getElementById('admin-message-send-result');
+
+            if (!audienceEl || !subjectEl || !bodyEl || !emailEl || !smsEl || !btn) return;
+
+            const audience = String(audienceEl.value || 'all');
+            const identifierType = String(identifierTypeEl?.value || 'email');
+            const identifier = String(identifierEl?.value || '').trim();
+            const subject = String(subjectEl.value || '').trim();
+            const message = String(bodyEl.value || '').trim();
+            const channels = { email: !!emailEl.checked, sms: !!smsEl.checked };
+
+            if (!channels.email && !channels.sms) {
+                showAlert('Please select Email and/or SMS.', 'error');
+                return;
+            }
+
+            if (!message) {
+                showAlert('Message is required.', 'error');
+                return;
+            }
+
+            if (audience === 'single' && !identifier) {
+                showAlert('Please select a customer email or id.', 'error');
+                return;
+            }
+
+            const payload = { audience, identifierType, identifier, subject, message, channels };
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                if (resultEl) resultEl.textContent = '';
+
+                const resp = await api.post('/admin/messages/send', payload);
+                const summary = resp?.summary;
+                showAlert(resp?.message || 'Message sent.', 'success');
+
+                if (resultEl && summary) {
+                    const emailText = channels.email
+                        ? `Email: ${summary.email?.sent || 0} sent, ${summary.email?.failed || 0} failed`
+                        : '';
+                    const smsText = channels.sms
+                        ? `SMS: ${summary.sms?.sent || 0} sent, ${summary.sms?.failed || 0} failed`
+                        : '';
+                    const totalText = `Recipients: ${summary.totalRecipients || 0}`;
+                    resultEl.textContent = [totalText, emailText, smsText].filter(Boolean).join(' • ');
+                }
+
+                // keep subject/body; admin may want to send again
+            } catch (err) {
+                console.error('Send admin message error:', err);
+                const msg = err?.error || err?.message || 'Failed to send message.';
+                showAlert(msg, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+            }
+        };
 
         // Helper functions
         function showLoading(containerId) {

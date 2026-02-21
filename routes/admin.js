@@ -76,6 +76,10 @@ router.get('/contact/unread-counts', adminController.getContactUnreadCounts);
 router.put('/contact/:id/read', adminController.markContactMessageRead);
 router.post('/contact/:id/business-email', adminController.sendContactMessageToBusinessEmail);
 
+// Admin outbound messaging (to customers/wholesale)
+router.get('/users/search', adminController.searchUsers);
+router.post('/messages/send', adminController.sendAdminMessage);
+
 // Danger Zone - Delete all non-admin data
 router.post('/delete-all-data', superAdminCheck, adminController.deleteAllData);
 
