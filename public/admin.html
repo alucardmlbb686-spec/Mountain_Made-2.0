@@ -2938,7 +2938,10 @@
             const discountInput = document.getElementById('edit-product-discount-price');
             if (!priceInput || !adjustInput || !discountInput) return;
 
-            const basePrice = parseFloat(String(priceInput.value || '').trim());
+            const savedPriceRaw = String(priceInput.getAttribute('data-saved-price') || '').trim();
+            const savedPrice = parseFloat(savedPriceRaw);
+            const currentPrice = parseFloat(String(priceInput.value || '').trim());
+            const basePrice = (source === 'adjust' && Number.isFinite(savedPrice)) ? savedPrice : currentPrice;
             if (!Number.isFinite(basePrice)) return;
 
             const adjustmentRaw = String(adjustInput.value || '').trim();
@@ -2976,6 +2979,9 @@
             computedDiscount = Math.max(0, computedDiscount);
             const computedText = Number(computedDiscount).toFixed(2);
             discountInput.value = computedText;
+            if (source === 'adjust') {
+                priceInput.value = computedText;
+            }
             try {
                 discountInput.dispatchEvent(new Event('input', { bubbles: true }));
                 discountInput.dispatchEvent(new Event('change', { bubbles: true }));
