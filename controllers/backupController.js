@@ -11,6 +11,64 @@ const isWindows = process.platform === 'win32';
 let autoBackupTimer = null;
 let isAutoBackupRunning = false;
 
+const resolveBackupDbConfig = () => {
+  const databaseUrl = String(process.env.DATABASE_URL || '').trim();
+  const direct = {
+    dbHost: String(process.env.DB_HOST || '').trim(),
+    dbPort: String(process.env.DB_PORT || '').trim(),
+    dbName: String(process.env.DB_NAME || '').trim(),
+    dbUser: String(process.env.DB_USER || '').trim(),
+    dbPassword: String(process.env.DB_PASSWORD || ''),
+    sslMode: String(process.env.PGSSLMODE || '').trim()
+  };
+
+  if (direct.dbHost && direct.dbPort && direct.dbName && direct.dbUser) {
+    return {
+      dbHost: direct.dbHost,
+      dbPort: direct.dbPort,
+      dbName: direct.dbName,
+      dbUser: direct.dbUser,
+      dbPassword: direct.dbPassword,
+      sslMode: direct.sslMode
+    };
+  }
+
+  if (!databaseUrl) {
+    return {
+      dbHost: direct.dbHost || 'localhost',
+      dbPort: direct.dbPort || '5432',
+      dbName: direct.dbName || 'mountain_made',
+      dbUser: direct.dbUser || 'postgres',
+      dbPassword: direct.dbPassword || '',
+      sslMode: direct.sslMode
+    };
+  }
+
+  try {
+    const parsed = new URL(databaseUrl);
+    const querySslMode = parsed.searchParams.get('sslmode') || '';
+    const host = parsed.hostname || direct.dbHost || 'localhost';
+
+    return {
+      dbHost: host,
+      dbPort: parsed.port || direct.dbPort || '5432',
+      dbName: (parsed.pathname || '').replace(/^\//, '') || direct.dbName || 'mountain_made',
+      dbUser: parsed.username || direct.dbUser || 'postgres',
+      dbPassword: parsed.password || direct.dbPassword || '',
+      sslMode: direct.sslMode || querySslMode || (host.includes('render.com') ? 'require' : '')
+    };
+  } catch (_) {
+    return {
+      dbHost: direct.dbHost || 'localhost',
+      dbPort: direct.dbPort || '5432',
+      dbName: direct.dbName || 'mountain_made',
+      dbUser: direct.dbUser || 'postgres',
+      dbPassword: direct.dbPassword || '',
+      sslMode: direct.sslMode
+    };
+  }
+};
+
 const toBool = (value) => String(value || '').trim().toLowerCase() === 'true';
 
 const AUTO_BACKUP_SETTING_KEYS = [
@@ -430,15 +488,24 @@ const createBackupInternal = async ({ drive, folderPath, createdByUserId = null 
     const filename = `mountain_made_backup_${timestamp}.sql`;
     const filePath = path.join(backupDir, filename);
 
-    // Get database credentials from environment
-    const dbHost = process.env.DB_HOST || 'localhost';
-    const dbPort = process.env.DB_PORT || '5432';
-    const dbName = process.env.DB_NAME || 'mountain_made';
-    const dbUser = process.env.DB_USER || 'postgres';
-    const dbPassword = process.env.DB_PASSWORD || '';
+    // Resolve database credentials (supports DATABASE_URL cloud deployments)
+    const {
+      dbHost,
+      dbPort,
+      dbName,
+      dbUser,
+      dbPassword,
+      sslMode
+    } = resolveBackupDbConfig();
 
-    // Set PGPASSWORD environment variable for pg_dump
-    const env = { ...process.env, PGPASSWORD: dbPassword };
+    // Set pg_dump environment variables
+    const env = {
+      ...process.env,
+      PGPASSWORD: dbPassword
+    };
+    if (sslMode) {
+      env.PGSSLMODE = sslMode;
+    }
 
     // Determine pg_dump binary path (allow override via PG_DUMP_PATH)
     const pgDumpBinary = process.env.PG_DUMP_PATH || 'pg_dump';
