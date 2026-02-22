@@ -5,7 +5,7 @@ class Order {
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = String(date.getFullYear());
-    return `MM${day}${month}${year}`;
+    return `MMDL${day}${month}${year}`;
   }
 
   static async generateOrderNumber(client, base) {
@@ -69,7 +69,7 @@ class Order {
         delivery_charge = 0
       } = orderData;
       
-      // Generate unique business order number (MMDDMMYYYY, then MMDDMMYYYY2, MMDDMMYYYY3...)
+      // Generate unique business order number (MMDLDDMMYYYY, then MMDLDDMMYYYY2, MMDLDDMMYYYY3...)
       const orderBase = this.buildOrderNumberBase(new Date());
       const orderQuery = `
         INSERT INTO orders (
