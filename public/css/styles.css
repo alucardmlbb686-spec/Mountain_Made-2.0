@@ -370,21 +370,47 @@ small {
 
 .navbar-deliver-inline {
   display: inline-flex;
-  flex-direction: column;
-  max-width: 240px;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 280px;
   line-height: 1.15;
   font-family: 'Inter', sans-serif;
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 0.2rem 0.35rem;
+  transition: background-color var(--transition-base), transform var(--transition-base);
+}
+
+.navbar-deliver-inline:hover {
+  background: var(--primary-50);
+  transform: translateY(-1px);
+}
+
+.navbar-deliver-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.navbar-deliver-text {
+  min-width: 0;
+  display: inline-flex;
+  flex-direction: column;
 }
 
 .navbar-deliver-label {
-  font-size: 0.62rem;
+  font-size: 0.64rem;
   font-weight: var(--font-semibold);
   color: var(--text-secondary);
 }
 
 .navbar-deliver-value {
-  font-size: 0.68rem;
-  font-weight: var(--font-semibold);
+  font-size: 0.76rem;
+  font-weight: var(--font-bold);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -1385,7 +1411,7 @@ small {
   }
 
   .navbar-deliver-inline {
-    max-width: 200px;
+    max-width: 220px;
   }
   
   .navbar-brand .logo-icon {
@@ -1445,7 +1471,15 @@ small {
   }
 
   .navbar-deliver-inline {
-    max-width: 132px;
+    max-width: 160px;
+    padding: 0.14rem 0.22rem;
+    gap: 0.3rem;
+  }
+
+  .navbar-deliver-icon {
+    width: 14px;
+    height: 14px;
+    font-size: 0.72rem;
   }
 
   .navbar-deliver-label {
@@ -1453,7 +1487,7 @@ small {
   }
 
   .navbar-deliver-value {
-    font-size: 0.56rem;
+    font-size: 0.62rem;
   }
   
   .navbar-brand .logo-icon {
@@ -1827,7 +1861,7 @@ small {
   }
 
   .navbar-deliver-inline {
-    max-width: 112px;
+    max-width: 132px;
   }
 
   .navbar-deliver-label,

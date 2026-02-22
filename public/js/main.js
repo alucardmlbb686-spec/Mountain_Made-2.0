@@ -447,10 +447,24 @@ const auth = {
 
     const ensureNode = (brand) => {
       let delivery = brand.querySelector('.navbar-deliver-inline');
+      if (delivery && delivery.tagName !== 'A') {
+        delivery.remove();
+        delivery = null;
+      }
       if (!delivery) {
-        delivery = document.createElement('span');
+        delivery = document.createElement('a');
         delivery.className = 'navbar-deliver-inline hidden';
+        delivery.href = '/addresses';
+        delivery.title = 'Manage delivery addresses';
+        delivery.setAttribute('aria-label', 'Manage delivery addresses');
         delivery.setAttribute('aria-live', 'polite');
+        delivery.innerHTML = `
+          <span class="navbar-deliver-icon"><i class="fas fa-location-dot" aria-hidden="true"></i></span>
+          <span class="navbar-deliver-text">
+            <span class="navbar-deliver-label"></span>
+            <span class="navbar-deliver-value"></span>
+          </span>
+        `;
         brand.appendChild(delivery);
       }
 
@@ -1558,10 +1572,13 @@ function applySiteLogo(logoUrl) {
         ${logoHtml}
         ${textImageHtml}
       </span>
-      <span class="navbar-deliver-inline hidden" aria-live="polite">
-        <span class="navbar-deliver-label"></span>
-        <span class="navbar-deliver-value"></span>
-      </span>
+      <a class="navbar-deliver-inline hidden" href="/addresses" title="Manage delivery addresses" aria-label="Manage delivery addresses" aria-live="polite">
+        <span class="navbar-deliver-icon"><i class="fas fa-location-dot" aria-hidden="true"></i></span>
+        <span class="navbar-deliver-text">
+          <span class="navbar-deliver-label"></span>
+          <span class="navbar-deliver-value"></span>
+        </span>
+      </a>
     `;
   });
 
