@@ -141,8 +141,8 @@
             position: sticky;
             top: 90px;
             align-self: flex-start;
-            max-height: calc(100vh - 110px);
-            overflow-y: auto;
+            max-height: none;
+            overflow: visible;
         }
 
         .filter-card {
@@ -407,6 +407,7 @@
                 top: 70px; /* roughly below navbar */
                 left: 0;
                 height: calc(100vh - 70px);
+                overflow-y: auto;
                 z-index: 900;
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
