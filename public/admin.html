@@ -2634,7 +2634,7 @@
                                     <label class="form-label">Discount Price (₹) <small style="color: var(--text-muted); font-weight: normal;">Optional</small></label>
                                     <input type="number" id="edit-product-discount-price" class="form-input" placeholder="0.00" step="0.01">
                                     <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.5rem; align-items:center;">
-                                        <input type="text" id="edit-product-discount-adjust" class="form-input" placeholder="Enter amount to subtract from price (e.g. 5)" style="max-width: 320px;" oninput="updateDiscountFromMainPrice()" onblur="updateDiscountFromMainPrice()">
+                                        <input type="text" id="edit-product-discount-adjust" class="form-input" placeholder="Use - to subtract, or number to add (e.g. -5 / 5)" style="max-width: 320px;" oninput="updateDiscountFromMainPrice()" onblur="updateDiscountFromMainPrice()">
                                     </div>
                                 </div>
                                 <div>
@@ -2951,8 +2951,9 @@
             const adjustment = parseFloat(adjustmentRaw);
             if (!Number.isFinite(adjustment)) return;
 
-            const subtractAmount = Math.abs(adjustment);
-            const computedDiscount = Math.max(0, basePrice - subtractAmount);
+            const computedDiscount = adjustmentRaw.startsWith('-')
+                ? Math.max(0, basePrice - Math.abs(adjustment))
+                : Math.max(0, basePrice + Math.abs(adjustment));
             discountInput.value = Number(computedDiscount).toFixed(2);
             try {
                 discountInput.dispatchEvent(new Event('input', { bubbles: true }));
