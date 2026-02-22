@@ -2634,7 +2634,7 @@
                                     <label class="form-label">Discount Price (₹) <small style="color: var(--text-muted); font-weight: normal;">Optional</small></label>
                                     <input type="number" id="edit-product-discount-price" class="form-input" placeholder="0.00" step="0.01">
                                     <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.5rem; align-items:center;">
-                                        <input type="text" id="edit-product-discount-adjust" class="form-input" placeholder="Enter +/- amount from main price (e.g. -5)" style="max-width: 320px;" oninput="updateDiscountFromMainPrice()" onblur="updateDiscountFromMainPrice()">
+                                        <input type="text" id="edit-product-discount-adjust" class="form-input" placeholder="Enter amount to subtract from price (e.g. 5)" style="max-width: 320px;" oninput="updateDiscountFromMainPrice()" onblur="updateDiscountFromMainPrice()">
                                     </div>
                                 </div>
                                 <div>
@@ -2942,12 +2942,16 @@
             if (!Number.isFinite(basePrice)) return;
 
             const adjustmentRaw = String(adjustInput.value || '').trim();
-            if (!adjustmentRaw) return;
+            if (!adjustmentRaw) {
+                discountInput.value = '';
+                return;
+            }
 
             const adjustment = parseFloat(adjustmentRaw);
             if (!Number.isFinite(adjustment)) return;
 
-            const computedDiscount = Math.max(0, basePrice + adjustment);
+            const subtractAmount = Math.abs(adjustment);
+            const computedDiscount = Math.max(0, basePrice - subtractAmount);
             discountInput.value = Number(computedDiscount).toFixed(2);
             try {
                 discountInput.dispatchEvent(new Event('input', { bubbles: true }));
