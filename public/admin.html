@@ -2943,7 +2943,8 @@
 
             const adjustmentRaw = String(adjustInput.value || '').trim();
             if (!adjustmentRaw) {
-                discountInput.value = '';
+                const savedDiscount = discountInput.getAttribute('data-saved-discount');
+                discountInput.value = savedDiscount || '';
                 return;
             }
 
@@ -6757,6 +6758,14 @@
             document.getElementById('edit-product-wholesale-price').value = product.wholesale_price || '';
             document.getElementById('edit-product-discount-price').value = product.discount_price || '';
             document.getElementById('edit-product-stock').value = product.stock_quantity || 0;
+
+            const editDiscountInput = document.getElementById('edit-product-discount-price');
+            if (editDiscountInput) {
+                const savedDiscount = (product.discount_price === null || product.discount_price === undefined || product.discount_price === '')
+                    ? ''
+                    : String(product.discount_price);
+                editDiscountInput.setAttribute('data-saved-discount', savedDiscount);
+            }
 
             const discountAdjust = document.getElementById('edit-product-discount-adjust');
             if (discountAdjust) discountAdjust.value = '';
