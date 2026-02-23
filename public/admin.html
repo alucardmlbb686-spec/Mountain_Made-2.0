@@ -8256,6 +8256,22 @@
                     recognition.interimResults = false;
                     recognition.maxAlternatives = 1;
 
+                    recognition.onstart = () => {
+                        try {
+                            micBtn.disabled = true;
+                        } catch (_) {
+                            // ignore
+                        }
+                    };
+
+                    recognition.onend = () => {
+                        try {
+                            micBtn.disabled = !enabled || !canListen;
+                        } catch (_) {
+                            // ignore
+                        }
+                    };
+
                     recognition.onresult = (event) => {
                         const transcript = event?.results?.[0]?.[0]?.transcript || '';
                         if (!transcript) {
@@ -8267,11 +8283,32 @@
 
                     recognition.onerror = (event) => {
                         const err = String(event?.error || '').toLowerCase();
-                        if (err === 'not-allowed' || err === 'service-not-allowed') {
-                            speak('Mic permission is blocked. Allow microphone access to use voice commands.', { interrupt: true, force: true });
+                        if (err === 'not-allowed') {
+                            speak('Microphone permission is blocked. Please allow mic access for this site.', { interrupt: true, force: true });
+                            try {
+                                window.showAlert?.('Microphone permission is blocked. In your browser: Site settings → Microphone → Allow.', 'error');
+                            } catch (_) { /* ignore */ }
                             return;
                         }
-                        // keep it short
+
+                        if (err === 'service-not-allowed') {
+                            speak('Voice recognition service is blocked in this browser. Try Chrome or Edge, not incognito, and make sure the page is HTTPS.', { interrupt: true, force: true });
+                            try {
+                                window.showAlert?.('Voice recognition service is blocked. Try Chrome/Edge (normal tab) on HTTPS, and disable strict tracking protection for this site.', 'error');
+                            } catch (_) { /* ignore */ }
+                            return;
+                        }
+
+                        if (err === 'audio-capture') {
+                            speak('I can’t access your microphone. Is another app using it?', { interrupt: true, force: true });
+                            return;
+                        }
+
+                        if (err === 'network') {
+                            speak('Voice recognition needs internet. Please check your connection.', { interrupt: true, force: true });
+                            return;
+                        }
+
                         speak('Voice command failed. Try again.', { interrupt: true, force: true });
                     };
 
@@ -8354,6 +8391,38 @@
                 toggleBtn.addEventListener('click', () => setEnabled(!enabled));
                 micBtn.addEventListener('click', async () => {
                     if (!enabled) return;
+
+                    // SpeechRecognition is typically HTTPS-only (or localhost).
+                    const isSecureOrigin = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+                    if (!isSecureOrigin) {
+                        speak('Voice commands need HTTPS.', { interrupt: true, force: true });
+                        try {
+                            window.showAlert?.('Lara voice commands require HTTPS (secure origin).', 'error');
+                        } catch (_) { /* ignore */ }
+                        return;
+                    }
+
+                    // Pre-request microphone permission so we can distinguish mic-denied from service issues.
+                    if (navigator.mediaDevices?.getUserMedia) {
+                        try {
+                            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                            try {
+                                stream.getTracks().forEach(t => t.stop());
+                            } catch (_) { /* ignore */ }
+                        } catch (micErr) {
+                            const name = String(micErr?.name || micErr?.message || '').toLowerCase();
+                            if (name.includes('notallowed') || name.includes('permission')) {
+                                speak('Microphone permission is blocked. Please allow mic access for this site.', { interrupt: true, force: true });
+                            } else {
+                                speak('I can’t access your microphone right now.', { interrupt: true, force: true });
+                            }
+                            try {
+                                window.showAlert?.('Microphone access failed. Check browser site settings and Windows privacy settings for the microphone.', 'error');
+                            } catch (_) { /* ignore */ }
+                            return;
+                        }
+                    }
+
                     const r = ensureRecognition();
                     if (!r) {
                         speak('Voice recognition is not available here.', { interrupt: true, force: true });
