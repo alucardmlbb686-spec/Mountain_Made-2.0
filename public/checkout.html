@@ -1748,16 +1748,6 @@
 
         // Ensure we check authentication asynchronously before loading checkout
 
-            window.addEventListener('pageshow', () => {
-                handlePendingGpayReturn();
-            });
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') {
-                    handlePendingGpayReturn();
-                }
-            });
-
-            await handlePendingGpayReturn();
         (async () => {
             const user = await auth.checkAuth();
             
@@ -1774,6 +1764,17 @@
             auth.updateNavigationLinks();
 
             wireBillingUI();
+
+            window.addEventListener('pageshow', () => {
+                handlePendingGpayReturn();
+            });
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    handlePendingGpayReturn();
+                }
+            });
+
+            await handlePendingGpayReturn();
 
             document.querySelectorAll('#checkout-form [data-validate]').forEach(field => {
                 field.addEventListener('blur', () => {
