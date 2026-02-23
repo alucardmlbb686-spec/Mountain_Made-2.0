@@ -7242,9 +7242,13 @@
                     return;
                 }
 
-                const priceToSave = Number.isFinite(parsedDiscountPrice)
-                    ? parsedDiscountPrice
-                    : parsedPrice;
+                if (Number.isFinite(parsedDiscountPrice) && Number.isFinite(parsedPrice) && parsedDiscountPrice >= parsedPrice) {
+                    showAlert('Discount price must be less than the base price.', 'error');
+                    return;
+                }
+
+                // IMPORTANT: keep base price as-is; store discount separately.
+                const priceToSave = parsedPrice;
                 const discountToSave = parsedDiscountPrice;
 
                 let updateData = {
