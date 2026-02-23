@@ -30,6 +30,7 @@
     "nodemailer": "^6.9.15",
     "path": "^0.12.7",
     "pg": "^8.11.3",
+    "razorpay": "^2.9.6",
     "twilio": "^5.4.2"
   },
   "devDependencies": {

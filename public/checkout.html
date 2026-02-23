@@ -649,6 +649,7 @@
     </style>
 
     <script src="/js/main.js?v=20260223"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
         // Fallbacks: if main.js is stale/blocked, keep checkout functional.
         (function ensureCheckoutDependencies() {
@@ -1741,8 +1742,99 @@
             const shouldSaveAddress = !selectedAddressId && !!document.getElementById('save_address')?.checked;
 
             if (paymentMethod === 'gpay') {
-                const gpayRef = generateGpayRef();
+                // Preferred: Razorpay (auto-detect success/cancel). Fallback: UPI deep-link + UTR prompt.
+                if (typeof window.Razorpay === 'function') {
+                    try {
+                        const paymentInit = await api.post('/payments/razorpay/create', {
+                            delivery_speed: checkoutDeliverySpeed
+                        });
 
+                        const rpKeyId = paymentInit?.keyId;
+                        const rpOrderId = paymentInit?.orderId;
+                        const rpAmount = paymentInit?.amount;
+                        const rpCurrency = paymentInit?.currency || 'INR';
+                        const rpDeliveryCharge = Number(paymentInit?.delivery_charge) || 0;
+                        const rpDeliverySpeed = paymentInit?.delivery_speed || checkoutDeliverySpeed;
+
+                        if (!rpKeyId || !rpOrderId || !rpAmount) {
+                            throw new Error('Payment initialization failed.');
+                        }
+
+                        const user = auth?.currentUser || null;
+                        const options = {
+                            key: rpKeyId,
+                            amount: rpAmount,
+                            currency: rpCurrency,
+                            name: 'Mountain Made',
+                            description: 'Checkout Payment',
+                            order_id: rpOrderId,
+                            handler: async function (response) {
+                                try {
+                                    // Save address first (if selected)
+                                    if (shouldSaveAddress) {
+                                        try {
+                                            await api.post('/addresses', {
+                                                label: 'Home',
+                                                full_name: shippingAddress.full_name,
+                                                phone: shippingAddress.phone,
+                                                address_line1: shippingAddress.address_line1,
+                                                address_line2: shippingAddress.address_line2,
+                                                city: shippingAddress.city,
+                                                state: shippingAddress.state,
+                                                postal_code: shippingAddress.postal_code,
+                                                country: shippingAddress.country,
+                                                is_default: userAddresses.length === 0
+                                            });
+                                        } catch (addrError) {
+                                            console.warn('Failed to save address before order:', addrError);
+                                        }
+                                    }
+
+                                    const verified = await api.post('/payments/razorpay/verify', {
+                                        ...response,
+                                        shipping_address: shippingAddress,
+                                        notes: combinedNotes,
+                                        delivery_speed: rpDeliverySpeed,
+                                        delivery_charge: rpDeliveryCharge
+                                    });
+
+                                    applyOrderPlacedUI(verified.order);
+                                } catch (verifyError) {
+                                    hideOrderStatusModal();
+                                    setPlaceOrderButtonState(false);
+                                    showAlert(verifyError.message || 'Payment verification failed.', 'error');
+                                }
+                            },
+                            modal: {
+                                ondismiss: function () {
+                                    hideOrderStatusModal();
+                                    setPlaceOrderButtonState(false);
+                                    showOrderFailed('Payment was cancelled. No order was created.');
+                                    showAlert('Payment cancelled. Order failed.', 'error');
+                                }
+                            },
+                            prefill: {
+                                name: user?.full_name || shippingAddress?.full_name || '',
+                                email: user?.email || '',
+                                contact: shippingAddress?.phone || ''
+                            },
+                            method: {
+                                upi: true
+                            }
+                        };
+
+                        hideOrderStatusModal();
+                        setPlaceOrderButtonState(false);
+                        const rzp = new window.Razorpay(options);
+                        rzp.open();
+                        return;
+                    } catch (rpError) {
+                        console.warn('Razorpay init error, falling back to UPI deep-link:', rpError);
+                        // continue to fallback below
+                    }
+                }
+
+                const gpayRef = generateGpayRef();
                 orderData.payment_details = {
                     ...(orderData.payment_details || {}),
                     ref: gpayRef
