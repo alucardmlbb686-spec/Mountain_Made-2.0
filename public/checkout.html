@@ -648,8 +648,98 @@
         }
     </style>
 
-    <script src="/js/main.js"></script>
+    <script src="/js/main.js?v=20260223"></script>
     <script>
+        // Fallbacks: if main.js is stale/blocked, keep checkout functional.
+        (function ensureCheckoutDependencies() {
+            if (typeof window.formatCurrency !== 'function') {
+                window.formatCurrency = function formatCurrency(amount) {
+                    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(amount) || 0);
+                };
+            }
+
+            const needsApi = !window.api || typeof window.api.get !== 'function';
+            if (needsApi) {
+                const APK_API_ORIGIN = 'https://mountain-made.onrender.com';
+                const isNative = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+                const API_BASE = (window.location.protocol === 'file:' || isNative) ? `${APK_API_ORIGIN}/api` : '/api';
+
+                window.api = {
+                    async request(endpoint, options = {}) {
+                        const token = localStorage.getItem('token');
+                        const headers = { ...(options.headers || {}) };
+                        const hasBody = options.body !== undefined && options.body !== null;
+                        const hasExplicitContentType = Object.keys(headers).some(k => k.toLowerCase() === 'content-type');
+                        if (hasBody && !hasExplicitContentType) {
+                            headers['Content-Type'] = 'application/json';
+                        }
+                        if (token && !headers.Authorization) {
+                            headers.Authorization = `Bearer ${token}`;
+                        }
+
+                        const resp = await fetch(`${API_BASE}${endpoint}`, {
+                            ...options,
+                            headers,
+                            credentials: 'include'
+                        });
+                        const text = await resp.text();
+                        const data = text ? (() => { try { return JSON.parse(text); } catch { return null; } })() : null;
+                        if (!resp.ok) throw new Error((data && data.error) || 'Request failed');
+                        return data;
+                    },
+                    get(endpoint) { return this.request(endpoint); },
+                    post(endpoint, body) { return this.request(endpoint, { method: 'POST', body: JSON.stringify(body) }); },
+                    put(endpoint, body) { return this.request(endpoint, { method: 'PUT', body: JSON.stringify(body) }); },
+                    delete(endpoint) { return this.request(endpoint, { method: 'DELETE' }); }
+                };
+            }
+
+            if (!window.cart || typeof window.cart.fetch !== 'function') {
+                window.cart = {
+                    items: [],
+                    total: 0,
+                    itemCount: 0,
+                    async fetch() {
+                        try {
+                            const data = await window.api.get('/cart');
+                            this.items = data?.cartItems || [];
+                            this.itemCount = this.items.length;
+                            this.total = Number(data?.total) || 0;
+                            return data;
+                        } catch (e) {
+                            return null;
+                        }
+                    },
+                    async update(itemId, quantity) {
+                        await window.api.put(`/cart/${itemId}`, { quantity });
+                        return this.fetch();
+                    },
+                    async remove(itemId) {
+                        await window.api.delete(`/cart/${itemId}`);
+                        return this.fetch();
+                    }
+                };
+            }
+
+            if (!window.auth || typeof window.auth.checkAuth !== 'function') {
+                window.auth = {
+                    currentUser: null,
+                    async checkAuth() {
+                        try {
+                            const data = await window.api.get('/auth/check');
+                            this.currentUser = data?.authenticated ? data.user : null;
+                            return this.currentUser;
+                        } catch (_) {
+                            this.currentUser = null;
+                            return null;
+                        }
+                    },
+                    isWholesale() { return false; },
+                    updateNavigationLinks() {}
+                };
+            }
+        })();
+
         let cartData = null;
         let userAddresses = [];
         let selectedAddressId = null;
