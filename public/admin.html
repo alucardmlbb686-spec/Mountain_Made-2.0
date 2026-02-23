@@ -1407,9 +1407,6 @@
         </div>
         <div class="navbar-actions">
             <span id="user-name" style="color: var(--text-muted); display: none;"></span>
-            <button id="lara-mic-btn" type="button" class="btn btn-sm btn-secondary" title="Talk to Lara (voice commands)">
-                <i class="fas fa-microphone"></i> <span class="hide-mobile">Talk</span>
-            </button>
             <button id="lara-voice-toggle-btn" type="button" class="btn btn-sm btn-secondary" title="Turn Lara voice on/off">
                 <i class="fas fa-volume-up"></i> <span class="hide-mobile">Lara:</span> <span id="lara-voice-state">Off</span>
             </button>
@@ -8127,9 +8124,8 @@
 
             window.initLaraVoiceAssistant = function() {
                 const toggleBtn = document.getElementById('lara-voice-toggle-btn');
-                const micBtn = document.getElementById('lara-mic-btn');
                 const stateEl = document.getElementById('lara-voice-state');
-                if (!toggleBtn || !micBtn || !stateEl) return;
+                if (!toggleBtn || !stateEl) return;
 
                 const synth = window.speechSynthesis;
                 const canSpeak = !!synth && typeof SpeechSynthesisUtterance !== 'undefined';
@@ -8141,15 +8137,15 @@
                 let voice = null;
                 let recognition = null;
                 let lastSpokenAt = 0;
+                let isListening = false;
+                let autoRestartTimer = null;
 
                 function setUi() {
                     stateEl.textContent = enabled ? 'On' : 'Off';
                     toggleBtn.classList.toggle('btn-success', enabled);
                     toggleBtn.classList.toggle('btn-secondary', !enabled);
-                    micBtn.disabled = !enabled || !canListen;
-                    micBtn.style.opacity = (!enabled || !canListen) ? '0.6' : '1';
-                    micBtn.title = canListen
-                        ? (enabled ? 'Talk to Lara (voice commands)' : 'Turn Lara on to talk')
+                    toggleBtn.title = canListen
+                        ? (enabled ? (isListening ? 'Lara is listening' : 'Lara voice is on') : 'Turn Lara voice on/off')
                         : 'Voice recognition not supported in this browser';
                 }
 
@@ -8252,23 +8248,25 @@
                     if (recognition) return recognition;
                     recognition = new Recognition();
                     recognition.lang = 'en-US';
-                    recognition.continuous = false;
+                    recognition.continuous = true;
                     recognition.interimResults = false;
                     recognition.maxAlternatives = 1;
 
                     recognition.onstart = () => {
-                        try {
-                            micBtn.disabled = true;
-                        } catch (_) {
-                            // ignore
-                        }
+                        isListening = true;
+                        setUi();
                     };
 
                     recognition.onend = () => {
-                        try {
-                            micBtn.disabled = !enabled || !canListen;
-                        } catch (_) {
-                            // ignore
+                        isListening = false;
+                        setUi();
+
+                        // Keep listening while enabled (browser may stop after a pause).
+                        if (enabled) {
+                            if (autoRestartTimer) clearTimeout(autoRestartTimer);
+                            autoRestartTimer = setTimeout(() => {
+                                startListening({ silent: true });
+                            }, 500);
                         }
                     };
 
@@ -8313,6 +8311,138 @@
                     };
 
                     return recognition;
+                }
+
+                async function preflightMicrophonePermission() {
+                    // SpeechRecognition is typically HTTPS-only (or localhost).
+                    const isSecureOrigin = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+                    if (!isSecureOrigin) {
+                        speak('Voice commands need HTTPS.', { interrupt: true, force: true });
+                        try {
+                            window.showAlert?.('Lara voice commands require HTTPS (secure origin).', 'error');
+                        } catch (_) { /* ignore */ }
+                        return false;
+                    }
+
+                    if (!navigator.mediaDevices?.getUserMedia) {
+                        speak('Microphone is not available in this browser.', { interrupt: true, force: true });
+                        try {
+                            window.showAlert?.('Microphone is not available (getUserMedia unsupported).', 'error');
+                        } catch (_) { /* ignore */ }
+                        return false;
+                    }
+
+                    // Best-effort: show Chrome permission state if available.
+                    if (navigator.permissions?.query) {
+                        try {
+                            const status = await navigator.permissions.query({ name: 'microphone' });
+                            const state = String(status?.state || '').trim();
+                            if (state) {
+                                window.showAlert?.(`Microphone permission state: ${state}`, state === 'granted' ? 'success' : 'info');
+                            }
+                        } catch (_) {
+                            // ignore
+                        }
+                    }
+
+                    try {
+                        // If there is no audio input device, Chrome will fail with NotFoundError.
+                        if (navigator.mediaDevices.enumerateDevices) {
+                            try {
+                                const devices = await navigator.mediaDevices.enumerateDevices();
+                                const hasMic = Array.isArray(devices) && devices.some(d => d && d.kind === 'audioinput');
+                                if (!hasMic) {
+                                    speak('No microphone was detected on this device.', { interrupt: true, force: true });
+                                    try {
+                                        window.showAlert?.('No microphone device detected (audioinput). Connect/enable a mic, then reload and try again.', 'error');
+                                    } catch (_) { /* ignore */ }
+                                    return false;
+                                }
+                            } catch (_) {
+                                // ignore enumeration failures
+                            }
+                        }
+
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        try {
+                            stream.getTracks().forEach(t => t.stop());
+                        } catch (_) { /* ignore */ }
+                        return true;
+                    } catch (micErr) {
+                        const errName = String(micErr?.name || '').trim();
+                        const errMsg = String(micErr?.message || '').trim();
+                        const name = `${errName} ${errMsg}`.toLowerCase();
+
+                        if (name.includes('notfound')) {
+                            speak('I can’t find a microphone device.', { interrupt: true, force: true });
+                            try {
+                                window.showAlert?.('Microphone not found. Check Windows sound input device and Chrome microphone device selection.', 'error');
+                            } catch (_) { /* ignore */ }
+                            return false;
+                        }
+
+                        if (name.includes('notreadable') || name.includes('trackstart')) {
+                            speak('Your microphone is busy or not available.', { interrupt: true, force: true });
+                            try {
+                                window.showAlert?.('Microphone is in use or not readable. Close other apps using mic (WhatsApp/Meet/Recorder), then try again.', 'error');
+                            } catch (_) { /* ignore */ }
+                            return false;
+                        }
+
+                        if (name.includes('notallowed') || name.includes('permission') || name.includes('denied')) {
+                            speak('Microphone permission is blocked. Please allow mic access for this site.', { interrupt: true, force: true });
+                        } else {
+                            speak('I can’t access your microphone right now.', { interrupt: true, force: true });
+                        }
+                        try {
+                            const details = errName ? ` (${errName})` : '';
+                            window.showAlert?.(
+                                `Microphone access failed${details}. Chrome: click the lock icon → Site settings → Microphone = Allow. Also check chrome://settings/content/microphone and Windows Settings → Privacy & security → Microphone.`,
+                                'error'
+                            );
+                        } catch (_) { /* ignore */ }
+                        return false;
+                    }
+                }
+
+                async function startListening({ silent = false } = {}) {
+                    if (!enabled) return;
+                    if (!canListen) {
+                        if (!silent) speak('Voice recognition is not available here.', { interrupt: true, force: true });
+                        return;
+                    }
+
+                    if (!(await preflightMicrophonePermission())) {
+                        return;
+                    }
+
+                    const r = ensureRecognition();
+                    if (!r) return;
+
+                    if (!silent) {
+                        speak('Listening. Just talk to me.', { interrupt: true, force: true });
+                    }
+
+                    try {
+                        r.start();
+                    } catch (_) {
+                        try { r.stop(); } catch (_) { /* ignore */ }
+                        try { r.start(); } catch (_) { /* ignore */ }
+                    }
+                }
+
+                function stopListening() {
+                    if (autoRestartTimer) {
+                        clearTimeout(autoRestartTimer);
+                        autoRestartTimer = null;
+                    }
+                    try {
+                        recognition?.stop?.();
+                    } catch (_) {
+                        // ignore
+                    }
+                    isListening = false;
+                    setUi();
                 }
 
                 function setEnabled(nextEnabled) {
@@ -8388,107 +8518,13 @@
                     }, true);
                 }
 
-                toggleBtn.addEventListener('click', () => setEnabled(!enabled));
-                micBtn.addEventListener('click', async () => {
-                    if (!enabled) return;
-
-                    // SpeechRecognition is typically HTTPS-only (or localhost).
-                    const isSecureOrigin = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
-                    if (!isSecureOrigin) {
-                        speak('Voice commands need HTTPS.', { interrupt: true, force: true });
-                        try {
-                            window.showAlert?.('Lara voice commands require HTTPS (secure origin).', 'error');
-                        } catch (_) { /* ignore */ }
-                        return;
-                    }
-
-                    // Pre-request microphone permission so we can distinguish mic-denied from service issues.
-                    if (navigator.mediaDevices?.getUserMedia) {
-                        // Best-effort: show Chrome permission state if available.
-                        if (navigator.permissions?.query) {
-                            try {
-                                const status = await navigator.permissions.query({ name: 'microphone' });
-                                const state = String(status?.state || '').trim();
-                                if (state) {
-                                    window.showAlert?.(`Microphone permission state: ${state}`, state === 'granted' ? 'success' : 'info');
-                                }
-                            } catch (_) {
-                                // ignore
-                            }
-                        }
-
-                        try {
-                            // If there is no audio input device, Chrome will fail with NotFoundError.
-                            if (navigator.mediaDevices.enumerateDevices) {
-                                try {
-                                    const devices = await navigator.mediaDevices.enumerateDevices();
-                                    const hasMic = Array.isArray(devices) && devices.some(d => d && d.kind === 'audioinput');
-                                    if (!hasMic) {
-                                        speak('No microphone was detected on this device.', { interrupt: true, force: true });
-                                        try {
-                                            window.showAlert?.('No microphone device detected (audioinput). Connect/enable a mic, then reload and try again.', 'error');
-                                        } catch (_) { /* ignore */ }
-                                        return;
-                                    }
-                                } catch (_) {
-                                    // ignore enumeration failures
-                                }
-                            }
-
-                            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                            try {
-                                stream.getTracks().forEach(t => t.stop());
-                            } catch (_) { /* ignore */ }
-                        } catch (micErr) {
-                            const errName = String(micErr?.name || '').trim();
-                            const errMsg = String(micErr?.message || '').trim();
-                            const name = `${errName} ${errMsg}`.toLowerCase();
-
-                            if (name.includes('notfound')) {
-                                speak('I can’t find a microphone device.', { interrupt: true, force: true });
-                                try {
-                                    window.showAlert?.('Microphone not found. Check Windows sound input device and Chrome microphone device selection.', 'error');
-                                } catch (_) { /* ignore */ }
-                                return;
-                            }
-
-                            if (name.includes('notreadable') || name.includes('trackstart')) {
-                                speak('Your microphone is busy or not available.', { interrupt: true, force: true });
-                                try {
-                                    window.showAlert?.('Microphone is in use or not readable. Close other apps using mic (WhatsApp/Meet/Recorder), then try again.', 'error');
-                                } catch (_) { /* ignore */ }
-                                return;
-                            }
-
-                            if (name.includes('notallowed') || name.includes('permission') || name.includes('denied')) {
-                                speak('Microphone permission is blocked. Please allow mic access for this site.', { interrupt: true, force: true });
-                            } else {
-                                speak('I can’t access your microphone right now.', { interrupt: true, force: true });
-                            }
-                            try {
-                                const details = errName ? ` (${errName})` : '';
-                                window.showAlert?.(
-                                    `Microphone access failed${details}. Chrome: click the lock icon → Site settings → Microphone = Allow. Also check chrome://settings/content/microphone and Windows Settings → Privacy & security → Microphone.`,
-                                    'error'
-                                );
-                            } catch (_) { /* ignore */ }
-                            return;
-                        }
-                    }
-
-                    const r = ensureRecognition();
-                    if (!r) {
-                        speak('Voice recognition is not available here.', { interrupt: true, force: true });
-                        return;
-                    }
-
-                    speak('Listening. Speak your command.', { interrupt: true, force: true });
-                    try {
-                        r.start();
-                    } catch (_) {
-                        // Some browsers throw if start is called twice.
-                        try { r.stop(); } catch (_) { /* ignore */ }
-                        try { r.start(); } catch (_) { /* ignore */ }
+                toggleBtn.addEventListener('click', async () => {
+                    const next = !enabled;
+                    setEnabled(next);
+                    if (next) {
+                        await startListening({ silent: false });
+                    } else {
+                        stopListening();
                     }
                 });
 
@@ -8496,6 +8532,9 @@
                 if (enabled) {
                     // say hello once on load
                     setTimeout(() => laraSayHello(), 600);
+                    // Best-effort auto-listen on load if already enabled.
+                    // Some browsers still require a user gesture to start mic.
+                    setTimeout(() => startListening({ silent: true }), 1200);
                 }
             };
         })();
