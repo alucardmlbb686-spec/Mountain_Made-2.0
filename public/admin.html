@@ -7268,6 +7268,11 @@
                 const parsedDiscountPrice = discount_price ? parseFloat(discount_price) : null;
                 const hasDiscountAdjust = discount_adjust_raw.length > 0;
 
+                if (!Number.isFinite(parsedPrice)) {
+                    showAlert('Please enter a valid price.', 'error');
+                    return;
+                }
+
                 if (hasDiscountAdjust && !Number.isFinite(parsedDiscountPrice)) {
                     showAlert('Please enter a valid discount adjustment.', 'error');
                     return;
@@ -7278,14 +7283,13 @@
                     return;
                 }
 
-                const effectiveBaseForValidation = Number.isFinite(parsedBasePrice) ? parsedBasePrice : parsedPrice;
-                if (Number.isFinite(parsedDiscountPrice) && Number.isFinite(effectiveBaseForValidation) && parsedDiscountPrice >= effectiveBaseForValidation) {
+                if (Number.isFinite(parsedDiscountPrice) && parsedDiscountPrice >= parsedPrice) {
                     showAlert('Discount price must be less than the base price.', 'error');
                     return;
                 }
 
-                // IMPORTANT: never overwrite the stored base price when stacking discounts.
-                const priceToSave = Number.isFinite(parsedBasePrice) ? parsedBasePrice : parsedPrice;
+                // Save the current price (history base) as the new base price.
+                const priceToSave = parsedPrice;
                 const discountToSave = parsedDiscountPrice;
 
                 let updateData = {
