@@ -8095,11 +8095,23 @@
             }
 
             function parseCommand(text) {
-                const t = String(text || '').toLowerCase().trim();
+                let t = String(text || '').toLowerCase().trim();
+                if (!t) return { type: 'empty' };
+
+                // Wake word handling (Siri-like): require "lara" / "hey lara".
+                // If present, strip it so commands like "Lara, open dashboard" work.
+                const hasWakeWord = /\b(hey\s+)?lara\b/.test(t);
+                if (!hasWakeWord) return { type: 'ignore' };
+                t = t
+                    .replace(/^\s*(hey\s+)?lara\b\s*[,.:;-]?\s*/i, '')
+                    .replace(/\b(hey\s+)?lara\b\s*[,.:;-]?\s*/gi, '')
+                    .trim();
                 if (!t) return { type: 'empty' };
 
                 const go = (id) => ({ type: 'section', id });
                 if (/(^|\b)help(\b|$)/.test(t)) return { type: 'help' };
+                if (/(^|\b)(stop|quiet|silence)(\b|$)/.test(t)) return { type: 'stop' };
+                if (/(^|\b)(off|turn off|disable)(\b|$)/.test(t)) return { type: 'off' };
                 if (/(^|\b)logout(\b|$)/.test(t)) return { type: 'logout' };
                 if (/(^|\b)read(\b|$)/.test(t) && /(page|section|screen)/.test(t)) return { type: 'read' };
 
@@ -8207,10 +8219,22 @@
 
                 function handleCommand(commandText) {
                     const cmd = parseCommand(commandText);
-                    if (cmd.type === 'empty') return;
+                    if (cmd.type === 'ignore' || cmd.type === 'empty') return;
 
                     if (cmd.type === 'help') {
                         speak(SAFE_FALLBACK_HELP, { interrupt: true, force: true });
+                        return;
+                    }
+
+                    if (cmd.type === 'stop') {
+                        stopSpeaking();
+                        speak('Okay. I’ll be quiet.', { interrupt: true, force: true });
+                        return;
+                    }
+
+                    if (cmd.type === 'off') {
+                        speak('Turning voice mode off.', { interrupt: true, force: true });
+                        setEnabled(false);
                         return;
                     }
 
@@ -8363,7 +8387,13 @@
                             }
                         }
 
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        const stream = await navigator.mediaDevices.getUserMedia({
+                            audio: {
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                autoGainControl: true
+                            }
+                        });
                         try {
                             stream.getTracks().forEach(t => t.stop());
                         } catch (_) { /* ignore */ }
@@ -8419,9 +8449,7 @@
                     const r = ensureRecognition();
                     if (!r) return;
 
-                    if (!silent) {
-                        speak('Listening. Just talk to me.', { interrupt: true, force: true });
-                    }
+                    if (!silent) speak('Listening. Say “Lara” then your command.', { interrupt: true, force: true });
 
                     try {
                         r.start();
