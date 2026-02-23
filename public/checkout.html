@@ -149,9 +149,6 @@
                                 <img id="gpay-qr-image" alt="GPay QR" style="max-width: 240px; width: 100%; border: 1px solid var(--border-primary); border-radius: 8px; background: #fff;">
                             </div>
                             <div class="form-help" id="gpay-prefill-hint">Prefilled from your Billing Management details.</div>
-                            <button type="button" id="open-gpay-btn" class="btn btn-secondary" style="margin-top: 0.75rem;">
-                                <i class="fab fa-google-pay"></i> Pay in GPay
-                            </button>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Order Notes (Optional)</label>
@@ -1031,7 +1028,6 @@
             const bankDisplay = document.getElementById('gpay-bank-display');
             const qrWrap = document.getElementById('gpay-qr-wrap');
             const qrImage = document.getElementById('gpay-qr-image');
-            const payBtn = document.getElementById('open-gpay-btn');
 
             if (!typeSelect || !valueInput || !label) return;
 
@@ -1063,12 +1059,6 @@
                 hint.textContent = checkoutGpaySettings.enabled
                     ? `Payee: ${checkoutGpaySettings.payeeName || 'Mountain Made'}`
                     : 'Google Pay is currently disabled by admin.';
-            }
-
-            if (payBtn) {
-                const total = getCurrentCheckoutTotal();
-                payBtn.disabled = !checkoutGpaySettings.enabled || !checkoutGpaySettings.upiId;
-                payBtn.innerHTML = `<i class="fab fa-google-pay"></i> Pay ${formatCurrency(total)} in GPay`;
             }
         }
 
@@ -1103,7 +1093,6 @@
             const typeSelect = document.getElementById('gpay-detail-type');
             const manageBtn = document.getElementById('manage-billing-btn');
             const saveBtn = document.getElementById('billing-save');
-            const openGpayBtn = document.getElementById('open-gpay-btn');
 
             if (typeSelect) {
                 typeSelect.value = 'upi';
@@ -1114,13 +1103,6 @@
             if (paymentSelect) {
                 paymentSelect.addEventListener('change', toggleGpayDetails);
                 toggleGpayDetails();
-            }
-
-            if (openGpayBtn) {
-                openGpayBtn.addEventListener('click', () => {
-                    const total = getCurrentCheckoutTotal();
-                    openGpayWithAmount(total, 'Checkout Payment');
-                });
             }
 
             if (manageBtn) {
@@ -1312,23 +1294,28 @@
             let gpayDetailValue = null;
 
             if (paymentMethod === 'gpay') {
-                const typeSelect = document.getElementById('gpay-detail-type');
-                const valueInput = document.getElementById('gpay-detail-value');
-                gpayDetailType = typeSelect?.value || 'upi';
-                gpayDetailValue = (valueInput?.value || '').trim();
-
-                if (!gpayDetailValue) {
-                    if (valueInput) showFieldError(valueInput, `${formatGpayLabel(gpayDetailType)} is required.`);
-                    showAlert(`Please enter your ${formatGpayLabel(gpayDetailType)} for GPay.`, 'error');
-                    if (valueInput) valueInput.focus();
+                if (!checkoutGpaySettings.enabled) {
+                    showAlert('Google Pay is currently disabled by admin.', 'error');
                     hideOrderStatusModal();
                     setPlaceOrderButtonState(false);
                     return;
                 }
 
-                if (valueInput) clearFieldError(valueInput);
+                if (!checkoutGpaySettings.upiId) {
+                    showAlert('GPay UPI ID is not configured by admin.', 'error');
+                    hideOrderStatusModal();
+                    setPlaceOrderButtonState(false);
+                    return;
+                }
 
-                saveBillingProfile({ preferred: gpayDetailType, [gpayDetailType]: gpayDetailValue });
+                const typeSelect = document.getElementById('gpay-detail-type');
+                gpayDetailType = typeSelect?.value || 'upi';
+                const selectedValues = {
+                    upi: checkoutGpaySettings.upiId,
+                    phone: checkoutGpaySettings.phoneNumber,
+                    qr: checkoutGpaySettings.qrImageUrl
+                };
+                gpayDetailValue = (selectedValues[gpayDetailType] || checkoutGpaySettings.upiId || '').trim();
             }
 
             const userNotes = document.getElementById('notes').value || '';
@@ -1401,6 +1388,11 @@
                 }
 
                 showOrderSuccess(result.order);
+
+                if (paymentMethod === 'gpay') {
+                    const orderNumber = result?.order?.order_number ? `Order ${result.order.order_number}` : 'Checkout Payment';
+                    openGpayWithAmount(totalAmount, orderNumber);
+                }
             } catch (error) {
                 hideOrderStatusModal();
                 setPlaceOrderButtonState(false);
