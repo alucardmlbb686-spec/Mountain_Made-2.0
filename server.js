@@ -89,7 +89,12 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'no-referrer');
-  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  const pathname = req.path || '/';
+  const isAdminPage = pathname === '/admin' || pathname === '/admin.html' || pathname.startsWith('/admin/');
+  // Microphone is required for Lara voice commands (admin only).
+  // Keep it blocked for the public site.
+  const microphonePolicy = isAdminPage ? 'microphone=(self)' : 'microphone=()';
+  res.setHeader('Permissions-Policy', `geolocation=(), ${microphonePolicy}, camera=()`);
   if (process.env.NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
