@@ -162,6 +162,73 @@
             color: var(--text-primary);
             line-height: 1.3;
         }
+
+        .product-title-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .product-share {
+            position: relative;
+            flex: 0 0 auto;
+        }
+
+        .product-share-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 1px solid var(--border-primary);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .product-share-btn:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .product-share-menu {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            min-width: 220px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+            padding: 0.5rem;
+            z-index: 50;
+        }
+
+        .product-share-menu button {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.6rem;
+            padding: 0.65rem 0.75rem;
+            border: 0;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .product-share-menu button:hover {
+            background: var(--bg-secondary);
+        }
+
+        .product-share-hint {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            padding: 0.25rem 0.75rem 0.5rem;
+        }
         
         @media (max-width: 768px) {
             .product-info-section h1 {
@@ -960,7 +1027,32 @@
                     </div>
                     
                     <div class="product-info-section">
-                        <h1>${product.name}</h1>
+                        <div class="product-title-row">
+                            <h1>${product.name}</h1>
+                            <div class="product-share">
+                                <button type="button" class="product-share-btn" onclick="toggleProductShareMenu(event)" aria-label="Share product">
+                                    <i class="fas fa-share-nodes"></i>
+                                </button>
+                                <div id="product-share-menu" class="product-share-menu hidden" role="menu" aria-label="Share options">
+                                    <div class="product-share-hint">Share this product</div>
+                                    <button type="button" onclick="shareProduct('whatsapp')" role="menuitem">
+                                        <i class="fab fa-whatsapp"></i> WhatsApp
+                                    </button>
+                                    <button type="button" onclick="shareProduct('facebook')" role="menuitem">
+                                        <i class="fab fa-facebook"></i> Facebook
+                                    </button>
+                                    <button type="button" onclick="shareProduct('instagram')" role="menuitem">
+                                        <i class="fab fa-instagram"></i> Instagram
+                                    </button>
+                                    <button type="button" onclick="shareProduct('native')" role="menuitem">
+                                        <i class="fas fa-share-from-square"></i> More…
+                                    </button>
+                                    <button type="button" onclick="shareProduct('copy')" role="menuitem">
+                                        <i class="fas fa-link"></i> Copy link
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                         
                         <div class="product-price-section">
                             <div class="product-price">
@@ -1050,6 +1142,127 @@
             
             document.getElementById('product-content').innerHTML = content;
             updateDisplayedPrice();
+        }
+
+        function getShareUrl() {
+            if (product && product.id != null) {
+                return `${window.location.origin}/product-details?id=${encodeURIComponent(String(product.id))}`;
+            }
+            return window.location.href;
+        }
+
+        function getSharePayload() {
+            const url = getShareUrl();
+            const pricing = getCurrentPricing();
+            const priceText = pricing?.salePrice ? formatCurrency(pricing.salePrice) : '';
+            const title = product?.name ? String(product.name) : 'Product';
+            const text = priceText ? `${title} (${priceText})` : title;
+            return { title, text, url };
+        }
+
+        function toggleProductShareMenu(event) {
+            try { event?.stopPropagation?.(); } catch (_) { /* ignore */ }
+            const menu = document.getElementById('product-share-menu');
+            if (!menu) return;
+
+            const isHidden = menu.classList.contains('hidden');
+            // Close any open menu first
+            menu.classList.add('hidden');
+            if (isHidden) {
+                menu.classList.remove('hidden');
+            }
+        }
+
+        function closeProductShareMenu() {
+            const menu = document.getElementById('product-share-menu');
+            if (!menu) return;
+            menu.classList.add('hidden');
+        }
+
+        async function copyTextToClipboard(value) {
+            const text = String(value || '').trim();
+            if (!text) return false;
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                }
+            } catch (_) {
+                // fall through
+            }
+
+            try {
+                const el = document.createElement('textarea');
+                el.value = text;
+                el.setAttribute('readonly', '');
+                el.style.position = 'fixed';
+                el.style.top = '-1000px';
+                el.style.left = '-1000px';
+                document.body.appendChild(el);
+                el.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(el);
+                return !!ok;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        async function shareProduct(target) {
+            closeProductShareMenu();
+            const { title, text, url } = getSharePayload();
+            const message = `${text}\n${url}`.trim();
+
+            const safeOpen = (shareUrl) => {
+                try {
+                    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+                } catch (_) {
+                    window.location.href = shareUrl;
+                }
+            };
+
+            if (target === 'copy') {
+                const ok = await copyTextToClipboard(url);
+                if (typeof showAlert === 'function') {
+                    showAlert(ok ? 'Link copied!' : 'Copy failed. Please copy the link from the address bar.', ok ? 'success' : 'error');
+                } else {
+                    alert(ok ? 'Link copied!' : 'Copy failed.');
+                }
+                return;
+            }
+
+            // Native share (best way to share into WhatsApp/Facebook/Instagram apps on mobile)
+            if (target === 'native' || target === 'instagram') {
+                if (navigator.share) {
+                    try {
+                        await navigator.share({ title, text, url });
+                        return;
+                    } catch (_) {
+                        // user cancelled or not supported for this payload
+                    }
+                }
+            }
+
+            if (target === 'whatsapp') {
+                safeOpen(`https://wa.me/?text=${encodeURIComponent(message)}`);
+                return;
+            }
+
+            if (target === 'facebook') {
+                safeOpen(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`);
+                return;
+            }
+
+            if (target === 'instagram') {
+                // Instagram doesn't support a reliable web share URL like WhatsApp/Facebook.
+                // Real working path on mobile is the native share sheet; otherwise copy link.
+                const ok = await copyTextToClipboard(url);
+                safeOpen('https://www.instagram.com/');
+                if (typeof showAlert === 'function') {
+                    showAlert(ok ? 'Link copied. Paste it in Instagram.' : 'Open Instagram and paste the link.', ok ? 'success' : 'info');
+                }
+                return;
+            }
         }
 
         function selectProductImage(thumbnailElement) {
@@ -1356,9 +1569,15 @@
             await loadProduct();
             await loadUserAddresses();
 
+            // Close share menu on outside click
+            document.addEventListener('click', () => {
+                closeProductShareMenu();
+            });
+
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') {
                     closeImageLightbox();
+                    closeProductShareMenu();
                 }
             });
 
