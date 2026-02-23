@@ -4555,7 +4555,7 @@
             document.getElementById('stock-reports-list').innerHTML = html;
         }
 
-        function filterStockReports() {
+        window.filterStockReports = function() {
             if (!window._stockReportsCache) return;
 
             const searchTerm = (document.getElementById('stock-search')?.value || '').toLowerCase().trim();
