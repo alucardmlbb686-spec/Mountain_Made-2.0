@@ -1407,6 +1407,12 @@
         </div>
         <div class="navbar-actions">
             <span id="user-name" style="color: var(--text-muted); display: none;"></span>
+            <button id="lara-mic-btn" type="button" class="btn btn-sm btn-secondary" title="Talk to Lara (voice commands)">
+                <i class="fas fa-microphone"></i> <span class="hide-mobile">Talk</span>
+            </button>
+            <button id="lara-voice-toggle-btn" type="button" class="btn btn-sm btn-secondary" title="Turn Lara voice on/off">
+                <i class="fas fa-volume-up"></i> <span class="hide-mobile">Lara:</span> <span id="lara-voice-state">Off</span>
+            </button>
             <button id="logout-btn" type="button" class="btn btn-sm btn-secondary">
                 <i class="fas fa-sign-out-alt"></i> <span class="hide-mobile">Logout</span>
             </button>
@@ -7990,6 +7996,15 @@
                 // Watch unread support inbox badges
                 startContactUnreadBadgesWatcher();
 
+                // Lara Voice Assistant (admin only)
+                try {
+                    if (typeof window.initLaraVoiceAssistant === 'function') {
+                        window.initLaraVoiceAssistant();
+                    }
+                } catch (laraInitErr) {
+                    console.warn('Lara init failed:', laraInitErr);
+                }
+
                 // Preload support inbox tables so sections are never blank on first open
                 try {
                     await Promise.all([
@@ -8006,6 +8021,362 @@
                 setTimeout(() => window.location.href = '/login?admin=true', 1500);
             }
         }
+
+        // ==================== LARA VOICE ASSISTANT (ADMIN ONLY) ====================
+        (function() {
+            const STORAGE_KEY = 'lara_voice_enabled';
+            const MAX_SPEAK_CHARS = 420;
+            const SAFE_FALLBACK_HELP = "You can say: 'go to dashboard', 'manage products', 'order history', 'customers orders', 'categories', 'homepage sections', 'messages', 'logout', or 'read page'.";
+
+            function stripHtml(input) {
+                const div = document.createElement('div');
+                div.innerHTML = String(input || '');
+                return String(div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+            }
+
+            function clampText(text) {
+                const clean = String(text || '').replace(/\s+/g, ' ').trim();
+                if (!clean) return '';
+                return clean.length > MAX_SPEAK_CHARS ? `${clean.slice(0, MAX_SPEAK_CHARS)}…` : clean;
+            }
+
+            function getSectionLabel(sectionId) {
+                const map = {
+                    'dashboard': 'Dashboard',
+                    'manage-products': 'Manage Products',
+                    'upload-products': 'Upload Products',
+                    'categories': 'Categories',
+                    'homepage-sections': 'Homepage Sections',
+                    'stock-reports': 'Stock Reports',
+                    'order-history': 'Order History',
+                    'customers-orders': 'Customers Orders',
+                    'customers': 'Customers',
+                    'activities': 'User Activities',
+                    'messages': 'Messages',
+                    'users': 'Users',
+                    'wholesale': 'Wholesale Requests',
+                    'admin-license': 'Admin License',
+                    'site-settings': 'Site Settings',
+                    'database-backup': 'Database Backup'
+                };
+                return map[String(sectionId || '')] || String(sectionId || '').replace(/-/g, ' ').trim();
+            }
+
+            function findFemaleVoice(voices) {
+                const list = Array.isArray(voices) ? voices : [];
+                if (!list.length) return null;
+
+                const preferredNameHints = [
+                    'zira', 'susan', 'samantha', 'karen', 'hazel', 'moira', 'tessa', 'natasha',
+                    'female', 'woman', 'google uk english female', 'microsoft'
+                ];
+
+                const english = list.filter(v => String(v.lang || '').toLowerCase().startsWith('en'));
+                const pool = english.length ? english : list;
+
+                const scored = pool
+                    .map(v => {
+                        const name = String(v.name || '').toLowerCase();
+                        const score = preferredNameHints.reduce((acc, hint) => acc + (name.includes(hint) ? 1 : 0), 0);
+                        return { v, score };
+                    })
+                    .sort((a, b) => b.score - a.score);
+
+                return scored[0]?.v || null;
+            }
+
+            function safeGetVisibleTextFromSection(sectionId) {
+                const section = document.getElementById(sectionId);
+                if (!section) return '';
+
+                // Don’t read code.
+                const blockedSelectors = 'script, style, pre, code';
+                const clones = section.cloneNode(true);
+                clones.querySelectorAll(blockedSelectors).forEach(el => el.remove());
+                const raw = (clones.textContent || '').replace(/\s+/g, ' ').trim();
+                return clampText(raw);
+            }
+
+            function parseCommand(text) {
+                const t = String(text || '').toLowerCase().trim();
+                if (!t) return { type: 'empty' };
+
+                const go = (id) => ({ type: 'section', id });
+                if (/(^|\b)help(\b|$)/.test(t)) return { type: 'help' };
+                if (/(^|\b)logout(\b|$)/.test(t)) return { type: 'logout' };
+                if (/(^|\b)read(\b|$)/.test(t) && /(page|section|screen)/.test(t)) return { type: 'read' };
+
+                if (t.includes('dashboard')) return go('dashboard');
+                if (t.includes('manage') && t.includes('product')) return go('manage-products');
+                if (t.includes('upload') && t.includes('product')) return go('upload-products');
+                if (t.includes('category')) return go('categories');
+                if (t.includes('homepage') && t.includes('section')) return go('homepage-sections');
+                if (t.includes('stock')) return go('stock-reports');
+                if (t.includes('order') && (t.includes('history') || t.includes('past'))) return go('order-history');
+                if (t.includes('customer') && t.includes('order')) return go('customers-orders');
+                if (t.includes('customer')) return go('customers');
+                if (t.includes('activity')) return go('activities');
+                if (t.includes('message') || t.includes('support')) return go('messages');
+                if (t.includes('user')) return go('users');
+                if (t.includes('wholesale')) return go('wholesale');
+                if (t.includes('license')) return go('admin-license');
+                if (t.includes('backup') || t.includes('database')) return go('database-backup');
+
+                return { type: 'unknown', raw: t };
+            }
+
+            window.initLaraVoiceAssistant = function() {
+                const toggleBtn = document.getElementById('lara-voice-toggle-btn');
+                const micBtn = document.getElementById('lara-mic-btn');
+                const stateEl = document.getElementById('lara-voice-state');
+                if (!toggleBtn || !micBtn || !stateEl) return;
+
+                const synth = window.speechSynthesis;
+                const canSpeak = !!synth && typeof SpeechSynthesisUtterance !== 'undefined';
+
+                const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const canListen = typeof Recognition === 'function';
+
+                let enabled = localStorage.getItem(STORAGE_KEY) === '1';
+                let voice = null;
+                let recognition = null;
+                let lastSpokenAt = 0;
+
+                function setUi() {
+                    stateEl.textContent = enabled ? 'On' : 'Off';
+                    toggleBtn.classList.toggle('btn-success', enabled);
+                    toggleBtn.classList.toggle('btn-secondary', !enabled);
+                    micBtn.disabled = !enabled || !canListen;
+                    micBtn.style.opacity = (!enabled || !canListen) ? '0.6' : '1';
+                    micBtn.title = canListen
+                        ? (enabled ? 'Talk to Lara (voice commands)' : 'Turn Lara on to talk')
+                        : 'Voice recognition not supported in this browser';
+                }
+
+                function stopSpeaking() {
+                    try { synth?.cancel?.(); } catch (_) { /* ignore */ }
+                }
+
+                function speak(text, opts = {}) {
+                    if (!enabled) return;
+                    if (!canSpeak) return;
+
+                    const clean = clampText(text);
+                    if (!clean) return;
+
+                    // prevent spam
+                    const now = Date.now();
+                    if (!opts.force && now - lastSpokenAt < 300) return;
+                    lastSpokenAt = now;
+
+                    if (opts.interrupt) stopSpeaking();
+
+                    const u = new SpeechSynthesisUtterance(clean);
+                    if (voice) u.voice = voice;
+                    u.rate = 1.02;
+                    u.pitch = 1.12;
+                    u.volume = 1;
+                    try { synth.speak(u); } catch (_) { /* ignore */ }
+                }
+
+                function refreshVoice() {
+                    if (!canSpeak) return;
+                    const voices = synth.getVoices?.() || [];
+                    voice = findFemaleVoice(voices);
+                }
+
+                if (canSpeak) {
+                    refreshVoice();
+                    // Some browsers populate voices asynchronously.
+                    if (typeof synth.onvoiceschanged !== 'undefined') {
+                        synth.onvoiceschanged = () => refreshVoice();
+                    }
+                }
+
+                function laraSayHello() {
+                    const name = String(auth?.currentUser?.full_name || 'boss').split(' ')[0];
+                    speak(`Hi ${name}. I'm Lara. Voice mode is on. Tell me where you want to go… and I'll take you there.`, { interrupt: true, force: true });
+                }
+
+                function laraFlirtyAck() {
+                    // Playful but not explicit.
+                    const lines = [
+                        "Done. You're kind of unstoppable today.",
+                        "Okay. Smooth move.",
+                        "Got it. I’m right here with you.",
+                        "On it. Let’s make it look perfect."
+                    ];
+                    speak(lines[Math.floor(Math.random() * lines.length)]);
+                }
+
+                function handleCommand(commandText) {
+                    const cmd = parseCommand(commandText);
+                    if (cmd.type === 'empty') return;
+
+                    if (cmd.type === 'help') {
+                        speak(SAFE_FALLBACK_HELP, { interrupt: true, force: true });
+                        return;
+                    }
+
+                    if (cmd.type === 'logout') {
+                        speak('Logging you out.', { interrupt: true, force: true });
+                        document.getElementById('logout-btn')?.click?.();
+                        return;
+                    }
+
+                    if (cmd.type === 'read') {
+                        const current = window._currentSection || 'dashboard';
+                        const label = getSectionLabel(current);
+                        const summary = safeGetVisibleTextFromSection(current);
+                        speak(`You're in ${label}. ${summary || 'Tell me what you want to do.'}`, { interrupt: true, force: true });
+                        return;
+                    }
+
+                    if (cmd.type === 'section') {
+                        const label = getSectionLabel(cmd.id);
+                        speak(`Opening ${label}.`, { interrupt: true, force: true });
+                        try {
+                            window.showSection?.(cmd.id);
+                        } catch (_) {
+                            // ignore
+                        }
+                        laraFlirtyAck();
+                        return;
+                    }
+
+                    speak("I didn't catch a section name. Say 'help' to hear commands.", { interrupt: true, force: true });
+                }
+
+                function ensureRecognition() {
+                    if (!canListen) return null;
+                    if (recognition) return recognition;
+                    recognition = new Recognition();
+                    recognition.lang = 'en-US';
+                    recognition.continuous = false;
+                    recognition.interimResults = false;
+                    recognition.maxAlternatives = 1;
+
+                    recognition.onresult = (event) => {
+                        const transcript = event?.results?.[0]?.[0]?.transcript || '';
+                        if (!transcript) {
+                            speak("Say that again for me?", { interrupt: true, force: true });
+                            return;
+                        }
+                        handleCommand(transcript);
+                    };
+
+                    recognition.onerror = (event) => {
+                        const err = String(event?.error || '').toLowerCase();
+                        if (err === 'not-allowed' || err === 'service-not-allowed') {
+                            speak('Mic permission is blocked. Allow microphone access to use voice commands.', { interrupt: true, force: true });
+                            return;
+                        }
+                        // keep it short
+                        speak('Voice command failed. Try again.', { interrupt: true, force: true });
+                    };
+
+                    return recognition;
+                }
+
+                function setEnabled(nextEnabled) {
+                    enabled = !!nextEnabled;
+                    localStorage.setItem(STORAGE_KEY, enabled ? '1' : '0');
+                    setUi();
+                    if (enabled) {
+                        laraSayHello();
+                    } else {
+                        stopSpeaking();
+                    }
+                }
+
+                // Wrap showAlert to speak alerts (no code / no HTML).
+                if (!window.__laraWrappedAlerts && typeof window.showAlert === 'function') {
+                    window.__laraWrappedAlerts = true;
+                    const originalShowAlert = window.showAlert;
+                    window.showAlert = function(message, type = 'info') {
+                        originalShowAlert(message, type);
+                        try {
+                            const spoken = stripHtml(message);
+                            if (spoken) {
+                                speak(spoken, { interrupt: type === 'error' || type === 'success' });
+                            }
+                        } catch (_) {
+                            // ignore
+                        }
+                    };
+                }
+
+                // Wrap showSection to announce section changes.
+                if (!window.__laraWrappedSections && typeof window.showSection === 'function') {
+                    window.__laraWrappedSections = true;
+                    const originalShowSection = window.showSection;
+                    window.showSection = function(id) {
+                        originalShowSection(id);
+                        try {
+                            const label = getSectionLabel(id);
+                            if (label) speak(`${label}.`, { interrupt: false });
+                        } catch (_) {
+                            // ignore
+                        }
+                    };
+                }
+
+                // Speak field label on focus (admin-only).
+                if (!window.__laraFocusBound) {
+                    window.__laraFocusBound = true;
+                    document.addEventListener('focusin', (e) => {
+                        if (!enabled) return;
+                        const el = e?.target;
+                        if (!el) return;
+                        const tag = String(el.tagName || '').toLowerCase();
+                        if (!['input', 'textarea', 'select'].includes(tag)) return;
+
+                        const id = el.id ? `#${el.id}` : '';
+                        let labelText = '';
+                        if (id) {
+                            const label = document.querySelector(`label[for="${el.id}"]`);
+                            labelText = label ? stripHtml(label.textContent) : '';
+                        }
+                        if (!labelText) {
+                            const placeholder = stripHtml(el.getAttribute('placeholder'));
+                            labelText = placeholder ? placeholder : '';
+                        }
+                        if (!labelText) {
+                            const aria = stripHtml(el.getAttribute('aria-label'));
+                            labelText = aria ? aria : '';
+                        }
+                        if (labelText) {
+                            speak(labelText);
+                        }
+                    }, true);
+                }
+
+                toggleBtn.addEventListener('click', () => setEnabled(!enabled));
+                micBtn.addEventListener('click', async () => {
+                    if (!enabled) return;
+                    const r = ensureRecognition();
+                    if (!r) {
+                        speak('Voice recognition is not available here.', { interrupt: true, force: true });
+                        return;
+                    }
+
+                    speak('Listening. Speak your command.', { interrupt: true, force: true });
+                    try {
+                        r.start();
+                    } catch (_) {
+                        // Some browsers throw if start is called twice.
+                        try { r.stop(); } catch (_) { /* ignore */ }
+                        try { r.start(); } catch (_) { /* ignore */ }
+                    }
+                });
+
+                setUi();
+                if (enabled) {
+                    // say hello once on load
+                    setTimeout(() => laraSayHello(), 600);
+                }
+            };
+        })();
 
         // ==================== GLOBAL MODAL HELPERS ====================
         window.showSuccessModal = function(messageHtml) {
