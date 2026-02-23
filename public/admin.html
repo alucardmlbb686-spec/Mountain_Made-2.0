@@ -6900,7 +6900,7 @@
             }
 
             const discountAdjust = document.getElementById('edit-product-discount-adjust');
-            if (discountAdjust) discountAdjust.value = '';
+            if (discountAdjust) discountAdjust.value = (product.discount_adjust ?? '');
 
             const editPriceInput = document.getElementById('edit-product-price');
             if (editPriceInput && editPriceInput.getAttribute('data-discount-adjust-bound') !== '1') {
@@ -7255,6 +7255,7 @@
                     price: priceToSave,
                     wholesale_price: wholesale_price ? parseFloat(wholesale_price) : null,
                     discount_price: discountToSave,
+                    discount_adjust: discount_adjust_raw || null,
                     stock_quantity: parseInt(stock),
                     min_wholesale_qty: parseInt(min_wholesale_qty)
                 };

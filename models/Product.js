@@ -83,6 +83,7 @@ class Product {
     try {
       await db.pool.query('ALTER TABLE products ADD COLUMN IF NOT EXISTS discount_price NUMERIC');
       await db.pool.query('ALTER TABLE products ADD COLUMN IF NOT EXISTS discount_percentage NUMERIC');
+      await db.pool.query('ALTER TABLE products ADD COLUMN IF NOT EXISTS discount_adjust TEXT');
     } catch (err) {
       console.warn('ensureDiscountColumns warning:', err.message || err);
     }
@@ -99,6 +100,7 @@ class Product {
       price, 
       wholesale_price, 
       discount_price,
+      discount_adjust,
       stock_quantity, 
       min_wholesale_qty,
       image_url, 
@@ -110,10 +112,10 @@ class Product {
 
     const query = `
       INSERT INTO products (
-        name, description, category_id, homepage_section_id, price, wholesale_price, discount_price,
+        name, description, category_id, homepage_section_id, price, wholesale_price, discount_price, discount_adjust,
         stock_quantity, min_wholesale_qty, image_url, images, is_active, weight, unit
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *
     `;
 
@@ -125,6 +127,7 @@ class Product {
       price, 
       wholesale_price, 
       discount_price,
+      discount_adjust ? String(discount_adjust).trim() : null,
       stock_quantity,
       min_wholesale_qty || 10,
       image_url, 
@@ -232,6 +235,7 @@ class Product {
       price, 
       wholesale_price, 
       discount_price,
+      discount_adjust,
       stock_quantity,
       min_wholesale_qty,
       image_url, 
@@ -250,15 +254,16 @@ class Product {
           price = COALESCE($5, price),
           wholesale_price = COALESCE($6, wholesale_price),
           discount_price = COALESCE($7, discount_price),
-          stock_quantity = COALESCE($8, stock_quantity),
-          min_wholesale_qty = COALESCE($9, min_wholesale_qty),
-          image_url = COALESCE($10, image_url),
-          images = COALESCE($11, images),
-          is_active = COALESCE($12, is_active),
-          weight = COALESCE($13, weight),
-          unit = COALESCE($14, unit),
+          discount_adjust = COALESCE($8, discount_adjust),
+          stock_quantity = COALESCE($9, stock_quantity),
+          min_wholesale_qty = COALESCE($10, min_wholesale_qty),
+          image_url = COALESCE($11, image_url),
+          images = COALESCE($12, images),
+          is_active = COALESCE($13, is_active),
+          weight = COALESCE($14, weight),
+          unit = COALESCE($15, unit),
           updated_at = CURRENT_TIMESTAMP
-        WHERE id = $15
+        WHERE id = $16
       RETURNING *
     `;
 
@@ -270,6 +275,7 @@ class Product {
       price, 
       wholesale_price, 
       discount_price,
+      discount_adjust !== undefined && discount_adjust !== null ? String(discount_adjust).trim() : null,
       stock_quantity,
       min_wholesale_qty,
       image_url, 

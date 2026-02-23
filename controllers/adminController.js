@@ -548,6 +548,12 @@ exports.createProduct = async (req, res) => {
     
     productData.price = price;
     productData.discount_price = discountPrice;
+
+    if (productData.discount_adjust !== undefined) {
+      const rawAdjust = productData.discount_adjust;
+      const trimmed = rawAdjust === null ? '' : String(rawAdjust).trim();
+      productData.discount_adjust = trimmed ? trimmed : null;
+    }
     
     const product = await Product.create(productData);
     
@@ -581,6 +587,9 @@ exports.updateProduct = async (req, res) => {
       price: incoming.price !== undefined ? parseFloat(incoming.price) : existing.price,
       wholesale_price: incoming.wholesale_price !== undefined ? parseFloat(incoming.wholesale_price) : existing.wholesale_price,
       discount_price: incoming.discount_price !== undefined ? parseFloat(incoming.discount_price) : existing.discount_price,
+      discount_adjust: incoming.discount_adjust !== undefined
+        ? (incoming.discount_adjust === null ? null : String(incoming.discount_adjust).trim() || null)
+        : existing.discount_adjust,
       stock_quantity: incoming.stock_quantity !== undefined ? parseInt(incoming.stock_quantity, 10) : existing.stock_quantity,
       min_wholesale_qty: incoming.min_wholesale_qty !== undefined ? parseInt(incoming.min_wholesale_qty, 10) : existing.min_wholesale_qty,
       image_url: incoming.image_url ?? existing.image_url,

@@ -386,6 +386,7 @@ const initializeDatabase = async () => {
         homepage_section_id INTEGER REFERENCES homepage_sections(id) ON DELETE SET NULL,
         price DECIMAL(10, 2) NOT NULL,
         wholesale_price DECIMAL(10, 2),
+        discount_adjust TEXT,
         stock_quantity INTEGER DEFAULT 0,
         min_wholesale_qty INTEGER DEFAULT 10,
         image_url VARCHAR(500),
@@ -425,6 +426,11 @@ const initializeDatabase = async () => {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                       WHERE table_name='products' AND column_name='wholesale_price') THEN
           ALTER TABLE products ADD COLUMN wholesale_price DECIMAL(10, 2);
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name='products' AND column_name='discount_adjust') THEN
+          ALTER TABLE products ADD COLUMN discount_adjust TEXT;
         END IF;
 
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
