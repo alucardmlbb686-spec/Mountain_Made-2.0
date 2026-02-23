@@ -411,7 +411,7 @@ small {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: var(--error);
   flex-shrink: 0;
 }
 
@@ -461,7 +461,7 @@ small {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: var(--error);
   flex-shrink: 0;
 }
 
