@@ -1796,7 +1796,7 @@
                 <div class="controls">
                     <div class="search-box">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="stock-search" placeholder="Search products..." onkeyup="filterStockReports()">
+                        <input type="text" id="stock-search" placeholder="Search products..." oninput="filterStockReports()" onkeyup="filterStockReports()">
                     </div>
                     <button type="button" class="btn btn-secondary btn-sm filter-toggle" onclick="toggleFilters(this)">
                         <i class="fas fa-filter"></i> <span class="hide-mobile">Filters</span>
@@ -4564,12 +4564,14 @@
 
             let filtered = window._stockReportsCache.filter(p => {
                 // Search across multiple fields: ID, product name, category name
-                // Handle ID search with or without "#" prefix
-                const cleanSearch = searchTerm.replace('#', '');
-                const matchesSearch = !searchTerm ||
-                    String(p.id).includes(cleanSearch) ||
-                    (p.name || '').toLowerCase().includes(searchTerm) ||
-                    (p.category_name || '').toLowerCase().includes(searchTerm);
+                // Robust ID matching: allow inputs like "#12", "id 12", "ID: # 12".
+                const idDigits = searchTerm.replace(/[^0-9]/g, '');
+                const matchesId = !!idDigits && String(p.id).includes(idDigits);
+
+                const name = (p.name || '').toLowerCase();
+                const categoryName = (p.category_name || '').toLowerCase();
+
+                const matchesSearch = !searchTerm || matchesId || name.includes(searchTerm) || categoryName.includes(searchTerm);
 
                 // Category filter
                 const matchesCategory = !categoryFilter || p.category_id == categoryFilter;
@@ -8151,6 +8153,35 @@
                 let lastSpokenAt = 0;
                 let isListening = false;
                 let autoRestartTimer = null;
+                let cloudAudio = null;
+                let cloudTtsEnabled = false;
+                let cloudConfigChecked = false;
+
+                function buildAuthHeaders() {
+                    const token = localStorage.getItem('token');
+                    return token ? { Authorization: `Bearer ${token}` } : {};
+                }
+
+                async function checkCloudVoiceConfig() {
+                    if (cloudConfigChecked) return;
+                    cloudConfigChecked = true;
+                    try {
+                        const resp = await fetch('/api/voice/config', {
+                            method: 'GET',
+                            headers: buildAuthHeaders(),
+                            credentials: 'include',
+                            cache: 'no-store'
+                        });
+                        if (!resp.ok) {
+                            cloudTtsEnabled = false;
+                            return;
+                        }
+                        const data = await resp.json().catch(() => null);
+                        cloudTtsEnabled = !!data?.enabled && !!data?.ttsEnabled;
+                    } catch (_) {
+                        cloudTtsEnabled = false;
+                    }
+                }
 
                 function setUi() {
                     stateEl.textContent = enabled ? 'On' : 'Off';
@@ -8163,6 +8194,51 @@
 
                 function stopSpeaking() {
                     try { synth?.cancel?.(); } catch (_) { /* ignore */ }
+                    try {
+                        if (cloudAudio) {
+                            cloudAudio.pause();
+                            cloudAudio.src = '';
+                            cloudAudio = null;
+                        }
+                    } catch (_) { /* ignore */ }
+                }
+
+                async function speakViaCloudTts(text) {
+                    const clean = clampText(text);
+                    if (!clean) return false;
+
+                    try {
+                        const resp = await fetch('/api/voice/tts', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...buildAuthHeaders()
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify({ text: clean })
+                        });
+
+                        if (!resp.ok) return false;
+                        const blob = await resp.blob();
+                        const url = URL.createObjectURL(blob);
+                        const audio = new Audio(url);
+                        audio.preload = 'auto';
+
+                        cloudAudio = audio;
+                        audio.addEventListener('ended', () => {
+                            try { URL.revokeObjectURL(url); } catch (_) { /* ignore */ }
+                            if (cloudAudio === audio) cloudAudio = null;
+                        }, { once: true });
+                        audio.addEventListener('error', () => {
+                            try { URL.revokeObjectURL(url); } catch (_) { /* ignore */ }
+                            if (cloudAudio === audio) cloudAudio = null;
+                        }, { once: true });
+
+                        await audio.play();
+                        return true;
+                    } catch (_) {
+                        return false;
+                    }
                 }
 
                 function speak(text, opts = {}) {
@@ -8178,6 +8254,22 @@
                     lastSpokenAt = now;
 
                     if (opts.interrupt) stopSpeaking();
+
+                    // Prefer cloud TTS when configured; fallback to browser voices.
+                    if (cloudTtsEnabled) {
+                        (async () => {
+                            const ok = await speakViaCloudTts(clean);
+                            if (!ok) {
+                                const u = new SpeechSynthesisUtterance(clean);
+                                if (voice) u.voice = voice;
+                                u.rate = 1.02;
+                                u.pitch = 1.12;
+                                u.volume = 1;
+                                try { synth.speak(u); } catch (_) { /* ignore */ }
+                            }
+                        })();
+                        return;
+                    }
 
                     const u = new SpeechSynthesisUtterance(clean);
                     if (voice) u.voice = voice;
@@ -8200,6 +8292,9 @@
                         synth.onvoiceschanged = () => refreshVoice();
                     }
                 }
+
+                // Non-blocking: see if server-side voice is available.
+                checkCloudVoiceConfig();
 
                 function laraSayHello() {
                     const name = String(auth?.currentUser?.full_name || 'boss').split(' ')[0];

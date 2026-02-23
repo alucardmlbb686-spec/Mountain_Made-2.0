@@ -993,6 +993,52 @@ exports.getDashboardStats = async (req, res) => {
 // Stock Reports with Movement Details
 exports.getStockReports = async (req, res) => {
   try {
+    const rawQuery = String(req.query?.q || req.query?.query || req.query?.search || '').trim();
+    const rawStatus = String(req.query?.status || '').trim();
+    const rawCategoryId = String(req.query?.category_id || req.query?.categoryId || '').trim();
+
+    const queryForText = rawQuery
+      .replace(/^\s*id\s*[:#\-]?\s*/i, '')
+      .replace(/^\s*#\s*/, '')
+      .trim();
+
+    const likeText = queryForText ? `%${queryForText}%` : null;
+    const queryDigits = rawQuery.replace(/[^0-9]/g, '').trim();
+    const likeId = queryDigits ? `%${queryDigits}%` : null;
+
+    const categoryId = /^[0-9]+$/.test(rawCategoryId) ? parseInt(rawCategoryId, 10) : null;
+
+    const where = ['p.is_active = true'];
+    const params = [];
+
+    if (categoryId) {
+      params.push(categoryId);
+      where.push(`p.category_id = $${params.length}`);
+    }
+
+    if (rawStatus === 'in-stock') {
+      where.push('p.stock_quantity > 10');
+    } else if (rawStatus === 'low-stock') {
+      where.push('p.stock_quantity > 0 AND p.stock_quantity <= 10');
+    } else if (rawStatus === 'out-of-stock') {
+      where.push('p.stock_quantity <= 0');
+    }
+
+    if (likeText || likeId) {
+      if (likeText && likeId) {
+        params.push(likeText);
+        const textParam = `$${params.length}`;
+        params.push(likeId);
+        const idParam = `$${params.length}`;
+        where.push(`(p.name ILIKE ${textParam} OR c.name ILIKE ${textParam} OR p.id::text ILIKE ${idParam})`);
+      } else {
+        const oneLike = likeText || likeId;
+        params.push(oneLike);
+        const oneParam = `$${params.length}`;
+        where.push(`(p.name ILIKE ${oneParam} OR c.name ILIKE ${oneParam} OR p.id::text ILIKE ${oneParam})`);
+      }
+    }
+
     // Build product summary directly from live products + orders
     // so values always stay in sync with Manage Products
     const summaryQuery = `
@@ -1014,13 +1060,13 @@ exports.getStockReports = async (req, res) => {
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN order_items oi ON p.id = oi.product_id
       LEFT JOIN orders o ON oi.order_id = o.id
-      WHERE p.is_active = true
+      WHERE ${where.join(' AND ')}
       GROUP BY p.id, p.name, p.description, p.category_id, c.name, p.price, 
                p.wholesale_price, p.stock_quantity, p.images, p.is_active, p.created_at
       ORDER BY p.id ASC
     `;
 
-    const summaryResult = await db.query(summaryQuery);
+    const summaryResult = await db.query(summaryQuery, params);
     
     // Get transaction details for each product
     const stockReports = [];

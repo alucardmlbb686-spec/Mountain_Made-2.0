@@ -315,6 +315,7 @@ app.use('/api/upload', require('./routes/upload'));
 app.use('/api/backup', require('./routes/backup'));
 app.use('/api/restore', require('./routes/restore'));
 app.use('/api/contact', require('./routes/contact'));
+app.use('/api/voice', require('./routes/voice'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
