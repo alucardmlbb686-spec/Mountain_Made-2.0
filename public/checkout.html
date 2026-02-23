@@ -948,7 +948,27 @@
             }
         }
 
+        function showOrderFailed(message) {
+            const modal = document.getElementById('order-status-modal');
+            const content = document.getElementById('order-status-content');
+            if (!modal || !content) return;
+
+            modal.classList.remove('hidden');
+            content.innerHTML = `
+                <button type="button" class="order-modal-close" onclick="hideOrderStatusModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="order-modal-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                    <i class="fas fa-times"></i>
+                </div>
+                <h3 class="order-modal-title">Order failed</h3>
+                <p class="order-modal-text">${message || 'Payment was not completed. No order was created.'}</p>
+            `;
+        }
+
         const BILLING_STORAGE_KEY = 'mm_billing_profile';
+        const GPAY_PENDING_ORDER_KEY = 'mm_pending_gpay_order';
+        let gpayPendingCheckInProgress = false;
 
         function loadBillingProfile() {
             try {
@@ -1009,15 +1029,156 @@
             return `upi://pay?${params.toString()}`;
         }
 
+        function buildGpayIntentLink(amount, note = '') {
+            const upiLink = buildGpayUpiLink(amount, note);
+            if (!upiLink) return null;
+            const query = upiLink.replace('upi://pay?', '');
+            return `intent://pay?${query}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`;
+        }
+
         function openGpayWithAmount(amount, note = '') {
-            const link = buildGpayUpiLink(amount, note);
-            if (!link) {
+            const upiLink = buildGpayUpiLink(amount, note);
+            if (!upiLink) {
                 showAlert('GPay UPI ID is not configured by admin.', 'error');
                 return false;
             }
 
-            window.location.href = link;
+            const isAndroid = /android/i.test(navigator.userAgent || '');
+            if (isAndroid) {
+                const intentLink = buildGpayIntentLink(amount, note);
+                if (intentLink) {
+                    window.location.href = intentLink;
+                    setTimeout(() => {
+                        if (document.visibilityState === 'visible') {
+                            window.location.href = upiLink;
+                        }
+                    }, 900);
+                    return true;
+                }
+            }
+
+            window.location.href = upiLink;
             return true;
+        }
+
+        function savePendingGpayOrder(payload) {
+            try {
+                sessionStorage.setItem(GPAY_PENDING_ORDER_KEY, JSON.stringify({
+                    ...payload,
+                    createdAt: Date.now()
+                }));
+                return true;
+            } catch (error) {
+                console.error('Failed to save pending GPay order:', error);
+                return false;
+            }
+        }
+
+        function getPendingGpayOrder() {
+            try {
+                const raw = sessionStorage.getItem(GPAY_PENDING_ORDER_KEY);
+                if (!raw) return null;
+                return JSON.parse(raw);
+            } catch (error) {
+                console.error('Failed to parse pending GPay order:', error);
+                return null;
+            }
+        }
+
+        function clearPendingGpayOrder() {
+            sessionStorage.removeItem(GPAY_PENDING_ORDER_KEY);
+        }
+
+        function applyOrderPlacedUI(order) {
+            const placeOrderBtn = document.getElementById('place-order-btn');
+            if (placeOrderBtn) {
+                placeOrderBtn.disabled = true;
+                const label = placeOrderBtn.querySelector('.place-order-label');
+                const icon = placeOrderBtn.querySelector('i');
+                if (label) label.textContent = 'Order Placed';
+                if (icon) icon.className = 'fas fa-check';
+            }
+
+            const itemsContainer = document.getElementById('order-items');
+            const totalEl = document.getElementById('order-total');
+            if (itemsContainer) {
+                itemsContainer.innerHTML = '<p class="text-center">Your order has been placed and the cart has been cleared.</p>';
+            }
+            if (totalEl) {
+                totalEl.textContent = formatCurrency(0);
+            }
+
+            showOrderSuccess(order);
+        }
+
+        async function finalizePendingGpayOrder() {
+            const pending = getPendingGpayOrder();
+            if (!pending?.orderData) {
+                return;
+            }
+
+            setPlaceOrderButtonState(true);
+            showOrderProcessing();
+
+            try {
+                if (pending.shouldSaveAddress && pending.shippingAddress) {
+                    try {
+                        await api.post('/addresses', {
+                            label: 'Home',
+                            full_name: pending.shippingAddress.full_name,
+                            phone: pending.shippingAddress.phone,
+                            address_line1: pending.shippingAddress.address_line1,
+                            address_line2: pending.shippingAddress.address_line2,
+                            city: pending.shippingAddress.city,
+                            state: pending.shippingAddress.state,
+                            postal_code: pending.shippingAddress.postal_code,
+                            country: pending.shippingAddress.country,
+                            is_default: userAddresses.length === 0
+                        });
+                    } catch (addrError) {
+                        console.warn('Failed to save address before order:', addrError);
+                    }
+                }
+
+                const result = await api.post('/orders', pending.orderData);
+                clearPendingGpayOrder();
+                applyOrderPlacedUI(result.order);
+            } catch (error) {
+                hideOrderStatusModal();
+                setPlaceOrderButtonState(false);
+                showAlert(error.message || 'Failed to place order', 'error');
+            }
+        }
+
+        async function handlePendingGpayReturn() {
+            if (gpayPendingCheckInProgress) return;
+            const pending = getPendingGpayOrder();
+            if (!pending?.orderData) return;
+
+            gpayPendingCheckInProgress = true;
+            try {
+                const paid = await showConfirmDialog(
+                    'Did you complete the payment in Google Pay?',
+                    {
+                        title: 'Confirm GPay Payment',
+                        confirmText: 'Yes, Paid',
+                        cancelText: 'No, Cancelled'
+                    }
+                );
+
+                if (!paid) {
+                    clearPendingGpayOrder();
+                    hideOrderStatusModal();
+                    setPlaceOrderButtonState(false);
+                    showOrderFailed('Google Pay was cancelled. No order was created. Please try again.');
+                    showAlert('Payment cancelled. Order failed.', 'error');
+                    return;
+                }
+
+                await finalizePendingGpayOrder();
+            } finally {
+                gpayPendingCheckInProgress = false;
+            }
         }
 
         function updateGpayLabelAndPrefill() {
@@ -1345,9 +1506,40 @@
                 }))
             };
 
+            const shouldSaveAddress = !selectedAddressId && !!document.getElementById('save_address')?.checked;
+
+            if (paymentMethod === 'gpay') {
+                const saved = savePendingGpayOrder({
+                    orderData,
+                    shippingAddress,
+                    shouldSaveAddress
+                });
+
+                if (!saved) {
+                    hideOrderStatusModal();
+                    setPlaceOrderButtonState(false);
+                    showAlert('Unable to start GPay flow. Please try again.', 'error');
+                    return;
+                }
+
+                const launched = openGpayWithAmount(totalAmount, 'Checkout Payment');
+                if (!launched) {
+                    clearPendingGpayOrder();
+                    hideOrderStatusModal();
+                    setPlaceOrderButtonState(false);
+                    showAlert('Failed to open Google Pay.', 'error');
+                    return;
+                }
+
+                hideOrderStatusModal();
+                setPlaceOrderButtonState(false);
+                showAlert('Google Pay opened. Complete payment and return to confirm your order.', 'info');
+                return;
+            }
+
             try {
                 // If using a manual address and user chose to save it, persist it first
-                if (!selectedAddressId && document.getElementById('save_address')?.checked) {
+                if (shouldSaveAddress) {
                     try {
                         await api.post('/addresses', {
                             label: 'Home',
@@ -1367,32 +1559,7 @@
                 }
 
                 const result = await api.post('/orders', orderData);
-
-                // Reflect success state in the underlying order summary as well
-                const placeOrderBtn = document.getElementById('place-order-btn');
-                if (placeOrderBtn) {
-                    placeOrderBtn.disabled = true;
-                    const label = placeOrderBtn.querySelector('.place-order-label');
-                    const icon = placeOrderBtn.querySelector('i');
-                    if (label) label.textContent = 'Order Placed';
-                    if (icon) icon.className = 'fas fa-check';
-                }
-                
-                const itemsContainer = document.getElementById('order-items');
-                const totalEl = document.getElementById('order-total');
-                if (itemsContainer) {
-                    itemsContainer.innerHTML = '<p class="text-center">Your order has been placed and the cart has been cleared.</p>';
-                }
-                if (totalEl) {
-                    totalEl.textContent = formatCurrency(0);
-                }
-
-                showOrderSuccess(result.order);
-
-                if (paymentMethod === 'gpay') {
-                    const orderNumber = result?.order?.order_number ? `Order ${result.order.order_number}` : 'Checkout Payment';
-                    openGpayWithAmount(totalAmount, orderNumber);
-                }
+                applyOrderPlacedUI(result.order);
             } catch (error) {
                 hideOrderStatusModal();
                 setPlaceOrderButtonState(false);
@@ -1401,6 +1568,17 @@
         });
 
         // Ensure we check authentication asynchronously before loading checkout
+
+            window.addEventListener('pageshow', () => {
+                handlePendingGpayReturn();
+            });
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    handlePendingGpayReturn();
+                }
+            });
+
+            await handlePendingGpayReturn();
         (async () => {
             const user = await auth.checkAuth();
             
