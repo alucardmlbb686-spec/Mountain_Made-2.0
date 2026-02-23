@@ -8404,6 +8404,19 @@
 
                     // Pre-request microphone permission so we can distinguish mic-denied from service issues.
                     if (navigator.mediaDevices?.getUserMedia) {
+                        // Best-effort: show Chrome permission state if available.
+                        if (navigator.permissions?.query) {
+                            try {
+                                const status = await navigator.permissions.query({ name: 'microphone' });
+                                const state = String(status?.state || '').trim();
+                                if (state) {
+                                    window.showAlert?.(`Microphone permission state: ${state}`, state === 'granted' ? 'success' : 'info');
+                                }
+                            } catch (_) {
+                                // ignore
+                            }
+                        }
+
                         try {
                             // If there is no audio input device, Chrome will fail with NotFoundError.
                             if (navigator.mediaDevices.enumerateDevices) {
