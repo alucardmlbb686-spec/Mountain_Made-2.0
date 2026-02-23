@@ -796,6 +796,13 @@
         let selectedQuantity = 1;
         let userAddresses = [];
 
+        function getQuantityStep() {
+            const isWholesaleUser = !!(auth && typeof auth.isWholesale === 'function' && auth.isWholesale());
+            if (!isWholesaleUser) return 1;
+            const raw = parseInt((product && product.min_wholesale_qty) || 10, 10);
+            return Number.isFinite(raw) && raw > 0 ? raw : 10;
+        }
+
         function getCurrentPricing() {
             if (!product) return { basePrice: 0, salePrice: 0, showDiscount: false, isWholesale: false };
 
@@ -888,8 +895,9 @@
         }
 
         function renderProduct() {
-            selectedQuantity = 1;
             const isWholesale = auth.isWholesale();
+            const qtyStep = getQuantityStep();
+            selectedQuantity = qtyStep;
             const unitInfo = getUnitInfo(product);
             const basePrice = parseFloat(product.price || 0);
             const discount = product.discount_price != null ? parseFloat(product.discount_price) : null;
@@ -978,7 +986,7 @@
                                     <label>Quantity:</label>
                                     <div class="quantity-controls">
                                         <button onclick="decrementQuantity()">-</button>
-                                        <input type="number" id="quantity" value="1" min="1" max="${product.stock_quantity}" 
+                                        <input type="number" id="quantity" value="${selectedQuantity}" min="${qtyStep}" step="${qtyStep}" max="${product.stock_quantity}" 
                                                    onchange="updateQuantity(this.value)" oninput="updateQuantity(this.value)">
                                         <button onclick="incrementQuantity()">+</button>
                                     </div>
@@ -1087,26 +1095,63 @@
         }
 
         function updateQuantity(value) {
-            const qty = parseInt(value);
-            if (qty > 0 && qty <= product.stock_quantity) {
-                selectedQuantity = qty;
-                updateDisplayedPrice();
-            } else {
+            const step = getQuantityStep();
+            const maxQty = parseInt(product.stock_quantity, 10);
+            const hasMax = Number.isFinite(maxQty) && maxQty > 0;
+
+            let qty = parseInt(value, 10);
+            if (!Number.isFinite(qty) || qty <= 0) qty = step;
+
+            if (hasMax && maxQty < step) {
+                selectedQuantity = maxQty;
                 document.getElementById('quantity').value = selectedQuantity;
+                updateDisplayedPrice();
+                return;
             }
+
+            qty = Math.max(step, qty);
+            if (hasMax) qty = Math.min(qty, maxQty);
+
+            if (step > 1) {
+                qty = Math.ceil(qty / step) * step;
+                if (hasMax && qty > maxQty) {
+                    qty = Math.floor(maxQty / step) * step;
+                }
+                qty = Math.max(step, qty);
+            }
+
+            if (hasMax) qty = Math.min(qty, maxQty);
+
+            selectedQuantity = qty;
+            document.getElementById('quantity').value = selectedQuantity;
+            updateDisplayedPrice();
         }
 
         function incrementQuantity() {
-            if (selectedQuantity < product.stock_quantity) {
-                selectedQuantity++;
+            const step = getQuantityStep();
+            const maxQty = parseInt(product.stock_quantity, 10);
+            const hasMax = Number.isFinite(maxQty) && maxQty > 0;
+
+            if (hasMax && maxQty < step) {
+                selectedQuantity = maxQty;
+                document.getElementById('quantity').value = selectedQuantity;
+                updateDisplayedPrice();
+                return;
+            }
+
+            const next = selectedQuantity + step;
+            if (!hasMax || next <= maxQty) {
+                selectedQuantity = next;
                 document.getElementById('quantity').value = selectedQuantity;
                 updateDisplayedPrice();
             }
         }
 
         function decrementQuantity() {
-            if (selectedQuantity > 1) {
-                selectedQuantity--;
+            const step = getQuantityStep();
+            const next = Math.max(step, selectedQuantity - step);
+            if (next !== selectedQuantity) {
+                selectedQuantity = next;
                 document.getElementById('quantity').value = selectedQuantity;
                 updateDisplayedPrice();
             }

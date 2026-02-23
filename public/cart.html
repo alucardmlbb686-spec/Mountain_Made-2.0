@@ -266,6 +266,8 @@
             updateCartShoppingLinks();
             return;
         }
+        const isWholesaleUser = !!(auth && typeof auth.isWholesale === 'function' && auth.isWholesale());
+
         container.innerHTML = data.cartItems.map(function(item) {
             const priceBlock = (() => {
                 const base = item.original_price != null ? parseFloat(item.original_price) : null;
@@ -277,6 +279,12 @@
                 return formatCurrency(sale ?? 0);
             })();
 
+            const minQty = (() => {
+                if (!isWholesaleUser) return 1;
+                const raw = parseInt(item.min_wholesale_qty || 10, 10);
+                return Number.isFinite(raw) && raw > 0 ? raw : 10;
+            })();
+
             return `
             <div class="card" style="margin-bottom: 1rem; max-width: 700px; margin-left: auto; margin-right: auto;">
                 <div class="card-content cart-item-row">
@@ -285,8 +293,8 @@
                         <h4 style="margin-bottom: 0.5rem;">${item.name}</h4>
                         <p style="color: var(--text-light); margin-bottom: 0.5rem;">${priceBlock} each</p>
                         <div class="cart-item-actions">
-                            <input type="number" value="${item.quantity}" min="1" max="${item.stock_quantity}" 
-                                   onchange="updateQuantity(${item.id}, this.value)" 
+                            <input type="number" value="${item.quantity}" min="${minQty}" step="${minQty}" max="${item.stock_quantity}" 
+                                   onchange="updateQuantity(${item.id}, this.value, ${minQty}, ${item.stock_quantity})" 
                                    style="width: 70px; padding: 0.4rem; border: 2px solid var(--border); border-radius: 6px;">
                             <button onclick="cart.remove(${item.id}); loadCart();" class="btn btn-danger btn-sm">
                                 <i class="fas fa-trash"></i> Remove
@@ -309,8 +317,36 @@
         });
     }
 
-    async function updateQuantity(itemId, quantity) {
-        await cart.update(itemId, parseInt(quantity));
+    async function updateQuantity(itemId, quantity, minQty = 1, maxQty = Infinity) {
+        const parsedMin = parseInt(minQty, 10);
+        const step = Number.isFinite(parsedMin) && parsedMin > 0 ? parsedMin : 1;
+
+        let q = parseInt(quantity, 10);
+        if (!Number.isFinite(q) || q <= 0) q = step;
+
+        q = Math.max(step, q);
+
+        const maxParsed = parseInt(maxQty, 10);
+        const hasMax = Number.isFinite(maxParsed) && maxParsed > 0;
+        if (hasMax) {
+            q = Math.min(q, maxParsed);
+        }
+
+        if (hasMax && maxParsed < step) {
+            await cart.update(itemId, maxParsed);
+            loadCart();
+            return;
+        }
+
+        if (step > 1) {
+            q = Math.ceil(q / step) * step;
+            if (hasMax && q > maxParsed) {
+                q = Math.floor(maxParsed / step) * step;
+            }
+            q = Math.max(step, q);
+        }
+
+        await cart.update(itemId, q);
         loadCart();
     }
 
