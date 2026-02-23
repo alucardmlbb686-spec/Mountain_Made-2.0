@@ -691,19 +691,60 @@
             return Number.isFinite(parsed) ? parsed : 0;
         }
 
+        function resolveItemUnitPrice(item) {
+            if (!item || typeof item !== 'object') return 0;
+
+            const candidates = [
+                item.price,
+                item.unit_price,
+                item.retail_price,
+                item.discount_price,
+                item.sale_price,
+                item.final_price,
+                item.original_price,
+                item.amount
+            ];
+
+            for (const candidate of candidates) {
+                const value = toNumber(candidate);
+                if (value > 0) return value;
+            }
+
+            return 0;
+        }
+
+        function resolveItemSubtotal(item) {
+            if (!item || typeof item !== 'object') return 0;
+
+            const directSubtotalCandidates = [
+                item.subtotal,
+                item.line_total,
+                item.lineTotal,
+                item.total,
+                item.amount
+            ];
+
+            for (const candidate of directSubtotalCandidates) {
+                const value = toNumber(candidate);
+                if (value > 0) return value;
+            }
+
+            const quantity = Math.max(1, toNumber(item.quantity || item.qty || 1));
+            const unitPrice = resolveItemUnitPrice(item);
+            return unitPrice > 0 ? unitPrice * quantity : 0;
+        }
+
         function computeCartSubtotal(data) {
             const items = Array.isArray(data?.cartItems) ? data.cartItems : [];
             if (!items.length) return 0;
 
             const itemsTotal = items.reduce((sum, item) => {
-                const itemSubtotal = toNumber(item?.subtotal);
+                const itemSubtotal = resolveItemSubtotal(item);
                 if (itemSubtotal > 0) {
                     return sum + itemSubtotal;
                 }
 
-                const price = toNumber(item?.price);
-                const quantity = toNumber(item?.quantity || 0);
-                return sum + (price * quantity);
+                return sum;
             }, 0);
 
             if (itemsTotal > 0) return itemsTotal;
@@ -743,7 +784,7 @@
             document.getElementById('order-items').innerHTML = cartData.cartItems.map(item => {
                 const priceBlock = (() => {
                     const base = item.original_price != null ? parseFloat(item.original_price) : null;
-                    const sale = item.price != null ? parseFloat(item.price) : null;
+                    const sale = resolveItemUnitPrice(item);
                     const showDiscount = base != null && sale != null && sale < base;
                     if (showDiscount) {
                         return `<span style="text-decoration: line-through; color: #d14343; font-size: 0.9em; margin-right: 6px;">${formatCurrency(base)}</span><span style="color: var(--primary); font-weight: 700;">${formatCurrency(sale)}</span>`;
@@ -758,7 +799,7 @@
                             <label for="checkout-qty-${item.id}" style="font-size:0.8rem;">Qty</label>
                             <input type="number"
                                    id="checkout-qty-${item.id}"
-                                   value="${item.quantity}"
+                                   value="${toNumber(item.quantity || item.qty || 1)}"
                                    min="1"
                                    max="${item.stock_quantity || ''}"
                                    style="width:60px; padding:0.2rem 0.35rem; font-size:0.85rem; border:1px solid var(--border); border-radius:4px;"
@@ -766,7 +807,7 @@
                             <span>× ${priceBlock}</span>
                         </div>
                     </span>
-                    <strong>${formatCurrency(toNumber(item.subtotal) || (toNumber(item.price) * toNumber(item.quantity)))}</strong>
+                    <strong>${formatCurrency(resolveItemSubtotal(item))}</strong>
                 </div>`;
             }).join('');
             updateOrderSummaryTotals();
@@ -1548,9 +1589,9 @@
                 items: cartData.cartItems.map(item => ({
                     product_id: item.product_id,
                     product_name: item.name,
-                    quantity: item.quantity,
-                    price: item.price,
-                    subtotal: item.subtotal
+                    quantity: Math.max(1, toNumber(item.quantity || item.qty || 1)),
+                    price: resolveItemUnitPrice(item),
+                    subtotal: resolveItemSubtotal(item)
                 }))
             };
 
