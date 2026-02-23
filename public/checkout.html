@@ -658,6 +658,23 @@
                 };
             }
 
+            if (typeof window.showConfirmDialog !== 'function') {
+                window.showConfirmDialog = async function showConfirmDialog(message, options = {}) {
+                    const title = options?.title ? `${options.title}\n\n` : '';
+                    return window.confirm(`${title}${message}`);
+                };
+            }
+
+            if (typeof window.showPromptDialog !== 'function') {
+                window.showPromptDialog = async function showPromptDialog(message, options = {}) {
+                    const title = options?.title ? `${options.title}\n\n` : '';
+                    const placeholder = options?.placeholder ? `\n(${options.placeholder})` : '';
+                    const value = window.prompt(`${title}${message}${placeholder}`);
+                    if (value == null) return '';
+                    return String(value);
+                };
+            }
+
             const needsApi = !window.api || typeof window.api.get !== 'function';
             if (needsApi) {
                 const APK_API_ORIGIN = 'https://mountain-made.onrender.com';
@@ -1185,7 +1202,12 @@
             return subtotal + deliveryCharge;
         }
 
-        function buildGpayUpiLink(amount, note = '') {
+        function generateGpayRef() {
+            const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+            return `MM${Date.now()}${rand}`;
+        }
+
+        function buildGpayUpiLink(amount, note = '', transactionRef = '') {
             const upiId = String(checkoutGpaySettings.upiId || '').trim();
             if (!upiId) return null;
 
@@ -1200,6 +1222,11 @@
                 cu: 'INR'
             });
 
+            const tr = String(transactionRef || '').trim();
+            if (tr) {
+                params.set('tr', tr.slice(0, 35));
+            }
+
             if (note) {
                 params.set('tn', String(note).slice(0, 120));
             }
@@ -1207,15 +1234,15 @@
             return `upi://pay?${params.toString()}`;
         }
 
-        function buildGpayIntentLink(amount, note = '') {
-            const upiLink = buildGpayUpiLink(amount, note);
+        function buildGpayIntentLink(amount, note = '', transactionRef = '') {
+            const upiLink = buildGpayUpiLink(amount, note, transactionRef);
             if (!upiLink) return null;
             const query = upiLink.replace('upi://pay?', '');
             return `intent://pay?${query}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`;
         }
 
-        function openGpayWithAmount(amount, note = '') {
-            const upiLink = buildGpayUpiLink(amount, note);
+        function openGpayWithAmount(amount, note = '', transactionRef = '') {
+            const upiLink = buildGpayUpiLink(amount, note, transactionRef);
             if (!upiLink) {
                 showAlert('GPay UPI ID is not configured by admin.', 'error');
                 return false;
@@ -1223,7 +1250,7 @@
 
             const isAndroid = /android/i.test(navigator.userAgent || '');
             if (isAndroid) {
-                const intentLink = buildGpayIntentLink(amount, note);
+                const intentLink = buildGpayIntentLink(amount, note, transactionRef);
                 if (intentLink) {
                     window.location.href = intentLink;
                     setTimeout(() => {
@@ -1335,24 +1362,50 @@
 
             gpayPendingCheckInProgress = true;
             try {
-                const paid = await showConfirmDialog(
-                    'Did you complete the payment in Google Pay?',
-                    {
-                        title: 'Confirm GPay Payment',
-                        confirmText: 'Yes, Paid',
-                        cancelText: 'No, Cancelled'
-                    }
-                );
+                const refText = pending?.gpayRef ? `\n\nReference: ${pending.gpayRef}` : '';
+                const utr = await (typeof showPromptDialog === 'function'
+                    ? showPromptDialog(
+                        `After you pay in Google Pay, you will get a UTR / Transaction ID.${refText}\n\nEnter UTR to confirm order:`,
+                        {
+                            title: 'Confirm GPay Payment',
+                            placeholder: 'UTR / Transaction ID',
+                            confirmText: 'Confirm Order',
+                            cancelText: 'I Cancelled'
+                        }
+                    )
+                    : Promise.resolve(window.prompt(`Enter UTR / Transaction ID to confirm payment.${refText}`) || ''));
 
-                if (!paid) {
+                const utrValue = String(utr || '').trim();
+                if (!utrValue) {
                     clearPendingGpayOrder();
                     hideOrderStatusModal();
                     setPlaceOrderButtonState(false);
-                    showOrderFailed('Google Pay was cancelled. No order was created. Please try again.');
+                    showOrderFailed('Google Pay was cancelled (or UTR not provided). No order was created.');
                     showAlert('Payment cancelled. Order failed.', 'error');
                     return;
                 }
 
+                const looksValid = /^[A-Za-z0-9]{6,40}$/.test(utrValue.replace(/\s+/g, ''));
+                if (!looksValid) {
+                    hideOrderStatusModal();
+                    setPlaceOrderButtonState(false);
+                    showAlert('Please enter a valid UTR / Transaction ID.', 'error');
+                    return;
+                }
+
+                const updatedPending = {
+                    ...pending,
+                    orderData: {
+                        ...(pending.orderData || {}),
+                        payment_details: {
+                            ...(pending.orderData?.payment_details || {}),
+                            utr: utrValue
+                        },
+                        notes: `${String(pending.orderData?.notes || '').trim()} | UTR: ${utrValue}`.trim().replace(/^\|\s*/, '')
+                    }
+                };
+
+                savePendingGpayOrder(updatedPending);
                 await finalizePendingGpayOrder();
             } finally {
                 gpayPendingCheckInProgress = false;
@@ -1688,10 +1741,19 @@
             const shouldSaveAddress = !selectedAddressId && !!document.getElementById('save_address')?.checked;
 
             if (paymentMethod === 'gpay') {
+                const gpayRef = generateGpayRef();
+
+                orderData.payment_details = {
+                    ...(orderData.payment_details || {}),
+                    ref: gpayRef
+                };
+                orderData.notes = `${String(orderData.notes || '').trim()} | Ref: ${gpayRef}`.trim().replace(/^\|\s*/, '');
+
                 const saved = savePendingGpayOrder({
                     orderData,
                     shippingAddress,
-                    shouldSaveAddress
+                    shouldSaveAddress,
+                    gpayRef
                 });
 
                 if (!saved) {
@@ -1701,7 +1763,7 @@
                     return;
                 }
 
-                const launched = openGpayWithAmount(totalAmount, 'Checkout Payment');
+                const launched = openGpayWithAmount(totalAmount, 'Checkout Payment', gpayRef);
                 if (!launched) {
                     clearPendingGpayOrder();
                     hideOrderStatusModal();
