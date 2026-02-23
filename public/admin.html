@@ -6927,7 +6927,7 @@
             }
 
             const discountAdjust = document.getElementById('edit-product-discount-adjust');
-            if (discountAdjust) discountAdjust.value = (product.discount_adjust ?? '');
+            if (discountAdjust) discountAdjust.value = '';
 
             const editPriceInput = document.getElementById('edit-product-price');
             if (editPriceInput && editPriceInput.getAttribute('data-discount-adjust-bound') !== '1') {
