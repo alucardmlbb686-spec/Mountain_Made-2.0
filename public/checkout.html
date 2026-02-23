@@ -711,12 +711,29 @@
             return toNumber(data?.total);
         }
 
+        function normalizeCartPayload(data) {
+            const apiItems = Array.isArray(data?.cartItems) ? data.cartItems : [];
+            const fallbackItems = Array.isArray(cart?.items) ? cart.items : [];
+            const items = apiItems.length ? apiItems : fallbackItems;
+
+            const apiTotal = toNumber(data?.total);
+            const fallbackTotal = toNumber(cart?.total);
+            const computedTotal = computeCartSubtotal({ cartItems: items, total: apiTotal || fallbackTotal });
+
+            return {
+                cartItems: items,
+                total: computedTotal
+            };
+        }
+
         async function loadCheckout() {
             // Clean up direct buy flag
             sessionStorage.removeItem('directBuy');
             
-            cartData = await cart.fetch();
-            if (!cartData || cartData.cartItems.length === 0) {
+            const fetched = await cart.fetch();
+            cartData = normalizeCartPayload(fetched || {});
+
+            if (!cartData || !Array.isArray(cartData.cartItems) || cartData.cartItems.length === 0) {
                 window.location.href = '/cart';
                 return;
             }
@@ -749,7 +766,7 @@
                             <span>× ${priceBlock}</span>
                         </div>
                     </span>
-                    <strong>${formatCurrency(item.subtotal)}</strong>
+                    <strong>${formatCurrency(toNumber(item.subtotal) || (toNumber(item.price) * toNumber(item.quantity)))}</strong>
                 </div>`;
             }).join('');
             updateOrderSummaryTotals();
