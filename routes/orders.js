@@ -1,12 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
+const Razorpay = require('razorpay');
 const { authenticateToken } = require('../middleware/auth');
 const { blockAdminCommerce } = require('../middleware/commerceAccess');
 
 // All order routes require authentication
 router.use(authenticateToken);
 router.use(blockAdminCommerce);
+
+function getRequiredEnv(name) {
+  const value = process.env[name];
+  if (!value || !String(value).trim()) return null;
+  return String(value).trim();
+}
 
 // Create order
 router.post('/', async (req, res) => {
@@ -64,6 +71,104 @@ router.get('/:id', async (req, res) => {
   } catch (error) {
     console.error('Get order error:', error);
     res.status(500).json({ error: 'Failed to fetch order.' });
+  }
+});
+
+// Cancel an order (customer initiated). If order was paid by Razorpay, initiate refund back to original payment method.
+router.post('/:id/cancel', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : 'Customer cancelled';
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    if (order.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+
+    if (order.status === 'cancelled') {
+      return res.json({ message: 'Order already cancelled.', order });
+    }
+
+    if (order.status === 'shipped' || order.status === 'delivered') {
+      return res.status(409).json({ error: 'This order can no longer be cancelled.' });
+    }
+
+    // Cancel + restock first (DB authoritative). Refund will be attempted after.
+    const cancelled = await Order.cancelById({
+      orderId: Number(id),
+      userId: req.user.id,
+      reason
+    });
+
+    const needsRefund =
+      String(cancelled.payment_provider || '').toLowerCase() === 'razorpay' &&
+      String(cancelled.payment_status || '').toLowerCase() === 'paid' &&
+      !!String(cancelled.payment_gateway_payment_id || '').trim();
+
+    if (!needsRefund) {
+      return res.json({
+        message: 'Order cancelled successfully.',
+        order: cancelled
+      });
+    }
+
+    const keyId = getRequiredEnv('RAZORPAY_KEY_ID');
+    const keySecret = getRequiredEnv('RAZORPAY_KEY_SECRET');
+    if (!keyId || !keySecret) {
+      const updated = await Order.updateRefundStatus({
+        orderId: cancelled.id,
+        refund_status: 'refund_failed',
+        refund_id: null,
+        refund_amount: null,
+        refunded_at: new Date(),
+        payment_status: cancelled.payment_status
+      });
+
+      return res.status(501).json({
+        error: 'Refund could not be initiated (Razorpay not configured on server).',
+        order: updated
+      });
+    }
+
+    // Initiate real Razorpay refund (will go back to original UPI/bank based on gateway rules)
+    const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+    const refundResponse = await razorpay.payments.refund(String(cancelled.payment_gateway_payment_id), {
+      notes: {
+        order_id: String(cancelled.id),
+        order_number: String(cancelled.order_number || ''),
+        reason
+      }
+    });
+
+    const refundAmount = Number(cancelled.payment_amount || cancelled.total_amount || 0) || null;
+    const refundStatusRaw = String(refundResponse?.status || '').toLowerCase();
+    const normalizedRefundStatus = refundStatusRaw === 'processed' ? 'refunded' : 'refund_pending';
+    const normalizedPaymentStatus = refundStatusRaw === 'processed' ? 'refunded' : 'refund_pending';
+
+    const updated = await Order.updateRefundStatus({
+      orderId: cancelled.id,
+      refund_status: normalizedRefundStatus,
+      refund_id: refundResponse?.id ? String(refundResponse.id) : null,
+      refund_amount: refundAmount,
+      refunded_at: new Date(),
+      payment_status: normalizedPaymentStatus
+    });
+
+    return res.json({
+      message: 'Order cancelled and refund initiated.',
+      order: updated,
+      refund: {
+        id: refundResponse?.id,
+        status: refundResponse?.status
+      }
+    });
+  } catch (error) {
+    console.error('Cancel order error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to cancel order.' });
   }
 });
 

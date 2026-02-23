@@ -242,6 +242,56 @@
             }
         }
 
+        function getRefundDisplay(order) {
+            const provider = String(order.payment_provider || '').toLowerCase();
+            const paymentStatus = String(order.payment_status || '').toLowerCase();
+            const refundStatus = String(order.refund_status || '').toLowerCase();
+
+            if (provider !== 'razorpay') return '';
+
+            if (refundStatus === 'refunded' || paymentStatus === 'refunded') {
+                return '<span style="color: var(--success); font-weight: 700;">Refunded</span>';
+            }
+
+            if (refundStatus === 'refund_pending' || paymentStatus === 'refund_pending') {
+                return '<span style="color: var(--warning); font-weight: 700;">Refund pending</span>';
+            }
+
+            if (refundStatus === 'refund_failed') {
+                return '<span style="color: var(--error); font-weight: 700;">Refund failed (contact support)</span>';
+            }
+
+            if (paymentStatus === 'paid') {
+                return '<span style="color: var(--info); font-weight: 700;">Paid</span>';
+            }
+
+            return '';
+        }
+
+        function canCustomerCancel(order) {
+            const status = String(order.status || '').toLowerCase();
+            return status === 'pending' || status === 'processing';
+        }
+
+        async function cancelOrder(orderId) {
+            if (!orderId) return;
+            const ok = await showConfirmDialog('Cancel this order? If it was paid by UPI/GPay, the refund will be initiated back to your bank account.', {
+                title: 'Cancel Order',
+                confirmText: 'Cancel Order',
+                cancelText: 'Keep Order'
+            });
+            if (!ok) return;
+
+            try {
+                const resp = await api.post(`/orders/${orderId}/cancel`, { reason: 'Customer cancelled' });
+                showAlert(resp.message || 'Order cancelled', 'success');
+                await loadOrders();
+            } catch (err) {
+                console.error('Cancel order failed:', err);
+                showAlert(err.message || 'Failed to cancel order', 'error');
+            }
+        }
+
         async function loadOrders() {
             const data = await api.get('/orders');
             const container = document.getElementById('orders-list');
@@ -268,8 +318,21 @@
                             <p style="margin: 0 0 0.5rem; font-weight: 600; color: var(--primary);">
                                 Status: <span class="${getCustomerOrderStatusClass(order.status)}" style="margin-left: 0.25rem;">${getCustomerOrderStatusText(order.status)}</span>
                             </p>
+                            ${getRefundDisplay(order) ? `
+                                <p style="margin: 0 0 0.75rem; color: var(--text-light);">
+                                    Payment/Refund: ${getRefundDisplay(order)}
+                                </p>
+                            ` : ''}
                             <strong style="display: block; margin-bottom: 0.5rem;">Items:</strong>
                             ${order.items.map(item => `<div style="display: flex; justify-content: space-between; padding: 0.5rem 0;"><span>${item.product_name} x ${item.quantity}</span><span>${formatCurrency(item.subtotal)}</span></div>`).join('')}
+
+                            ${canCustomerCancel(order) ? `
+                                <div style="margin-top: 1rem; display:flex; justify-content:flex-end;">
+                                    <button class="btn btn-danger btn-sm" onclick="cancelOrder(${order.id})">
+                                        <i class="fas fa-times"></i> Cancel Order
+                                    </button>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>

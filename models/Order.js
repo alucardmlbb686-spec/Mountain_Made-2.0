@@ -63,6 +63,14 @@ class Order {
         total_amount,
         shipping_address,
         payment_method,
+        payment_provider = null,
+        payment_status = null,
+        payment_currency = 'INR',
+        payment_amount = null,
+        payment_gateway_order_id = null,
+        payment_gateway_payment_id = null,
+        payment_gateway_signature = null,
+        paid_at = null,
         notes,
         items,
         delivery_speed = null,
@@ -78,12 +86,20 @@ class Order {
           total_amount,
           shipping_address,
           payment_method,
+          payment_provider,
+          payment_status,
+          payment_currency,
+          payment_amount,
+          payment_gateway_order_id,
+          payment_gateway_payment_id,
+          payment_gateway_signature,
+          paid_at,
           notes,
           status,
           delivery_speed,
           delivery_charge
         )
-        VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 'unpaid'), $8, $9, $10, $11, $12, $13, $14, $15, 'pending', $16, $17)
         RETURNING *
       `;
 
@@ -98,6 +114,14 @@ class Order {
             total_amount,
             JSON.stringify(shipping_address),
             payment_method,
+            payment_provider,
+            payment_status,
+            payment_currency,
+            payment_amount,
+            payment_gateway_order_id,
+            payment_gateway_payment_id,
+            payment_gateway_signature,
+            paid_at,
             notes,
             delivery_speed,
             delivery_charge
@@ -265,6 +289,115 @@ class Order {
       RETURNING *
     `;
     const result = await db.query(query, [status, id]);
+    return result.rows[0];
+  }
+
+  static async cancelById({ orderId, userId, reason = 'Customer cancelled' }) {
+    const id = Number(orderId);
+    if (!Number.isFinite(id)) {
+      throw new Error('Invalid order id');
+    }
+
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const orderResult = await client.query(
+        'SELECT * FROM orders WHERE id = $1 FOR UPDATE',
+        [id]
+      );
+
+      const order = orderResult.rows[0];
+      if (!order) {
+        throw new Error('Order not found');
+      }
+
+      if (Number(order.user_id) !== Number(userId)) {
+        throw new Error('Access denied');
+      }
+
+      if (order.status === 'cancelled') {
+        await client.query('COMMIT');
+        return order;
+      }
+
+      if (order.status === 'shipped' || order.status === 'delivered') {
+        throw new Error('This order can no longer be cancelled');
+      }
+
+      const itemsResult = await client.query(
+        'SELECT product_id, quantity FROM order_items WHERE order_id = $1',
+        [id]
+      );
+
+      // Restock items (best-effort for deleted products)
+      for (const row of itemsResult.rows || []) {
+        const productId = row.product_id;
+        const qty = Number(row.quantity) || 0;
+        if (!productId || qty <= 0) continue;
+        await client.query(
+          'UPDATE products SET stock_quantity = stock_quantity + $1 WHERE id = $2',
+          [qty, productId]
+        );
+      }
+
+      const updateResult = await client.query(
+        `
+          UPDATE orders
+          SET status = 'cancelled',
+              cancel_reason = $1,
+              cancelled_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = $2
+          RETURNING *
+        `,
+        [reason, id]
+      );
+
+      await client.query('COMMIT');
+      return updateResult.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  static async updateRefundStatus({
+    orderId,
+    refund_status = null,
+    refund_id = null,
+    refund_amount = null,
+    refunded_at = null,
+    payment_status = null
+  }) {
+    const id = Number(orderId);
+    if (!Number.isFinite(id)) {
+      throw new Error('Invalid order id');
+    }
+
+    const query = `
+      UPDATE orders
+      SET refund_status = $1,
+          refund_id = $2,
+          refund_amount = $3,
+          refunded_at = $4,
+          payment_status = COALESCE($5, payment_status),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $6
+      RETURNING *
+    `;
+
+    const result = await db.query(query, [
+      refund_status,
+      refund_id,
+      refund_amount,
+      refunded_at,
+      payment_status,
+      id
+    ]);
+
     return result.rows[0];
   }
 

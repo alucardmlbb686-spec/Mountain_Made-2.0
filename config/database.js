@@ -543,6 +543,105 @@ const initializeDatabase = async () => {
         ) THEN
           ALTER TABLE orders ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
         END IF;
+
+        -- Payment + refund tracking (Razorpay/UPI)
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'payment_provider'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN payment_provider VARCHAR(50);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'payment_status'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN payment_status VARCHAR(50) DEFAULT 'unpaid';
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'payment_currency'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN payment_currency VARCHAR(10) DEFAULT 'INR';
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'payment_amount'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN payment_amount DECIMAL(10, 2);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'payment_gateway_order_id'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN payment_gateway_order_id VARCHAR(100);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'payment_gateway_payment_id'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN payment_gateway_payment_id VARCHAR(100);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'payment_gateway_signature'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN payment_gateway_signature VARCHAR(255);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'paid_at'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN paid_at TIMESTAMP;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'refund_status'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN refund_status VARCHAR(50);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'refund_id'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN refund_id VARCHAR(100);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'refund_amount'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN refund_amount DECIMAL(10, 2);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'refunded_at'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN refunded_at TIMESTAMP;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'cancelled_at'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN cancelled_at TIMESTAMP;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'cancel_reason'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN cancel_reason TEXT;
+        END IF;
       END $$;
     `);
 
