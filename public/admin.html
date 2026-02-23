@@ -2990,16 +2990,36 @@
             const discountInput = document.getElementById('edit-product-discount-price');
             if (!priceInput || !adjustInput || !discountInput) return;
 
-            const savedPriceRaw = String(priceInput.getAttribute('data-saved-price') || '').trim();
-            const savedPrice = parseFloat(savedPriceRaw);
+            const basePriceRaw = String(priceInput.getAttribute('data-base-price') || priceInput.getAttribute('data-saved-price') || '').trim();
+            const basePriceAttr = parseFloat(basePriceRaw);
+            const savedDiscountRaw = String(discountInput.getAttribute('data-saved-discount') || '').trim();
+            const savedDiscount = parseFloat(savedDiscountRaw);
             const currentPrice = parseFloat(String(priceInput.value || '').trim());
-            const basePrice = (source === 'adjust' && Number.isFinite(savedPrice)) ? savedPrice : currentPrice;
+            const currentDiscount = parseFloat(String(discountInput.value || '').trim());
+
+            let basePrice = currentPrice;
+            // When using the calculator, stack from the current discount (history):
+            // price 50, discount 45 -> next -5 should use 45 as base.
+            if (source === 'adjust') {
+                if (Number.isFinite(currentDiscount)) {
+                    basePrice = currentDiscount;
+                } else if (Number.isFinite(savedDiscount)) {
+                    basePrice = savedDiscount;
+                } else if (Number.isFinite(basePriceAttr)) {
+                    basePrice = basePriceAttr;
+                }
+            }
+
             if (!Number.isFinite(basePrice)) return;
 
             const adjustmentRaw = String(adjustInput.value || '').trim();
             if (!adjustmentRaw) {
                 const savedDiscount = discountInput.getAttribute('data-saved-discount');
                 discountInput.value = savedDiscount || '';
+                const restoreBase = String(priceInput.getAttribute('data-base-price') || priceInput.getAttribute('data-saved-price') || '').trim();
+                if (restoreBase) {
+                    priceInput.value = restoreBase;
+                }
                 return;
             }
 
@@ -3029,6 +3049,12 @@
             }
 
             computedDiscount = Math.max(0, computedDiscount);
+
+            // Show the "history base" in the Price field live while stacking.
+            if (source === 'adjust' && Number.isFinite(basePrice)) {
+                priceInput.value = Number(basePrice).toFixed(2);
+            }
+
             const computedText = Number(computedDiscount).toFixed(2);
             discountInput.value = computedText;
             try {
@@ -6889,6 +6915,7 @@
                     ? ''
                     : String(product.price);
                 editPriceInputForSave.setAttribute('data-saved-price', savedPrice);
+                editPriceInputForSave.setAttribute('data-base-price', savedPrice);
             }
 
             const editDiscountInput = document.getElementById('edit-product-discount-price');
@@ -6906,6 +6933,12 @@
             if (editPriceInput && editPriceInput.getAttribute('data-discount-adjust-bound') !== '1') {
                 editPriceInput.setAttribute('data-discount-adjust-bound', '1');
                 editPriceInput.addEventListener('input', function() {
+                    const adjustInput = document.getElementById('edit-product-discount-adjust');
+                    if (adjustInput && String(adjustInput.value || '').trim() === '') {
+                        const baseRaw = String(editPriceInput.value || '').trim();
+                        editPriceInput.setAttribute('data-base-price', baseRaw);
+                        editPriceInput.setAttribute('data-saved-price', baseRaw);
+                    }
                     if (window.updateDiscountFromMainPrice) {
                         window.updateDiscountFromMainPrice();
                     }
@@ -7228,6 +7261,9 @@
                     return;
                 }
 
+                const priceInputEl = document.getElementById('edit-product-price');
+                const basePriceRaw = String(priceInputEl?.getAttribute('data-base-price') || priceInputEl?.getAttribute('data-saved-price') || price || '').trim();
+                const parsedBasePrice = parseFloat(basePriceRaw);
                 const parsedPrice = parseFloat(price);
                 const parsedDiscountPrice = discount_price ? parseFloat(discount_price) : null;
                 const hasDiscountAdjust = discount_adjust_raw.length > 0;
@@ -7242,13 +7278,14 @@
                     return;
                 }
 
-                if (Number.isFinite(parsedDiscountPrice) && Number.isFinite(parsedPrice) && parsedDiscountPrice >= parsedPrice) {
+                const effectiveBaseForValidation = Number.isFinite(parsedBasePrice) ? parsedBasePrice : parsedPrice;
+                if (Number.isFinite(parsedDiscountPrice) && Number.isFinite(effectiveBaseForValidation) && parsedDiscountPrice >= effectiveBaseForValidation) {
                     showAlert('Discount price must be less than the base price.', 'error');
                     return;
                 }
 
-                // IMPORTANT: keep base price as-is; store discount separately.
-                const priceToSave = parsedPrice;
+                // IMPORTANT: never overwrite the stored base price when stacking discounts.
+                const priceToSave = Number.isFinite(parsedBasePrice) ? parsedBasePrice : parsedPrice;
                 const discountToSave = parsedDiscountPrice;
 
                 let updateData = {
