@@ -8405,19 +8405,59 @@
                     // Pre-request microphone permission so we can distinguish mic-denied from service issues.
                     if (navigator.mediaDevices?.getUserMedia) {
                         try {
+                            // If there is no audio input device, Chrome will fail with NotFoundError.
+                            if (navigator.mediaDevices.enumerateDevices) {
+                                try {
+                                    const devices = await navigator.mediaDevices.enumerateDevices();
+                                    const hasMic = Array.isArray(devices) && devices.some(d => d && d.kind === 'audioinput');
+                                    if (!hasMic) {
+                                        speak('No microphone was detected on this device.', { interrupt: true, force: true });
+                                        try {
+                                            window.showAlert?.('No microphone device detected (audioinput). Connect/enable a mic, then reload and try again.', 'error');
+                                        } catch (_) { /* ignore */ }
+                                        return;
+                                    }
+                                } catch (_) {
+                                    // ignore enumeration failures
+                                }
+                            }
+
                             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                             try {
                                 stream.getTracks().forEach(t => t.stop());
                             } catch (_) { /* ignore */ }
                         } catch (micErr) {
-                            const name = String(micErr?.name || micErr?.message || '').toLowerCase();
-                            if (name.includes('notallowed') || name.includes('permission')) {
+                            const errName = String(micErr?.name || '').trim();
+                            const errMsg = String(micErr?.message || '').trim();
+                            const name = `${errName} ${errMsg}`.toLowerCase();
+
+                            if (name.includes('notfound')) {
+                                speak('I can’t find a microphone device.', { interrupt: true, force: true });
+                                try {
+                                    window.showAlert?.('Microphone not found. Check Windows sound input device and Chrome microphone device selection.', 'error');
+                                } catch (_) { /* ignore */ }
+                                return;
+                            }
+
+                            if (name.includes('notreadable') || name.includes('trackstart')) {
+                                speak('Your microphone is busy or not available.', { interrupt: true, force: true });
+                                try {
+                                    window.showAlert?.('Microphone is in use or not readable. Close other apps using mic (WhatsApp/Meet/Recorder), then try again.', 'error');
+                                } catch (_) { /* ignore */ }
+                                return;
+                            }
+
+                            if (name.includes('notallowed') || name.includes('permission') || name.includes('denied')) {
                                 speak('Microphone permission is blocked. Please allow mic access for this site.', { interrupt: true, force: true });
                             } else {
                                 speak('I can’t access your microphone right now.', { interrupt: true, force: true });
                             }
                             try {
-                                window.showAlert?.('Microphone access failed. Check browser site settings and Windows privacy settings for the microphone.', 'error');
+                                const details = errName ? ` (${errName})` : '';
+                                window.showAlert?.(
+                                    `Microphone access failed${details}. Chrome: click the lock icon → Site settings → Microphone = Allow. Also check chrome://settings/content/microphone and Windows Settings → Privacy & security → Microphone.`,
+                                    'error'
+                                );
                             } catch (_) { /* ignore */ }
                             return;
                         }
