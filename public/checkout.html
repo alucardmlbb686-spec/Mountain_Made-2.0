@@ -682,6 +682,35 @@
             });
         }
 
+        function toNumber(value) {
+            if (typeof value === 'number') {
+                return Number.isFinite(value) ? value : 0;
+            }
+            const cleaned = String(value ?? '').replace(/[^0-9.-]/g, '');
+            const parsed = parseFloat(cleaned);
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function computeCartSubtotal(data) {
+            const items = Array.isArray(data?.cartItems) ? data.cartItems : [];
+            if (!items.length) return 0;
+
+            const itemsTotal = items.reduce((sum, item) => {
+                const itemSubtotal = toNumber(item?.subtotal);
+                if (itemSubtotal > 0) {
+                    return sum + itemSubtotal;
+                }
+
+                const price = toNumber(item?.price);
+                const quantity = toNumber(item?.quantity || 0);
+                return sum + (price * quantity);
+            }, 0);
+
+            if (itemsTotal > 0) return itemsTotal;
+
+            return toNumber(data?.total);
+        }
+
         async function loadCheckout() {
             // Clean up direct buy flag
             sessionStorage.removeItem('directBuy');
@@ -692,7 +721,7 @@
                 return;
             }
 
-            checkoutCartSubtotal = parseFloat(cartData.total || 0);
+            checkoutCartSubtotal = computeCartSubtotal(cartData);
             
             document.getElementById('order-items').innerHTML = cartData.cartItems.map(item => {
                 const priceBlock = (() => {
@@ -1004,7 +1033,8 @@
             const deliveryCharge = checkoutDeliverySpeed === 'fast' && checkoutSettings.fastDeliveryEnabled
                 ? (checkoutSettings.fastDeliveryCharge || 0)
                 : 0;
-            return (checkoutCartSubtotal || 0) + deliveryCharge;
+            const subtotal = computeCartSubtotal(cartData) || checkoutCartSubtotal || 0;
+            return subtotal + deliveryCharge;
         }
 
         function buildGpayUpiLink(amount, note = '') {
@@ -1487,7 +1517,8 @@
             const delivery_charge = checkoutDeliverySpeed === 'fast' && checkoutSettings.fastDeliveryEnabled
                 ? (checkoutSettings.fastDeliveryCharge || 0)
                 : 0;
-            const totalAmount = (checkoutCartSubtotal || 0) + delivery_charge;
+            const currentSubtotal = computeCartSubtotal(cartData) || checkoutCartSubtotal || 0;
+            const totalAmount = currentSubtotal + delivery_charge;
 
             const orderData = {
                 shipping_address: shippingAddress,
