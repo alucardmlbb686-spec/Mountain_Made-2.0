@@ -1431,7 +1431,13 @@ exports.updateSiteSettings = async (req, res) => {
       admin_license_blocked,
       admin_license_expires_at,
       fast_delivery_enabled,
-      fast_delivery_charge
+      fast_delivery_charge,
+      gpay_enabled,
+      gpay_payee_name,
+      gpay_upi_id,
+      gpay_phone_number,
+      gpay_bank_name,
+      gpay_qr_image_url
     } = req.body || {};
 
     const hasLicenseChange =
@@ -1505,6 +1511,48 @@ exports.updateSiteSettings = async (req, res) => {
         return res.status(400).json({ error: 'Fast delivery charge must be a valid non-negative number.' });
       }
       updates.push({ key: 'fast_delivery_charge', value: parsed.toFixed(2) });
+    }
+
+    if (gpay_enabled !== undefined && gpay_enabled !== null) {
+      const enabledValue =
+        typeof gpay_enabled === 'boolean'
+          ? gpay_enabled
+          : String(gpay_enabled).toLowerCase() === 'true';
+      updates.push({ key: 'gpay_enabled', value: enabledValue ? 'true' : 'false' });
+    }
+
+    if (gpay_payee_name !== undefined) {
+      const payeeName = String(gpay_payee_name || '').trim();
+      updates.push({ key: 'gpay_payee_name', value: payeeName });
+    }
+
+    if (gpay_upi_id !== undefined) {
+      const upiId = String(gpay_upi_id || '').trim();
+      if (upiId && !/^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}$/i.test(upiId)) {
+        return res.status(400).json({ error: 'GPay UPI ID format looks invalid. Example: yourname@oksbi' });
+      }
+      updates.push({ key: 'gpay_upi_id', value: upiId });
+    }
+
+    if (gpay_phone_number !== undefined) {
+      const phoneNumber = String(gpay_phone_number || '').trim();
+      if (phoneNumber && !/^[0-9+\-\s()]{8,20}$/.test(phoneNumber)) {
+        return res.status(400).json({ error: 'GPay phone number format looks invalid.' });
+      }
+      updates.push({ key: 'gpay_phone_number', value: phoneNumber });
+    }
+
+    if (gpay_bank_name !== undefined) {
+      const bankName = String(gpay_bank_name || '').trim();
+      updates.push({ key: 'gpay_bank_name', value: bankName });
+    }
+
+    if (gpay_qr_image_url !== undefined) {
+      const qrImageUrl = String(gpay_qr_image_url || '').trim();
+      if (qrImageUrl && !/^https?:\/\//i.test(qrImageUrl)) {
+        return res.status(400).json({ error: 'GPay QR image URL must start with http:// or https://.' });
+      }
+      updates.push({ key: 'gpay_qr_image_url', value: qrImageUrl });
     }
 
     if (updates.length === 0) {

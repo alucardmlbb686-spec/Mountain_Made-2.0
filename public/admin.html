@@ -2095,6 +2095,58 @@
                         </button>
                     </div>
                 </div>
+
+                <div class="data-table-container" style="margin-top: 1.5rem;">
+                    <div class="table-header">
+                        <h3>Google Pay Integration</h3>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">
+                            Configure real GPay payment details used at checkout. Customers can choose UPI/Phone/QR view, and payment amount opens in GPay automatically.
+                        </p>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label class="form-label" style="display:flex; align-items:center; gap:0.5rem;">
+                                <input type="checkbox" id="gpay-enabled" style="width:auto;">
+                                Enable Google Pay at checkout
+                            </label>
+                        </div>
+
+                        <div class="form-row" style="margin-bottom: 1rem;">
+                            <div>
+                                <label class="form-label" for="gpay-payee-name">Payee Name</label>
+                                <input type="text" id="gpay-payee-name" class="form-input" placeholder="e.g. Mountain Made Pvt Ltd">
+                            </div>
+                            <div>
+                                <label class="form-label" for="gpay-bank-name">Bank Name</label>
+                                <input type="text" id="gpay-bank-name" class="form-input" placeholder="e.g. SBI">
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="margin-bottom: 1rem;">
+                            <div>
+                                <label class="form-label" for="gpay-upi-id">UPI ID (required for redirect)</label>
+                                <input type="text" id="gpay-upi-id" class="form-input" placeholder="e.g. mountainmade@oksbi">
+                            </div>
+                            <div>
+                                <label class="form-label" for="gpay-phone-number">GPay Phone Number</label>
+                                <input type="text" id="gpay-phone-number" class="form-input" placeholder="e.g. +91 9876543210">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem; max-width: 640px;">
+                            <label class="form-label" for="gpay-qr-image-url">Fixed QR Image URL</label>
+                            <input type="url" id="gpay-qr-image-url" class="form-input" placeholder="https://.../gpay-qr.png">
+                            <small style="color: var(--text-muted); display:block; margin-top: 0.35rem;">
+                                Paste a public image URL for your fixed business QR code.
+                            </small>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="saveGpayIntegrationSettings()">
+                            <i class="fab fa-google-pay"></i> Save GPay Integration
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Admin License Section -->
@@ -5399,6 +5451,22 @@
                 if (businessEmailInput) {
                     businessEmailInput.value = settings.business_support_email || 'hello@mountain-made.com';
                 }
+
+                const gpayEnabledEl = document.getElementById('gpay-enabled');
+                const gpayPayeeNameEl = document.getElementById('gpay-payee-name');
+                const gpayUpiEl = document.getElementById('gpay-upi-id');
+                const gpayPhoneEl = document.getElementById('gpay-phone-number');
+                const gpayBankEl = document.getElementById('gpay-bank-name');
+                const gpayQrEl = document.getElementById('gpay-qr-image-url');
+
+                if (gpayEnabledEl) {
+                    gpayEnabledEl.checked = String(settings.gpay_enabled || 'false').toLowerCase() === 'true';
+                }
+                if (gpayPayeeNameEl) gpayPayeeNameEl.value = settings.gpay_payee_name || '';
+                if (gpayUpiEl) gpayUpiEl.value = settings.gpay_upi_id || '';
+                if (gpayPhoneEl) gpayPhoneEl.value = settings.gpay_phone_number || '';
+                if (gpayBankEl) gpayBankEl.value = settings.gpay_bank_name || '';
+                if (gpayQrEl) gpayQrEl.value = settings.gpay_qr_image_url || '';
             } catch (error) {
                 console.error('Load site settings error:', error);
                 showAlert('Failed to load site settings', 'error');
@@ -5683,6 +5751,37 @@
             } catch (error) {
                 console.error('Save business email settings error:', error);
                 showAlert(error.message || 'Failed to save business email settings', 'error');
+            }
+        };
+
+        window.saveGpayIntegrationSettings = async function() {
+            try {
+                const gpay_enabled = !!document.getElementById('gpay-enabled')?.checked;
+                const gpay_payee_name = (document.getElementById('gpay-payee-name')?.value || '').trim();
+                const gpay_upi_id = (document.getElementById('gpay-upi-id')?.value || '').trim();
+                const gpay_phone_number = (document.getElementById('gpay-phone-number')?.value || '').trim();
+                const gpay_bank_name = (document.getElementById('gpay-bank-name')?.value || '').trim();
+                const gpay_qr_image_url = (document.getElementById('gpay-qr-image-url')?.value || '').trim();
+
+                showAlert('Saving GPay integration settings...', 'info');
+                const response = await api.post('/admin/settings', {
+                    gpay_enabled,
+                    gpay_payee_name,
+                    gpay_upi_id,
+                    gpay_phone_number,
+                    gpay_bank_name,
+                    gpay_qr_image_url
+                });
+
+                if (response && (response.success || response.message)) {
+                    showAlert('GPay integration settings saved successfully!', 'success');
+                    await loadSiteSettings();
+                } else {
+                    throw new Error(response?.error || 'Failed to save GPay integration settings');
+                }
+            } catch (error) {
+                console.error('Save GPay integration settings error:', error);
+                showAlert(error.message || 'Failed to save GPay integration settings', 'error');
             }
         };
 

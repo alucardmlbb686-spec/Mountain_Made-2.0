@@ -132,19 +132,26 @@
                         </div>
                         <div id="gpay-details" class="gpay-details hidden">
                             <div class="form-group">
-                                <label class="form-label">GPay detail to share</label>
+                                <label class="form-label">Choose GPay Payment Option</label>
                                 <select id="gpay-detail-type" class="form-select">
                                     <option value="upi">UPI ID</option>
                                     <option value="phone">Phone Number</option>
-                                    <option value="qr">QR Code / Link</option>
+                                    <option value="qr">QR Code</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label id="gpay-detail-label" class="form-label">UPI ID</label>
-                                <input type="text" id="gpay-detail-value" class="form-input" placeholder="e.g. name@upi" data-validate data-label="GPay Detail">
-                                <div class="form-help">This is shared only with the owner for payment confirmation.</div>
+                                <input type="text" id="gpay-detail-value" class="form-input" placeholder="Configured from admin" readonly>
+                                <div class="form-help" id="gpay-bank-display">Bank: -</div>
+                            </div>
+                            <div id="gpay-qr-wrap" class="form-group hidden">
+                                <label class="form-label">Business GPay QR</label>
+                                <img id="gpay-qr-image" alt="GPay QR" style="max-width: 240px; width: 100%; border: 1px solid var(--border-primary); border-radius: 8px; background: #fff;">
                             </div>
                             <div class="form-help" id="gpay-prefill-hint">Prefilled from your Billing Management details.</div>
+                            <button type="button" id="open-gpay-btn" class="btn btn-secondary" style="margin-top: 0.75rem;">
+                                <i class="fab fa-google-pay"></i> Pay in GPay
+                            </button>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Order Notes (Optional)</label>
@@ -655,6 +662,14 @@
             fastDeliveryEnabled: false,
             fastDeliveryCharge: 0
         };
+        let checkoutGpaySettings = {
+            enabled: false,
+            payeeName: 'Mountain Made',
+            upiId: '',
+            phoneNumber: '',
+            bankName: '',
+            qrImageUrl: ''
+        };
 
         // Navigate back to appropriate home based on user role
         function navigateBack() {
@@ -964,35 +979,96 @@
 
         function formatGpayLabel(type) {
             if (type === 'phone') return 'Phone Number';
-            if (type === 'qr') return 'QR Code / Link';
+            if (type === 'qr') return 'QR Code';
             return 'UPI ID';
         }
 
-        function updateGpayLabelAndPrefill(profile) {
+        function getCurrentCheckoutTotal() {
+            const deliveryCharge = checkoutDeliverySpeed === 'fast' && checkoutSettings.fastDeliveryEnabled
+                ? (checkoutSettings.fastDeliveryCharge || 0)
+                : 0;
+            return (checkoutCartSubtotal || 0) + deliveryCharge;
+        }
+
+        function buildGpayUpiLink(amount, note = '') {
+            const upiId = String(checkoutGpaySettings.upiId || '').trim();
+            if (!upiId) return null;
+
+            const payeeName = String(checkoutGpaySettings.payeeName || 'Mountain Made').trim();
+            const finalAmount = Number(amount || 0);
+            if (!Number.isFinite(finalAmount) || finalAmount <= 0) return null;
+
+            const params = new URLSearchParams({
+                pa: upiId,
+                pn: payeeName,
+                am: finalAmount.toFixed(2),
+                cu: 'INR'
+            });
+
+            if (note) {
+                params.set('tn', String(note).slice(0, 120));
+            }
+
+            return `upi://pay?${params.toString()}`;
+        }
+
+        function openGpayWithAmount(amount, note = '') {
+            const link = buildGpayUpiLink(amount, note);
+            if (!link) {
+                showAlert('GPay UPI ID is not configured by admin.', 'error');
+                return false;
+            }
+
+            window.location.href = link;
+            return true;
+        }
+
+        function updateGpayLabelAndPrefill() {
             const typeSelect = document.getElementById('gpay-detail-type');
             const valueInput = document.getElementById('gpay-detail-value');
             const label = document.getElementById('gpay-detail-label');
             const hint = document.getElementById('gpay-prefill-hint');
+            const bankDisplay = document.getElementById('gpay-bank-display');
+            const qrWrap = document.getElementById('gpay-qr-wrap');
+            const qrImage = document.getElementById('gpay-qr-image');
+            const payBtn = document.getElementById('open-gpay-btn');
 
             if (!typeSelect || !valueInput || !label) return;
 
             const type = typeSelect.value || 'upi';
             label.textContent = formatGpayLabel(type);
 
-            const placeholders = {
-                upi: 'e.g. name@upi',
-                phone: '10-digit GPay phone',
-                qr: 'URL or note about your QR code'
+            const valueByType = {
+                upi: checkoutGpaySettings.upiId,
+                phone: checkoutGpaySettings.phoneNumber,
+                qr: checkoutGpaySettings.qrImageUrl
             };
-            valueInput.placeholder = placeholders[type] || 'Enter details';
 
-            const valueByType = { upi: profile.upi, phone: profile.phone, qr: profile.qr };
-            if (valueByType[type]) {
-                valueInput.value = valueByType[type];
-                if (hint) hint.textContent = `Prefilled with your saved ${formatGpayLabel(type)}.`;
-            } else {
-                valueInput.value = '';
-                if (hint) hint.textContent = 'Add your detail once and we will remember it for next time.';
+            valueInput.value = valueByType[type] || '';
+            valueInput.placeholder = 'Configured by admin';
+
+            if (bankDisplay) {
+                bankDisplay.textContent = `Bank: ${checkoutGpaySettings.bankName || '-'}`;
+            }
+
+            const isQr = type === 'qr';
+            if (qrWrap) {
+                qrWrap.classList.toggle('hidden', !isQr || !checkoutGpaySettings.qrImageUrl);
+            }
+            if (qrImage) {
+                qrImage.src = checkoutGpaySettings.qrImageUrl || '';
+            }
+
+            if (hint) {
+                hint.textContent = checkoutGpaySettings.enabled
+                    ? `Payee: ${checkoutGpaySettings.payeeName || 'Mountain Made'}`
+                    : 'Google Pay is currently disabled by admin.';
+            }
+
+            if (payBtn) {
+                const total = getCurrentCheckoutTotal();
+                payBtn.disabled = !checkoutGpaySettings.enabled || !checkoutGpaySettings.upiId;
+                payBtn.innerHTML = `<i class="fab fa-google-pay"></i> Pay ${formatCurrency(total)} in GPay`;
             }
         }
 
@@ -1002,6 +1078,9 @@
             if (!paymentSelect || !gpaySection) return;
             const isGpay = paymentSelect.value === 'gpay';
             gpaySection.classList.toggle('hidden', !isGpay);
+            if (isGpay) {
+                updateGpayLabelAndPrefill();
+            }
         }
 
         function openBillingManager() {
@@ -1024,17 +1103,24 @@
             const typeSelect = document.getElementById('gpay-detail-type');
             const manageBtn = document.getElementById('manage-billing-btn');
             const saveBtn = document.getElementById('billing-save');
+            const openGpayBtn = document.getElementById('open-gpay-btn');
 
-            const profile = loadBillingProfile();
             if (typeSelect) {
-                typeSelect.value = profile.preferred || 'upi';
-                typeSelect.addEventListener('change', () => updateGpayLabelAndPrefill(loadBillingProfile()));
-                updateGpayLabelAndPrefill(profile);
+                typeSelect.value = 'upi';
+                typeSelect.addEventListener('change', () => updateGpayLabelAndPrefill());
+                updateGpayLabelAndPrefill();
             }
 
             if (paymentSelect) {
                 paymentSelect.addEventListener('change', toggleGpayDetails);
                 toggleGpayDetails();
+            }
+
+            if (openGpayBtn) {
+                openGpayBtn.addEventListener('click', () => {
+                    const total = getCurrentCheckoutTotal();
+                    openGpayWithAmount(total, 'Checkout Payment');
+                });
             }
 
             if (manageBtn) {
@@ -1052,7 +1138,7 @@
                         phone: document.getElementById('billing-phone-input')?.value || '',
                         qr: document.getElementById('billing-qr-input')?.value || ''
                     });
-                    updateGpayLabelAndPrefill(updated);
+                    updateGpayLabelAndPrefill();
                     closeModal('billing-modal');
                     showAlert('Billing details saved.', 'success');
                 });
@@ -1074,6 +1160,13 @@
                 checkoutSettings.fastDeliveryEnabled = enabled;
                 checkoutSettings.fastDeliveryCharge = charge;
 
+                checkoutGpaySettings.enabled = String(settings.gpay_enabled || 'false').toLowerCase() === 'true';
+                checkoutGpaySettings.payeeName = String(settings.gpay_payee_name || 'Mountain Made').trim();
+                checkoutGpaySettings.upiId = String(settings.gpay_upi_id || '').trim();
+                checkoutGpaySettings.phoneNumber = String(settings.gpay_phone_number || '').trim();
+                checkoutGpaySettings.bankName = String(settings.gpay_bank_name || '').trim();
+                checkoutGpaySettings.qrImageUrl = String(settings.gpay_qr_image_url || '').trim();
+
                 const fastOption = document.getElementById('fast-delivery-option');
                 const fastLabel = document.getElementById('fast-delivery-charge-label');
                 const fastRadio = document.querySelector('input[name="delivery_speed"][value="fast"]');
@@ -1094,6 +1187,7 @@
                 }
 
                 updateOrderSummaryTotals();
+                updateGpayLabelAndPrefill();
             } catch (error) {
                 console.error('Failed to load checkout settings:', error);
                 // On error, keep defaults (standard delivery only / free)
@@ -1103,6 +1197,7 @@
                 checkoutSettings.fastDeliveryCharge = 0;
                 checkoutDeliverySpeed = 'standard';
                 updateOrderSummaryTotals();
+                updateGpayLabelAndPrefill();
             }
         }
 
