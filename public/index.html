@@ -548,20 +548,43 @@
         }
 
         /* Categories carousel (circular tiles, single row) */
+        .category-carousel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+        }
+
         .category-carousel .carousel-track-container {
             min-height: 170px;
-            overflow: visible;
+            overflow: hidden;
             border-radius: 12px;
+            width: min(100%, 920px);
+        }
+
+        .category-carousel .carousel-nav {
+            position: static;
+            top: auto;
+            left: auto;
+            right: auto;
+            transform: none;
+            width: 44px;
+            height: 44px;
         }
 
         .category-track {
             display: flex;
             flex-wrap: nowrap;
             gap: 1rem;
-            padding: 0.75rem;
+            padding: 0;
             overflow-x: auto;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+        }
+
+        .category-track.centered {
+            justify-content: center;
         }
 
         .category-track::-webkit-scrollbar {
@@ -580,17 +603,17 @@
             flex-direction: column;
             align-items: center;
             gap: 0.55rem;
-            padding: 0.5rem 0.5rem 0.65rem;
+            padding: 0.25rem 0;
             border-radius: 14px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            background: var(--bg-primary);
-            border: 1px solid var(--border-primary);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            scroll-snap-align: start;
         }
 
         .category-circle:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
         }
 
         .category-circle-image {
@@ -636,6 +659,13 @@
             }
             .category-carousel .carousel-track-container {
                 min-height: 155px;
+            }
+            .category-carousel {
+                gap: 0.45rem;
+            }
+            .category-carousel .carousel-nav {
+                width: 40px;
+                height: 40px;
             }
         }
 
@@ -916,7 +946,23 @@
             const next = document.getElementById('categories-next');
             if (!track || !prev || !next) return;
 
-            const scrollStep = () => Math.max(220, Math.round(track.clientWidth * 0.8));
+            const getGapPx = () => {
+                const gap = window.getComputedStyle(track).gap || '0px';
+                const parsed = parseFloat(gap);
+                return Number.isFinite(parsed) ? parsed : 0;
+            };
+
+            const scrollStep = () => {
+                const first = track.querySelector('.category-circle');
+                const base = first ? first.getBoundingClientRect().width : 120;
+                return Math.max(180, Math.round(base + getGapPx()));
+            };
+
+            const updateCentering = () => {
+                // Center only when everything fits; otherwise start-aligned (no fake empty space).
+                const fits = track.scrollWidth <= track.clientWidth + 2;
+                track.classList.toggle('centered', fits);
+            };
 
             prev.addEventListener('click', () => {
                 track.scrollBy({ left: -scrollStep(), behavior: 'smooth' });
@@ -924,6 +970,11 @@
             next.addEventListener('click', () => {
                 track.scrollBy({ left: scrollStep(), behavior: 'smooth' });
             });
+
+            window.addEventListener('resize', updateCentering);
+            // Run once now and again after images load.
+            updateCentering();
+            setTimeout(updateCentering, 250);
         }
 
         // Load categories
@@ -955,6 +1006,14 @@
                 `).join('');
                 if (window.optimizeDynamicImages) {
                     window.optimizeDynamicImages(track);
+                }
+
+                // Re-evaluate centering after DOM/images settle
+                if (typeof window.requestAnimationFrame === 'function') {
+                    requestAnimationFrame(() => {
+                        const fits = track.scrollWidth <= track.clientWidth + 2;
+                        track.classList.toggle('centered', fits);
+                    });
                 }
             } catch (error) {
                 console.error('Failed to load categories:', error);
