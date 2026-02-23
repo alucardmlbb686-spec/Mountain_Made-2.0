@@ -4562,16 +4562,19 @@
             const statusFilter = document.getElementById('stock-status-filter')?.value || '';
             const categoryFilter = document.getElementById('stock-category-filter')?.value || '';
 
+            const tokens = searchTerm ? searchTerm.split(/\s+/).filter(Boolean) : [];
+
             let filtered = window._stockReportsCache.filter(p => {
                 // Search across multiple fields: ID, product name, category name
-                // Robust ID matching: allow inputs like "#12", "id 12", "ID: # 12".
-                const idDigits = searchTerm.replace(/[^0-9]/g, '');
-                const matchesId = !!idDigits && String(p.id).includes(idDigits);
-
                 const name = (p.name || '').toLowerCase();
                 const categoryName = (p.category_name || '').toLowerCase();
 
-                const matchesSearch = !searchTerm || matchesId || name.includes(searchTerm) || categoryName.includes(searchTerm);
+                const matchesSearch = tokens.length === 0 || tokens.every(token => {
+                    // ID matching (digits-only) and normal text matching
+                    const digits = token.replace(/[^0-9]/g, '');
+                    if (digits && String(p.id).includes(digits)) return true;
+                    return name.includes(token) || categoryName.includes(token);
+                });
 
                 // Category filter
                 const matchesCategory = !categoryFilter || p.category_id == categoryFilter;
@@ -4588,6 +4591,9 @@
                 return matchesSearch && matchesCategory && matchesStatus;
             });
 
+            // Make the search feel "working" by updating the stats
+            // to reflect the filtered dataset.
+            updateStockStatistics(filtered);
             renderStockReportsTable(filtered);
         }
 
