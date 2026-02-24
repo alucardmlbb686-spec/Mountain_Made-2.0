@@ -2040,9 +2040,40 @@
                             <textarea id="homepage-hero-subtitle" class="form-input" rows="3" placeholder="Short description text under the main heading"></textarea>
                         </div>
 
-                        <button class="btn btn-primary" onclick="saveHomepageHeadings()">
-                            <i class="fas fa-save"></i> Save Homepage Headings
-                        </button>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label class="form-label" for="homepage-hero-banner-upload">Homepage Banner Image (JPG or PNG)</label>
+                            <input type="file" id="homepage-hero-banner-upload" class="form-input" accept=".jpg,.jpeg,.png" onchange="previewHomepageHeroBannerImage(event)">
+                            <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">Auto-cropped to 20:8 to match the homepage banner display.</small>
+                            <input type="hidden" id="homepage-hero-banner-current" value="">
+                        </div>
+
+                        <div style="margin-top: 1rem; max-width: 720px;">
+                            <label class="form-label">Cropped Banner Preview (20:8)</label>
+                            <div style="background: white; border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem;">
+                                <img id="homepage-hero-banner-preview" src="" alt="Homepage banner preview" style="display:none; width:100%; aspect-ratio: 20 / 8; max-height: 260px; object-fit: cover; border-radius: 6px;">
+                                <div id="homepage-hero-banner-placeholder" style="color: var(--text-muted); text-align: center; padding: 2rem 1rem;">Select image to auto-crop and preview</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1rem; max-width: 720px; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <div>
+                                <label class="form-label" for="hero-banner-crop-x">Crop Horizontal</label>
+                                <input type="range" id="hero-banner-crop-x" min="0" max="100" value="50" class="form-input" oninput="updateHeroBannerCropPreview()">
+                            </div>
+                            <div>
+                                <label class="form-label" for="hero-banner-crop-y">Crop Vertical</label>
+                                <input type="range" id="hero-banner-crop-y" min="0" max="100" value="50" class="form-input" oninput="updateHeroBannerCropPreview()">
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem;">
+                            <button class="btn btn-primary" type="button" onclick="saveHomepageHeadings()">
+                                <i class="fas fa-save"></i> Save Homepage Headings
+                            </button>
+                            <button class="btn btn-success" type="button" onclick="saveHomepageHeroBannerImage()">
+                                <i class="fas fa-image"></i> Upload & Save Banner Image
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -4029,30 +4060,69 @@
             const file = window._addSectionHeadingSourceFile;
             if (!file) return null;
 
-            const xControl = document.getElementById('add-heading-crop-x');
-            const yControl = document.getElementById('add-heading-crop-y');
-            const focusX = xControl ? Number(xControl.value) : 50;
-            const focusY = yControl ? Number(yControl.value) : 50;
+            const jobId = (window._addSectionHeadingCropJobId = (window._addSectionHeadingCropJobId || 0) + 1);
+            const cropPromise = (async () => {
+                const xControl = document.getElementById('add-heading-crop-x');
+                const yControl = document.getElementById('add-heading-crop-y');
+                const focusX = xControl ? Number(xControl.value) : 50;
+                const focusY = yControl ? Number(yControl.value) : 50;
 
-            const croppedFile = await cropImageToBannerFile(file, 20, 8, focusX, focusY);
-            window._addSectionHeadingCroppedFile = croppedFile;
-            await setImagePreviewFromFile(croppedFile, 'homepage-hero-image-preview', 'homepage-hero-image-placeholder');
-            return croppedFile;
+                const croppedFile = await cropImageToBannerFile(file, 20, 8, focusX, focusY);
+                if (jobId !== window._addSectionHeadingCropJobId) return null;
+
+                window._addSectionHeadingCroppedFile = croppedFile;
+                await setImagePreviewFromFile(croppedFile, 'homepage-hero-image-preview', 'homepage-hero-image-placeholder');
+                return croppedFile;
+            })();
+
+            window._addSectionHeadingCropPromise = cropPromise;
+            return cropPromise;
         }
 
         async function buildAndPreviewEditSectionCrop() {
             const file = window._editSectionHeadingSourceFile;
             if (!file) return null;
 
-            const xControl = document.getElementById('edit-heading-crop-x');
-            const yControl = document.getElementById('edit-heading-crop-y');
-            const focusX = xControl ? Number(xControl.value) : 50;
-            const focusY = yControl ? Number(yControl.value) : 50;
+            const jobId = (window._editSectionHeadingCropJobId = (window._editSectionHeadingCropJobId || 0) + 1);
+            const cropPromise = (async () => {
+                const xControl = document.getElementById('edit-heading-crop-x');
+                const yControl = document.getElementById('edit-heading-crop-y');
+                const focusX = xControl ? Number(xControl.value) : 50;
+                const focusY = yControl ? Number(yControl.value) : 50;
 
-            const croppedFile = await cropImageToBannerFile(file, 20, 8, focusX, focusY);
-            window._editSectionHeadingCroppedFile = croppedFile;
-            await setImagePreviewFromFile(croppedFile, 'edit-homepage-hero-image-preview', 'edit-homepage-hero-image-placeholder');
-            return croppedFile;
+                const croppedFile = await cropImageToBannerFile(file, 20, 8, focusX, focusY);
+                if (jobId !== window._editSectionHeadingCropJobId) return null;
+
+                window._editSectionHeadingCroppedFile = croppedFile;
+                await setImagePreviewFromFile(croppedFile, 'edit-homepage-hero-image-preview', 'edit-homepage-hero-image-placeholder');
+                return croppedFile;
+            })();
+
+            window._editSectionHeadingCropPromise = cropPromise;
+            return cropPromise;
+        }
+
+        async function buildAndPreviewHeroBannerCrop() {
+            const file = window._heroBannerSourceFile;
+            if (!file) return null;
+
+            const jobId = (window._heroBannerCropJobId = (window._heroBannerCropJobId || 0) + 1);
+            const cropPromise = (async () => {
+                const xControl = document.getElementById('hero-banner-crop-x');
+                const yControl = document.getElementById('hero-banner-crop-y');
+                const focusX = xControl ? Number(xControl.value) : 50;
+                const focusY = yControl ? Number(yControl.value) : 50;
+
+                const croppedFile = await cropImageToBannerFile(file, 20, 8, focusX, focusY);
+                if (jobId !== window._heroBannerCropJobId) return null;
+
+                window._heroBannerCroppedFile = croppedFile;
+                await setImagePreviewFromFile(croppedFile, 'homepage-hero-banner-preview', 'homepage-hero-banner-placeholder');
+                return croppedFile;
+            })();
+
+            window._heroBannerCropPromise = cropPromise;
+            return cropPromise;
         }
 
         window.updateAddHeadingCropPreview = function() {
@@ -4066,6 +4136,13 @@
             if (!window._editSectionHeadingSourceFile) return;
             buildAndPreviewEditSectionCrop().catch((error) => {
                 console.error('Update edit crop preview error:', error);
+            });
+        };
+
+        window.updateHeroBannerCropPreview = function() {
+            if (!window._heroBannerSourceFile) return;
+            buildAndPreviewHeroBannerCrop().catch((error) => {
+                console.error('Update hero banner crop preview error:', error);
             });
         };
 
@@ -5451,23 +5528,23 @@
                     heroSubtitleInput.value = settings.homepage_hero_subtitle || '';
                 }
 
-                const heroImagePreview = document.getElementById('homepage-hero-image-preview');
-                const heroImagePlaceholder = document.getElementById('homepage-hero-image-placeholder');
-                const heroImageCurrent = document.getElementById('homepage-hero-image-current');
-                const currentHeroImage = settings.homepage_hero_image_url || '';
+                const heroBannerPreview = document.getElementById('homepage-hero-banner-preview');
+                const heroBannerPlaceholder = document.getElementById('homepage-hero-banner-placeholder');
+                const heroBannerCurrent = document.getElementById('homepage-hero-banner-current');
+                const currentHeroBanner = (settings.homepage_hero_image_url || '').trim();
 
-                if (heroImageCurrent) {
-                    heroImageCurrent.value = currentHeroImage;
+                if (heroBannerCurrent) {
+                    heroBannerCurrent.value = currentHeroBanner;
                 }
-                if (heroImagePreview && heroImagePlaceholder) {
-                    if (currentHeroImage) {
-                        heroImagePreview.src = currentHeroImage;
-                        heroImagePreview.style.display = 'block';
-                        heroImagePlaceholder.style.display = 'none';
+                if (heroBannerPreview && heroBannerPlaceholder) {
+                    if (currentHeroBanner) {
+                        heroBannerPreview.src = currentHeroBanner;
+                        heroBannerPreview.style.display = 'block';
+                        heroBannerPlaceholder.style.display = 'none';
                     } else {
-                        heroImagePreview.src = '';
-                        heroImagePreview.style.display = 'none';
-                        heroImagePlaceholder.style.display = 'block';
+                        heroBannerPreview.src = '';
+                        heroBannerPreview.style.display = 'none';
+                        heroBannerPlaceholder.style.display = 'block';
                     }
                 }
 
@@ -5724,6 +5801,80 @@
                     event.target.value = '';
                 }
             })();
+        };
+
+        window.previewHomepageHeroBannerImage = function(event) {
+            const file = event?.target?.files?.[0];
+            if (!file) return;
+
+            const validation = validateImageFile(file);
+            if (!validation.valid) {
+                showAlert(validation.error, 'error');
+                event.target.value = '';
+                return;
+            }
+
+            (async () => {
+                try {
+                    window._heroBannerSourceFile = file;
+                    window._heroBannerCroppedFile = null;
+
+                    const cropX = document.getElementById('hero-banner-crop-x');
+                    const cropY = document.getElementById('hero-banner-crop-y');
+                    if (cropX) cropX.value = 50;
+                    if (cropY) cropY.value = 50;
+
+                    await buildAndPreviewHeroBannerCrop();
+                    showAlert('Banner image cropped. Adjust sliders to fine-tune.', 'success');
+                } catch (error) {
+                    console.error('Hero banner image crop error:', error);
+                    window._heroBannerSourceFile = null;
+                    window._heroBannerCroppedFile = null;
+                    showAlert(error.message || 'Failed to crop banner image', 'error');
+                    event.target.value = '';
+                }
+            })();
+        };
+
+        window.saveHomepageHeroBannerImage = async function() {
+            try {
+                if (window._heroBannerCropPromise) {
+                    await window._heroBannerCropPromise.catch(() => null);
+                }
+
+                let bannerFile = window._heroBannerCroppedFile || null;
+                if (!bannerFile && window._heroBannerSourceFile) {
+                    bannerFile = await buildAndPreviewHeroBannerCrop();
+                }
+
+                if (!bannerFile) {
+                    showAlert('Please choose a banner image first.', 'error');
+                    return;
+                }
+
+                showAlert('Uploading homepage banner image...', 'info');
+                const uploadedImageUrl = await uploadProductImage(bannerFile);
+                if (!uploadedImageUrl) {
+                    throw new Error('Banner image upload failed');
+                }
+
+                showAlert('Saving homepage banner image...', 'info');
+                const response = await api.post('/admin/settings', {
+                    homepage_hero_image_url: uploadedImageUrl
+                });
+
+                if (response && (response.success || response.message)) {
+                    showAlert('Homepage banner image saved successfully!', 'success');
+                    window._heroBannerSourceFile = null;
+                    window._heroBannerCroppedFile = null;
+                    await loadSiteSettings();
+                } else {
+                    throw new Error(response.error || 'Failed to save homepage banner image');
+                }
+            } catch (error) {
+                console.error('Save homepage banner image error:', error);
+                showAlert(error.message || 'Failed to save homepage banner image', 'error');
+            }
         };
 
         window.saveDeliverySettings = async function() {
@@ -7597,6 +7748,10 @@
                 });
 
                 if (response && (response.success || response.section || response.message)) {
+                    if (window._addSectionHeadingCropPromise) {
+                        await window._addSectionHeadingCropPromise.catch(() => null);
+                    }
+
                     let addSectionImageFile = window._addSectionHeadingCroppedFile || null;
                     if (!addSectionImageFile && window._addSectionHeadingSourceFile) {
                         addSectionImageFile = await buildAndPreviewAddSectionCrop();
@@ -7741,6 +7896,10 @@
                 });
 
                 if (response && (response.success || response.section || response.message)) {
+                    if (window._editSectionHeadingCropPromise) {
+                        await window._editSectionHeadingCropPromise.catch(() => null);
+                    }
+
                     let editSectionImageFile = window._editSectionHeadingCroppedFile || null;
                     if (!editSectionImageFile && window._editSectionHeadingSourceFile) {
                         editSectionImageFile = await buildAndPreviewEditSectionCrop();
