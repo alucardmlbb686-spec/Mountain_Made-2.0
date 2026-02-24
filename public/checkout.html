@@ -124,12 +124,7 @@
                     <div class="card-content">
                         <h3 style="margin-bottom: 1.5rem;">Payment Method</h3>
                         <div class="form-group">
-                            <div class="payment-select-header">
-                                <label class="form-label" for="payment_method">Select Payment</label>
-                                <span class="gpay-logo-chip">
-                                    <img src="/images/google_logo.svg" alt="Google Pay">
-                                </span>
-                            </div>
+                            <label class="form-label" for="payment_method">Select Payment</label>
                             <select id="payment_method" class="form-select" required data-validate data-label="Payment Method">
                                 <option value="gpay">Google Pay (UPI)</option>
                                 <option value="cash_on_delivery">Cash on Delivery</option>
@@ -526,31 +521,12 @@
             color: var(--text-light);
         }
 
-        .payment-select-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.75rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .payment-select-header .form-label {
-            margin-bottom: 0;
-        }
-
-        .gpay-logo-chip {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.5rem;
-            border: 1px solid var(--border);
-            border-radius: 999px;
-            background: var(--surface);
-        }
-
-        .gpay-logo-chip img {
-            width: 62px;
-            height: auto;
-            display: block;
+        #payment_method.payment-method-gpay {
+            background-image: url('/images/google_logo.svg');
+            background-repeat: no-repeat;
+            background-size: 22px 22px;
+            background-position: 14px center;
+            padding-left: 48px;
         }
 
         /* Billing Modal */
@@ -1492,6 +1468,7 @@
             const gpaySection = document.getElementById('gpay-details');
             if (!paymentSelect || !gpaySection) return;
             const isGpay = paymentSelect.value === 'gpay';
+            paymentSelect.classList.toggle('payment-method-gpay', isGpay);
             gpaySection.classList.toggle('hidden', !isGpay);
             if (isGpay) {
                 updateGpayLabelAndPrefill();
