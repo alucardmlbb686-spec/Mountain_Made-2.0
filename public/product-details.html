@@ -57,11 +57,12 @@
         .product-main-image {
             width: 100%;
             aspect-ratio: 1;
-            object-fit: cover;
+            object-fit: contain;
             border-radius: 12px;
             margin-bottom: 1rem;
-            background: var(--bg-secondary);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-primary);
+            box-shadow: var(--shadow-md);
             cursor: zoom-in;
         }
         
@@ -252,7 +253,7 @@
             margin-bottom: 1.5rem;
             padding-bottom: 1.5rem;
             border-bottom: 1px solid var(--border-primary);
-            color: #FFB800;
+            color: var(--warning);
         }
         
         @media (max-width: 768px) {
@@ -319,8 +320,8 @@
         }
         
         .product-stock {
-            background: #d1fae5;
-            color: #065f46;
+            background: var(--success-bg);
+            color: var(--text-primary);
             font-weight: 600;
             padding: 0.5rem 1rem;
             border-radius: 6px;
@@ -338,15 +339,15 @@
         }
         
         .product-stock.low {
-            background: #fed7aa;
-            color: #92400e;
+            background: var(--warning-bg);
+            color: var(--text-primary);
             border-color: rgba(245, 158, 11, 0.45);
             animation: productStockGlowAmber 1.8s ease-in-out infinite;
         }
         
         .product-stock.out {
-            background: #fecaca;
-            color: #991b1b;
+            background: var(--error-bg);
+            color: var(--text-primary);
             border-color: rgba(239, 68, 68, 0.48);
             animation: productStockGlowRed 1.8s ease-in-out infinite;
         }
@@ -573,11 +574,11 @@
         }
         
         .delivery-info {
-            background: #f0fdf4;
+            background: var(--success-bg);
             padding: 1.5rem;
             border-radius: 8px;
             margin: 1.5rem 0;
-            border-left: 4px solid #22c55e;
+            border-left: 4px solid var(--success);
         }
         
         @media (max-width: 768px) {
@@ -595,7 +596,7 @@
         }
         
         .delivery-info h4 {
-            color: #166534;
+            color: var(--text-primary);
             margin-bottom: 0.5rem;
             font-size: 1.05rem;
         }
@@ -611,7 +612,7 @@
             align-items: center;
             gap: 0.5rem;
             margin: 0.5rem 0;
-            color: #166534;
+            color: var(--text-primary);
         }
         
         @media (max-width: 480px) {
@@ -643,8 +644,8 @@
             max-width: 640px;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
-            border: 1px solid rgba(148, 163, 184, 0.4);
+            box-shadow: var(--shadow-2xl);
+            border: 1px solid var(--border-primary);
         }
         
         @media (max-width: 768px) {
@@ -690,12 +691,12 @@
         }
 
         .modal-close-btn:hover {
-            background: rgba(148, 163, 184, 0.15);
+            background: var(--bg-secondary);
             color: var(--text-primary);
         }
 
         .address-option {
-            background: #ffffff;
+            background: var(--bg-secondary);
         }
         
         /* Account Dropdown Styles */
@@ -774,30 +775,6 @@
             padding: 0.25rem 0;
         }
 
-        /* Dark Mode Styles */
-        body.dark-mode {
-            background-color: #1a1a1a;
-            color: #e0e0e0;
-        }
-
-        body.dark-mode .navbar {
-            background: #2d2d2d;
-            border-bottom-color: #404040;
-        }
-
-        body.dark-mode .card,
-        body.dark-mode .account-dropdown {
-            background: #2d2d2d;
-            border-color: #404040;
-        }
-
-        body.dark-mode .form-input,
-        body.dark-mode .form-select,
-        body.dark-mode .form-textarea {
-            background: #2d2d2d;
-            color: #e0e0e0;
-            border-color: #404040;
-        }
     </style>
 </head>
 <body>
@@ -1056,8 +1033,8 @@
                         
                         <div class="product-price-section">
                             <div class="product-price">
-                                <span id="product-base-price" style="text-decoration: line-through; color: #d14343; font-size: 0.9em; margin-right: 8px; ${showDiscount ? '' : 'display:none;'}">${formatCurrency(basePrice)}</span>
-                                <span id="product-sale-price" style="color: var(--primary); font-weight: 700;">${formatCurrency(salePrice)}</span>
+                                <span id="product-base-price" style="text-decoration: line-through; color: var(--error); font-size: 0.9em; margin-right: 8px; ${showDiscount ? '' : 'display:none;'}">${formatCurrency(basePrice)}</span>
+                                <span id="product-sale-price" style="color: var(--primary-600); font-weight: 700;">${formatCurrency(salePrice)}</span>
                                 <div id="product-total-price" class="product-total-price">Total for 1 item</div>
                             </div>
                             ${isWholesale && product.wholesale_price ? 
@@ -1606,22 +1583,6 @@
                     if (await showConfirmDialog('Are you sure you want to logout?', { title: 'Logout', confirmText: 'Logout' })) {
                         await auth.logout();
                     }
-                });
-            }
-
-            // Theme toggle handler
-            const themeToggle = document.getElementById('theme-toggle');
-            if (themeToggle) {
-                // Load saved theme
-                const savedTheme = localStorage.getItem('theme') || 'light';
-                if (savedTheme === 'dark') {
-                    document.body.classList.add('dark-mode');
-                }
-
-                themeToggle.addEventListener('click', () => {
-                    document.body.classList.toggle('dark-mode');
-                    const isDark = document.body.classList.contains('dark-mode');
-                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
                 });
             }
         });
