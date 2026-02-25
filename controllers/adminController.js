@@ -1482,6 +1482,12 @@ exports.updateSiteSettings = async (req, res) => {
       homepage_hero_subtitle,
       homepage_hero_image_url,
       homepage_hero_section_id,
+      about_us_description,
+      about_us_paragraph_1,
+      about_us_paragraph_2,
+      about_us_paragraph_3,
+      about_us_paragraph_4,
+      about_us_paragraph_5,
       business_support_email,
       admin_license_blocked,
       admin_license_expires_at,
@@ -1521,6 +1527,24 @@ exports.updateSiteSettings = async (req, res) => {
     }
     if (homepage_hero_section_id !== undefined) {
       updates.push({ key: 'homepage_hero_section_id', value: homepage_hero_section_id });
+    }
+    if (about_us_description !== undefined) {
+      updates.push({ key: 'about_us_description', value: String(about_us_description || '').trim() });
+    }
+    if (about_us_paragraph_1 !== undefined) {
+      updates.push({ key: 'about_us_paragraph_1', value: String(about_us_paragraph_1 || '').trim() });
+    }
+    if (about_us_paragraph_2 !== undefined) {
+      updates.push({ key: 'about_us_paragraph_2', value: String(about_us_paragraph_2 || '').trim() });
+    }
+    if (about_us_paragraph_3 !== undefined) {
+      updates.push({ key: 'about_us_paragraph_3', value: String(about_us_paragraph_3 || '').trim() });
+    }
+    if (about_us_paragraph_4 !== undefined) {
+      updates.push({ key: 'about_us_paragraph_4', value: String(about_us_paragraph_4 || '').trim() });
+    }
+    if (about_us_paragraph_5 !== undefined) {
+      updates.push({ key: 'about_us_paragraph_5', value: String(about_us_paragraph_5 || '').trim() });
     }
     if (business_support_email !== undefined) {
       const emailValue = String(business_support_email || '').trim();

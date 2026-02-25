@@ -2109,6 +2109,51 @@
 
                 <div class="data-table-container" style="margin-top: 1.5rem;">
                     <div class="table-header">
+                        <h3>About Us Content</h3>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+                            Manage the public About Us section dynamically. Add description and 5 paragraph blocks. Numbered points (1, 2, 3...) are supported.
+                        </p>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label class="form-label" for="about-us-description">About Us Description</label>
+                            <textarea id="about-us-description" class="form-input" rows="3" placeholder="Short intro for About Us section"></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label class="form-label" for="about-us-paragraph-1">Paragraph 1</label>
+                            <textarea id="about-us-paragraph-1" class="form-input" rows="4" placeholder="Paragraph 1 content"></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label class="form-label" for="about-us-paragraph-2">Paragraph 2</label>
+                            <textarea id="about-us-paragraph-2" class="form-input" rows="4" placeholder="Paragraph 2 content"></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label class="form-label" for="about-us-paragraph-3">Paragraph 3</label>
+                            <textarea id="about-us-paragraph-3" class="form-input" rows="4" placeholder="Paragraph 3 content"></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label class="form-label" for="about-us-paragraph-4">Paragraph 4</label>
+                            <textarea id="about-us-paragraph-4" class="form-input" rows="4" placeholder="Paragraph 4 content"></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label class="form-label" for="about-us-paragraph-5">Paragraph 5</label>
+                            <textarea id="about-us-paragraph-5" class="form-input" rows="4" placeholder="Paragraph 5 content"></textarea>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="saveAboutUsSettings()">
+                            <i class="fas fa-save"></i> Save About Us Content
+                        </button>
+                    </div>
+                </div>
+
+                <div class="data-table-container" style="margin-top: 1.5rem;">
+                    <div class="table-header">
                         <h3>Business Email Integration</h3>
                     </div>
                     <div style="padding: 2rem;">
@@ -5548,6 +5593,20 @@
                     }
                 }
 
+                const aboutDescriptionEl = document.getElementById('about-us-description');
+                const aboutParagraph1El = document.getElementById('about-us-paragraph-1');
+                const aboutParagraph2El = document.getElementById('about-us-paragraph-2');
+                const aboutParagraph3El = document.getElementById('about-us-paragraph-3');
+                const aboutParagraph4El = document.getElementById('about-us-paragraph-4');
+                const aboutParagraph5El = document.getElementById('about-us-paragraph-5');
+
+                if (aboutDescriptionEl) aboutDescriptionEl.value = settings.about_us_description || '';
+                if (aboutParagraph1El) aboutParagraph1El.value = settings.about_us_paragraph_1 || '';
+                if (aboutParagraph2El) aboutParagraph2El.value = settings.about_us_paragraph_2 || '';
+                if (aboutParagraph3El) aboutParagraph3El.value = settings.about_us_paragraph_3 || '';
+                if (aboutParagraph4El) aboutParagraph4El.value = settings.about_us_paragraph_4 || '';
+                if (aboutParagraph5El) aboutParagraph5El.value = settings.about_us_paragraph_5 || '';
+
                 // Populate delivery settings
                 const fastEnabledInput = document.getElementById('fast-delivery-enabled');
                 const fastChargeInput = document.getElementById('fast-delivery-charge');
@@ -5913,6 +5972,37 @@
             } catch (error) {
                 console.error('Save delivery settings error:', error);
                 showAlert(error.message || 'Failed to save delivery settings', 'error');
+            }
+        };
+
+        window.saveAboutUsSettings = async function() {
+            try {
+                const about_us_description = (document.getElementById('about-us-description')?.value || '').trim();
+                const about_us_paragraph_1 = (document.getElementById('about-us-paragraph-1')?.value || '').trim();
+                const about_us_paragraph_2 = (document.getElementById('about-us-paragraph-2')?.value || '').trim();
+                const about_us_paragraph_3 = (document.getElementById('about-us-paragraph-3')?.value || '').trim();
+                const about_us_paragraph_4 = (document.getElementById('about-us-paragraph-4')?.value || '').trim();
+                const about_us_paragraph_5 = (document.getElementById('about-us-paragraph-5')?.value || '').trim();
+
+                showAlert('Saving About Us content...', 'info');
+                const response = await api.post('/admin/settings', {
+                    about_us_description,
+                    about_us_paragraph_1,
+                    about_us_paragraph_2,
+                    about_us_paragraph_3,
+                    about_us_paragraph_4,
+                    about_us_paragraph_5
+                });
+
+                if (response && (response.success || response.message)) {
+                    showAlert('About Us content saved successfully!', 'success');
+                    await loadSiteSettings();
+                } else {
+                    throw new Error(response?.error || 'Failed to save About Us content');
+                }
+            } catch (error) {
+                console.error('Save About Us settings error:', error);
+                showAlert(error.message || 'Failed to save About Us content', 'error');
             }
         };
 

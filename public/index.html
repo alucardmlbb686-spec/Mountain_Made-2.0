@@ -163,6 +163,48 @@
             font-size: 0.8em;
         }
 
+        .about-us-section {
+            margin: 2.5rem 0 2.75rem;
+        }
+
+        .about-us-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            margin-top: 1.1rem;
+        }
+
+        .about-us-card {
+            background: var(--surface);
+            border: 1px solid var(--border-primary);
+            border-radius: 14px;
+            padding: 1rem 1rem 0.95rem;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.22s ease, box-shadow 0.22s ease;
+        }
+
+        .about-us-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .about-us-card p {
+            margin: 0;
+            color: var(--text-secondary);
+            line-height: 1.65;
+        }
+
+        .about-us-list {
+            margin: 0;
+            padding-left: 1.15rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+        }
+
+        .about-us-list li + li {
+            margin-top: 0.3rem;
+        }
+
         @media (max-width: 768px) {
             #homepage-sections-container .product-card .card-image {
                 max-height: 110px;
@@ -885,6 +927,16 @@
     <!-- Dynamic Homepage Sections -->
     <div id="homepage-sections-container"></div>
 
+    <section id="about" class="about-us-section hidden">
+        <div class="container">
+            <div class="section-title">
+                <h2>About Us</h2>
+                <p id="about-us-description-text"></p>
+            </div>
+            <div id="about-us-content-grid" class="about-us-grid"></div>
+        </div>
+    </section>
+
     
 
     <!-- Footer -->
@@ -1026,6 +1078,75 @@
                 }
             }
         }
+
+        function escapeAboutHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderAboutBlock(blockText) {
+            const normalized = String(blockText || '').replace(/\r\n/g, '\n').trim();
+            if (!normalized) return '';
+
+            const lines = normalized
+                .split('\n')
+                .map((line) => line.trim())
+                .filter(Boolean);
+
+            const allNumbered = lines.length > 0 && lines.every((line) => /^\d+[.)\-\s]/.test(line));
+            if (allNumbered) {
+                const items = lines
+                    .map((line) => line.replace(/^\d+[.)\-\s]*/, '').trim())
+                    .filter(Boolean)
+                    .map((line) => `<li>${escapeAboutHtml(line)}</li>`)
+                    .join('');
+                return `<ol class="about-us-list">${items}</ol>`;
+            }
+
+            const paragraphs = normalized
+                .split(/\n\s*\n/)
+                .map((part) => part.trim())
+                .filter(Boolean)
+                .map((part) => `<p>${escapeAboutHtml(part).replace(/\n/g, '<br>')}</p>`)
+                .join('');
+
+            return paragraphs;
+        }
+
+        function renderHomepageAboutSection(settings) {
+            const aboutSection = document.getElementById('about');
+            const aboutDescription = document.getElementById('about-us-description-text');
+            const aboutGrid = document.getElementById('about-us-content-grid');
+            if (!aboutSection || !aboutDescription || !aboutGrid) return;
+
+            const description = (settings.about_us_description || '').trim();
+            const blocks = [
+                settings.about_us_paragraph_1,
+                settings.about_us_paragraph_2,
+                settings.about_us_paragraph_3,
+                settings.about_us_paragraph_4,
+                settings.about_us_paragraph_5
+            ]
+                .map((item) => String(item || '').trim())
+                .filter(Boolean);
+
+            if (!description && blocks.length === 0) {
+                aboutDescription.textContent = '';
+                aboutGrid.innerHTML = '';
+                aboutSection.classList.add('hidden');
+                return;
+            }
+
+            aboutDescription.textContent = description;
+            aboutGrid.innerHTML = blocks
+                .map((block) => `<article class="about-us-card">${renderAboutBlock(block)}</article>`)
+                .join('');
+            aboutSection.classList.remove('hidden');
+        }
         
         // Load dynamic homepage sections with products
         async function loadHomepageSections() {
@@ -1055,6 +1176,8 @@
                         heroWrap.classList.add('hidden');
                     }
                 }
+
+                renderHomepageAboutSection(settings);
 
                 const container = document.getElementById('homepage-sections-container');
                 
