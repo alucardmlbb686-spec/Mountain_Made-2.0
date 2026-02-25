@@ -1125,7 +1125,9 @@
             if (!aboutSection) return;
 
             const onAboutAnchor = (window.location.hash || '').toLowerCase() === '#about';
-            aboutSection.classList.toggle('hidden', !(aboutUsHasContent && onAboutAnchor && aboutSectionActivated));
+            const shouldShow = !!(aboutUsHasContent && onAboutAnchor && aboutSectionActivated);
+            aboutSection.classList.toggle('hidden', !shouldShow);
+            aboutSection.style.display = shouldShow ? '' : 'none';
         }
 
         function wireAboutSectionActivation() {
