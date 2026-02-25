@@ -2022,58 +2022,37 @@
 
                 <div class="data-table-container" style="margin-top: 1.5rem;">
                     <div class="table-header">
-                        <h3>Homepage Headings</h3>
+                        <h3>Admin Account Settings</h3>
                     </div>
                     <div style="padding: 2rem;">
-                        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
-                            Configure the main heading and subtitle text shown in the homepage hero section.
-                            These values are stored in the database and will persist across code updates and restarts.
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">
+                            Change your admin login username (email) and password. Changes are saved to database and used for next login.
                         </p>
 
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <label class="form-label" for="homepage-hero-title">Homepage Hero Title</label>
-                            <input type="text" id="homepage-hero-title" class="form-input" placeholder="e.g., Fresh from the Mountains">
+                        <div class="form-group" style="margin-bottom: 1rem; max-width: 560px;">
+                            <label class="form-label" for="admin-login-email">Admin Username (Email)</label>
+                            <input type="email" id="admin-login-email" class="form-input" placeholder="admin@example.com">
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <label class="form-label" for="homepage-hero-subtitle">Homepage Hero Subtitle</label>
-                            <textarea id="homepage-hero-subtitle" class="form-input" rows="3" placeholder="Short description text under the main heading"></textarea>
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <label class="form-label" for="homepage-hero-banner-upload">Homepage Banner Image (JPG or PNG)</label>
-                            <input type="file" id="homepage-hero-banner-upload" class="form-input" accept=".jpg,.jpeg,.png" onchange="previewHomepageHeroBannerImage(event)">
-                            <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">Auto-cropped to 20:8 to match the homepage banner display.</small>
-                            <input type="hidden" id="homepage-hero-banner-current" value="">
-                        </div>
-
-                        <div style="margin-top: 1rem; max-width: 720px;">
-                            <label class="form-label">Cropped Banner Preview (20:8)</label>
-                            <div style="background: white; border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem;">
-                                <img id="homepage-hero-banner-preview" src="" alt="Homepage banner preview" style="display:none; width:100%; aspect-ratio: 20 / 8; max-height: 260px; object-fit: cover; border-radius: 6px;">
-                                <div id="homepage-hero-banner-placeholder" style="color: var(--text-muted); text-align: center; padding: 2rem 1rem;">Select image to auto-crop and preview</div>
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 1rem; max-width: 720px; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="form-row" style="margin-bottom: 1rem;">
                             <div>
-                                <label class="form-label" for="hero-banner-crop-x">Crop Horizontal</label>
-                                <input type="range" id="hero-banner-crop-x" min="0" max="100" value="50" class="form-input" oninput="updateHeroBannerCropPreview()">
+                                <label class="form-label" for="admin-current-password">Current Password</label>
+                                <input type="password" id="admin-current-password" class="form-input" placeholder="Enter current password">
                             </div>
                             <div>
-                                <label class="form-label" for="hero-banner-crop-y">Crop Vertical</label>
-                                <input type="range" id="hero-banner-crop-y" min="0" max="100" value="50" class="form-input" oninput="updateHeroBannerCropPreview()">
+                                <label class="form-label" for="admin-new-password">New Password</label>
+                                <input type="password" id="admin-new-password" class="form-input" placeholder="Min 6 characters">
                             </div>
                         </div>
 
-                        <div style="display:flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem;">
-                            <button class="btn btn-primary" type="button" onclick="saveHomepageHeadings()">
-                                <i class="fas fa-save"></i> Save Homepage Headings
-                            </button>
-                            <button class="btn btn-success" type="button" onclick="saveHomepageHeroBannerImage()">
-                                <i class="fas fa-image"></i> Upload & Save Banner Image
-                            </button>
+                        <div class="form-group" style="margin-bottom: 1rem; max-width: 560px;">
+                            <label class="form-label" for="admin-confirm-password">Confirm New Password</label>
+                            <input type="password" id="admin-confirm-password" class="form-input" placeholder="Re-enter new password">
                         </div>
+
+                        <button class="btn btn-primary" onclick="saveAdminAccountSettings()">
+                            <i class="fas fa-user-shield"></i> Save Admin Credentials
+                        </button>
                     </div>
                 </div>
 
@@ -5677,9 +5656,33 @@
                 if (gpayPhoneEl) gpayPhoneEl.value = settings.gpay_phone_number || '';
                 if (gpayBankEl) gpayBankEl.value = settings.gpay_bank_name || '';
                 if (gpayQrEl) gpayQrEl.value = settings.gpay_qr_image_url || '';
+
+                await loadAdminAccountSettings();
             } catch (error) {
                 console.error('Load site settings error:', error);
                 showAlert('Failed to load site settings', 'error');
+            }
+        }
+
+        async function loadAdminAccountSettings() {
+            try {
+                const response = await api.get('/admin/account-settings');
+                const user = response?.user || {};
+                const loginEmailEl = document.getElementById('admin-login-email');
+                const currentPasswordEl = document.getElementById('admin-current-password');
+                const newPasswordEl = document.getElementById('admin-new-password');
+                const confirmPasswordEl = document.getElementById('admin-confirm-password');
+
+                if (loginEmailEl) {
+                    const currentEmail = user.login_email || '';
+                    loginEmailEl.value = currentEmail;
+                    loginEmailEl.dataset.original = currentEmail;
+                }
+                if (currentPasswordEl) currentPasswordEl.value = '';
+                if (newPasswordEl) newPasswordEl.value = '';
+                if (confirmPasswordEl) confirmPasswordEl.value = '';
+            } catch (error) {
+                console.error('Load admin account settings error:', error);
             }
         }
 
@@ -6009,6 +6012,51 @@
             } catch (error) {
                 console.error('Save delivery settings error:', error);
                 showAlert(error.message || 'Failed to save delivery settings', 'error');
+            }
+        };
+
+        window.saveAdminAccountSettings = async function() {
+            try {
+                const login_email = (document.getElementById('admin-login-email')?.value || '').trim();
+                const loginEmailEl = document.getElementById('admin-login-email');
+                const originalEmail = (loginEmailEl?.dataset?.original || '').trim().toLowerCase();
+                const current_password = (document.getElementById('admin-current-password')?.value || '').trim();
+                const new_password = (document.getElementById('admin-new-password')?.value || '').trim();
+                const confirm_password = (document.getElementById('admin-confirm-password')?.value || '').trim();
+
+                const wantsEmailChange = login_email.toLowerCase() !== originalEmail;
+                const wantsPasswordChange = !!new_password || !!confirm_password;
+
+                if (!wantsEmailChange && !wantsPasswordChange) {
+                    showAlert('No account changes detected.', 'error');
+                    return;
+                }
+
+                if (!current_password) {
+                    showAlert('Current password is required.', 'error');
+                    return;
+                }
+
+                showAlert('Saving admin account settings...', 'info');
+                const response = await api.post('/admin/account-settings', {
+                    login_email,
+                    current_password,
+                    new_password,
+                    confirm_password
+                });
+
+                if (response && (response.success || response.message)) {
+                    if (response.token) {
+                        localStorage.setItem('token', response.token);
+                    }
+                    showAlert('Admin account settings updated successfully!', 'success');
+                    await loadAdminAccountSettings();
+                } else {
+                    throw new Error(response?.error || 'Failed to update admin account settings');
+                }
+            } catch (error) {
+                console.error('Save admin account settings error:', error);
+                showAlert(error.message || 'Failed to update admin account settings', 'error');
             }
         };
 

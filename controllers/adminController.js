@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 const https = require('https');
@@ -1692,6 +1693,163 @@ exports.updateSiteSettings = async (req, res) => {
   } catch (error) {
     console.error('Update site settings error:', error);
     res.status(500).json({ error: 'Failed to update site settings.' });
+  }
+};
+
+exports.getAdminAccountSettings = async (req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT id, email, full_name, role FROM users WHERE id = $1 LIMIT 1',
+      [req.user.id]
+    );
+    const user = result.rows[0];
+    if (!user) {
+      return res.status(404).json({ error: 'Admin account not found.' });
+    }
+
+    if (!(user.role === 'admin' || user.role === 'super_admin')) {
+      return res.status(403).json({ error: 'Only admin accounts can access these settings.' });
+    }
+
+    return res.json({
+      user: {
+        id: user.id,
+        login_email: user.email,
+        full_name: user.full_name,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Get admin account settings error:', error);
+    return res.status(500).json({ error: 'Failed to fetch admin account settings.' });
+  }
+};
+
+exports.updateAdminAccountSettings = async (req, res) => {
+  try {
+    const login_email = normalizeEmail(req.body?.login_email || '');
+    const current_password = String(req.body?.current_password || '');
+    const new_password = String(req.body?.new_password || '');
+    const confirm_password = String(req.body?.confirm_password || '');
+
+    const accountResult = await db.query(
+      'SELECT id, email, password, role, full_name, is_approved, is_blocked, profile_photo FROM users WHERE id = $1 LIMIT 1',
+      [req.user.id]
+    );
+    const account = accountResult.rows[0];
+
+    if (!account) {
+      return res.status(404).json({ error: 'Admin account not found.' });
+    }
+
+    if (!(account.role === 'admin' || account.role === 'super_admin')) {
+      return res.status(403).json({ error: 'Only admin accounts can update these settings.' });
+    }
+
+    const wantsEmailChange = !!login_email && login_email !== normalizeEmail(account.email);
+    const wantsPasswordChange = !!new_password || !!confirm_password;
+
+    if (!wantsEmailChange && !wantsPasswordChange) {
+      return res.status(400).json({ error: 'No account changes provided.' });
+    }
+
+    if (!current_password) {
+      return res.status(400).json({ error: 'Current password is required to update account settings.' });
+    }
+
+    const currentPasswordValid = await User.verifyPassword(current_password, account.password);
+    if (!currentPasswordValid) {
+      return res.status(400).json({ error: 'Current password is incorrect.' });
+    }
+
+    if (wantsEmailChange) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(login_email)) {
+        return res.status(400).json({ error: 'Username must be a valid email address.' });
+      }
+
+      const emailTaken = await db.query(
+        'SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND id <> $2 LIMIT 1',
+        [login_email, account.id]
+      );
+      if (emailTaken.rows.length > 0) {
+        return res.status(400).json({ error: 'This username/email is already in use.' });
+      }
+
+      await db.query(
+        'UPDATE users SET email = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [login_email, account.id]
+      );
+    }
+
+    if (wantsPasswordChange) {
+      if (!new_password || !confirm_password) {
+        return res.status(400).json({ error: 'New password and confirm password are required.' });
+      }
+
+      if (new_password.length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+      }
+
+      if (new_password !== confirm_password) {
+        return res.status(400).json({ error: 'New password and confirm password do not match.' });
+      }
+
+      const isSame = await User.verifyPassword(new_password, account.password);
+      if (isSame) {
+        return res.status(400).json({ error: 'New password must be different from current password.' });
+      }
+
+      const hashedPassword = await bcrypt.hash(new_password, 10);
+      await db.query(
+        'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [hashedPassword, account.id]
+      );
+    }
+
+    const updatedResult = await db.query(
+      'SELECT id, email, full_name, role, is_approved, is_blocked, profile_photo FROM users WHERE id = $1 LIMIT 1',
+      [account.id]
+    );
+    const updatedUser = updatedResult.rows[0];
+
+    const token = jwt.sign(
+      {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        is_approved: updatedUser.is_approved,
+        is_blocked: updatedUser.is_blocked
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    const forceSecureCookie = String(process.env.COOKIE_SECURE || '').toLowerCase() === 'true';
+    const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
+    const isHttps = !!req.secure || forwardedProto === 'https';
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: forceSecureCookie ? true : isHttps,
+      sameSite: 'lax',
+      path: '/'
+    });
+
+    return res.json({
+      success: true,
+      message: 'Admin account settings updated successfully.',
+      token,
+      user: {
+        id: updatedUser.id,
+        login_email: updatedUser.email,
+        full_name: updatedUser.full_name,
+        role: updatedUser.role,
+        profile_photo: updatedUser.profile_photo
+      }
+    });
+  } catch (error) {
+    console.error('Update admin account settings error:', error);
+    return res.status(500).json({ error: 'Failed to update admin account settings.' });
   }
 };
 

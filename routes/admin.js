@@ -69,6 +69,8 @@ router.delete('/homepage-sections/:id', adminController.deleteHomepageSection);
 // Site Settings Management
 router.get('/settings', adminController.getSiteSettings);
 router.post('/settings', adminController.updateSiteSettings);
+router.get('/account-settings', adminController.getAdminAccountSettings);
+router.post('/account-settings', adminController.updateAdminAccountSettings);
 
 // Support: Messages & Complaints
 router.get('/contact', adminController.getContactMessages);
