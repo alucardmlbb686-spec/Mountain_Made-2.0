@@ -6,6 +6,7 @@ const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
+const { minify } = require('terser');
 require('dotenv').config();
 
 const database = require('./config/database');
@@ -89,6 +90,25 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+
+  const cspDirectives = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "script-src 'self' 'unsafe-inline' https:",
+    "style-src 'self' 'unsafe-inline' https:",
+    "img-src 'self' data: blob: https: http:",
+    "font-src 'self' data: https:",
+    "connect-src 'self' https: http: ws: wss:",
+    "media-src 'self' blob: data:",
+    "form-action 'self'"
+  ];
+  res.setHeader('Content-Security-Policy', cspDirectives.join('; '));
+
   const pathname = req.path || '/';
   const isAdminPage = pathname === '/admin' || pathname === '/admin.html' || pathname.startsWith('/admin/');
   // Microphone is required for Lara voice commands (admin only).
@@ -209,6 +229,59 @@ app.use((req, res, next) => {
 });
 
 // Serve static files with caching tuned for performance + safe updates
+const minifiedJsCache = new Map();
+app.get('/js/*', async (req, res, next) => {
+  try {
+    if (process.env.NODE_ENV !== 'production') {
+      return next();
+    }
+
+    const publicRoot = path.join(__dirname, 'public');
+    const decodedPath = decodeURIComponent(req.path || '');
+    const requestedFile = path.resolve(publicRoot, `.${decodedPath}`);
+
+    if (!requestedFile.startsWith(publicRoot) || path.extname(requestedFile).toLowerCase() !== '.js') {
+      return next();
+    }
+
+    const stat = await fs.promises.stat(requestedFile).catch(() => null);
+    if (!stat || !stat.isFile()) {
+      return next();
+    }
+
+    const cacheKey = requestedFile;
+    const cached = minifiedJsCache.get(cacheKey);
+    const mtimeMs = Number(stat.mtimeMs || 0);
+    if (cached && cached.mtimeMs === mtimeMs) {
+      res.type('application/javascript; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, no-cache, must-revalidate');
+      return res.send(cached.code);
+    }
+
+    const sourceCode = await fs.promises.readFile(requestedFile, 'utf8');
+    const result = await minify(sourceCode, {
+      compress: true,
+      mangle: true,
+      format: {
+        comments: false
+      }
+    });
+
+    const transformed = String(result?.code || '').trim();
+    if (!transformed) {
+      return next();
+    }
+
+    minifiedJsCache.set(cacheKey, { mtimeMs, code: transformed });
+    res.type('application/javascript; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, no-cache, must-revalidate');
+    return res.send(transformed);
+  } catch (error) {
+    console.warn('JS minification fallback:', error?.message || error);
+    return next();
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: true,
   lastModified: true,
