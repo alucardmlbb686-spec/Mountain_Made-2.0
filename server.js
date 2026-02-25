@@ -8,6 +8,7 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const { minify } = require('terser');
 const { minify: minifyHtml } = require('html-minifier-terser');
+const JavaScriptObfuscator = require('javascript-obfuscator');
 require('dotenv').config();
 
 const database = require('./config/database');
@@ -20,6 +21,45 @@ const backupController = require('./controllers/backupController');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const allowSetupEndpoints = process.env.ALLOW_SETUP_ENDPOINTS === 'true';
+
+function obfuscateJavaScript(sourceCode) {
+  try {
+    const source = String(sourceCode || '').trim();
+    if (!source) return '';
+
+    const result = JavaScriptObfuscator.obfuscate(source, {
+      compact: true,
+      controlFlowFlattening: true,
+      controlFlowFlatteningThreshold: 0.75,
+      deadCodeInjection: true,
+      deadCodeInjectionThreshold: 0.4,
+      disableConsoleOutput: true,
+      identifierNamesGenerator: 'hexadecimal',
+      renameGlobals: false,
+      rotateStringArray: true,
+      selfDefending: true,
+      splitStrings: true,
+      splitStringsChunkLength: 8,
+      stringArray: true,
+      stringArrayCallsTransform: true,
+      stringArrayCallsTransformThreshold: 0.75,
+      stringArrayEncoding: ['base64'],
+      stringArrayIndexShift: true,
+      stringArrayRotate: true,
+      stringArrayShuffle: true,
+      stringArrayWrappersCount: 2,
+      stringArrayWrappersChainedCalls: true,
+      stringArrayWrappersParametersMaxCount: 4,
+      stringArrayWrappersType: 'function',
+      transformObjectKeys: true,
+      unicodeEscapeSequence: false
+    });
+
+    return String(result?.getObfuscatedCode?.() || '').trim();
+  } catch (error) {
+    return '';
+  }
+}
 
 app.disable('x-powered-by');
 // Ensure req.secure and related proxy-derived fields behave correctly on Render/other proxies.
@@ -260,15 +300,18 @@ app.get('/js/*', async (req, res, next) => {
     }
 
     const sourceCode = await fs.promises.readFile(requestedFile, 'utf8');
-    const result = await minify(sourceCode, {
-      compress: true,
-      mangle: true,
-      format: {
-        comments: false
-      }
-    });
+    let transformed = obfuscateJavaScript(sourceCode);
+    if (!transformed) {
+      const result = await minify(sourceCode, {
+        compress: true,
+        mangle: true,
+        format: {
+          comments: false
+        }
+      });
+      transformed = String(result?.code || '').trim();
+    }
 
-    const transformed = String(result?.code || '').trim();
     if (!transformed) {
       return next();
     }
@@ -539,12 +582,15 @@ async function minifyInlineScripts(htmlText) {
     }
 
     try {
-      const minifiedScript = await minify(scriptBody, {
-        compress: true,
-        mangle: true,
-        format: { comments: false }
-      });
-      const packedScript = String(minifiedScript?.code || '').trim();
+      let packedScript = obfuscateJavaScript(scriptBody);
+      if (!packedScript) {
+        const minifiedScript = await minify(scriptBody, {
+          compress: true,
+          mangle: true,
+          format: { comments: false }
+        });
+        packedScript = String(minifiedScript?.code || '').trim();
+      }
       output += packedScript
         ? `<script${attributes}>${packedScript}</script>`
         : fullMatch;
