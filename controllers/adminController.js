@@ -1483,6 +1483,9 @@ exports.updateSiteSettings = async (req, res) => {
       homepage_hero_image_url,
       homepage_hero_section_id,
       about_us_description,
+      about_page_title,
+      about_intro_title,
+      about_mission_vision_title,
       about_us_heading_1,
       about_us_heading_2,
       about_us_heading_3,
@@ -1535,6 +1538,15 @@ exports.updateSiteSettings = async (req, res) => {
     }
     if (about_us_description !== undefined) {
       updates.push({ key: 'about_us_description', value: String(about_us_description || '').trim() });
+    }
+    if (about_page_title !== undefined) {
+      updates.push({ key: 'about_page_title', value: String(about_page_title || '').trim() });
+    }
+    if (about_intro_title !== undefined) {
+      updates.push({ key: 'about_intro_title', value: String(about_intro_title || '').trim() });
+    }
+    if (about_mission_vision_title !== undefined) {
+      updates.push({ key: 'about_mission_vision_title', value: String(about_mission_vision_title || '').trim() });
     }
     if (about_us_heading_1 !== undefined) {
       updates.push({ key: 'about_us_heading_1', value: String(about_us_heading_1 || '').trim() });

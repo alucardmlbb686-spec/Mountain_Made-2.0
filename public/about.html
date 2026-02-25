@@ -44,10 +44,10 @@
 
         .about-panel-title {
             margin: 0;
-            color: #b00020;
+            color: #166534;
             font-size: 1.26rem;
             font-weight: 800;
-            border-bottom: 2px solid #e11d48;
+            border-bottom: 2px solid #22c55e;
             padding-bottom: 0.55rem;
         }
 
@@ -75,7 +75,7 @@
         }
 
         .about-card {
-            background: linear-gradient(160deg, #b00020, #e11d48);
+            background: linear-gradient(160deg, #166534, #22c55e);
             border: 1px solid rgba(255,255,255,0.28);
             border-radius: 10px;
             padding: 1rem 1rem 1.05rem;
@@ -197,7 +197,7 @@
     </nav>
 
     <section class="about-page-hero">
-        <h1>About Us</h1>
+        <h1 id="about-page-title">About Us</h1>
         <p id="about-description">Loading About Us content...</p>
     </section>
 
@@ -209,7 +209,7 @@
         </section>
 
         <section class="about-panel">
-            <h2 class="about-panel-title">Our Mission &amp; Vision</h2>
+            <h2 id="about-mission-vision-title" class="about-panel-title">Our Mission &amp; Vision</h2>
             <div id="about-grid" class="about-grid"></div>
         </section>
     </main>
@@ -290,8 +290,10 @@
         }
 
         async function loadAboutUsContent() {
+            const pageTitleEl = document.getElementById('about-page-title');
             const descEl = document.getElementById('about-description');
             const introTitleEl = document.getElementById('about-intro-title');
+            const missionVisionTitleEl = document.getElementById('about-mission-vision-title');
             const introSubtitleEl = document.getElementById('about-intro-subtitle');
             const introContentEl = document.getElementById('about-intro-content');
             const gridEl = document.getElementById('about-grid');
@@ -300,12 +302,25 @@
                 const response = await api.get('/products/settings');
                 const settings = response?.settings || {};
 
+                const aboutPageTitle = (settings.about_page_title || '').trim();
+                const aboutIntroTitle = (settings.about_intro_title || '').trim();
+                const missionVisionTitle = (settings.about_mission_vision_title || '').trim();
                 const description = (settings.about_us_description || '').trim();
                 const blocks = [1, 2, 3, 4, 5].map((idx) => ({
                     heading: String(settings[`about_us_heading_${idx}`] || '').trim(),
                     paragraph: String(settings[`about_us_paragraph_${idx}`] || '').trim(),
                     index: idx
                 })).filter((item) => item.paragraph);
+
+                if (pageTitleEl) {
+                    pageTitleEl.textContent = aboutPageTitle || 'About Us';
+                }
+                if (introTitleEl) {
+                    introTitleEl.textContent = aboutIntroTitle || 'Welcome to Mountain Made';
+                }
+                if (missionVisionTitleEl) {
+                    missionVisionTitleEl.textContent = missionVisionTitle || 'Our Mission & Vision';
+                }
 
                 if (descEl) {
                     descEl.textContent = description || 'Learn more about our mission, quality promise, and mountain-fresh sourcing approach.';
@@ -316,7 +331,7 @@
                 if (!introTitleEl || !introSubtitleEl || !introContentEl) return;
 
                 if (blocks.length === 0) {
-                    introTitleEl.textContent = 'Welcome to Mountain Made';
+                    introTitleEl.textContent = aboutIntroTitle || 'Welcome to Mountain Made';
                     introSubtitleEl.textContent = description || 'Learn about our mission and quality commitment.';
                     introContentEl.innerHTML = '<p>About content is not added yet. Please update it from Admin &gt; Site Settings.</p>';
                     gridEl.innerHTML = '<div class="about-empty">Mission and vision content will appear here after update.</div>';
@@ -326,7 +341,7 @@
                 const introBlock = blocks[0];
                 const cards = blocks.slice(1);
 
-                introTitleEl.textContent = introBlock.heading || 'Welcome to Mountain Made';
+                introTitleEl.textContent = aboutIntroTitle || introBlock.heading || 'Welcome to Mountain Made';
                 introSubtitleEl.textContent = description || 'Learn about our mission to preserve quality and deliver with trust.';
                 introContentEl.innerHTML = renderBlock(introBlock.paragraph);
 

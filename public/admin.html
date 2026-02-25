@@ -2121,6 +2121,22 @@
                             <textarea id="about-us-description" class="form-input" rows="3" placeholder="Short intro for About Us section"></textarea>
                         </div>
 
+                        <div class="form-row" style="margin-bottom: 1rem;">
+                            <div>
+                                <label class="form-label" for="about-page-title">About Page Main Title</label>
+                                <input type="text" id="about-page-title" class="form-input" placeholder="e.g., About Us">
+                            </div>
+                            <div>
+                                <label class="form-label" for="about-intro-title">About Intro Section Title</label>
+                                <input type="text" id="about-intro-title" class="form-input" placeholder="e.g., Welcome to Mountain Made">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label class="form-label" for="about-mission-vision-title">Mission & Vision Section Title</label>
+                            <input type="text" id="about-mission-vision-title" class="form-input" placeholder="e.g., Our Mission & Vision">
+                        </div>
+
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label class="form-label" for="about-us-paragraph-1">Paragraph 1</label>
                             <input type="text" id="about-us-heading-1" class="form-input" placeholder="Heading for paragraph 1" style="margin-bottom:0.5rem;">
@@ -5599,6 +5615,9 @@
                 }
 
                 const aboutDescriptionEl = document.getElementById('about-us-description');
+                const aboutPageTitleEl = document.getElementById('about-page-title');
+                const aboutIntroTitleEl = document.getElementById('about-intro-title');
+                const aboutMissionVisionTitleEl = document.getElementById('about-mission-vision-title');
                 const aboutHeading1El = document.getElementById('about-us-heading-1');
                 const aboutHeading2El = document.getElementById('about-us-heading-2');
                 const aboutHeading3El = document.getElementById('about-us-heading-3');
@@ -5611,6 +5630,9 @@
                 const aboutParagraph5El = document.getElementById('about-us-paragraph-5');
 
                 if (aboutDescriptionEl) aboutDescriptionEl.value = settings.about_us_description || '';
+                if (aboutPageTitleEl) aboutPageTitleEl.value = settings.about_page_title || '';
+                if (aboutIntroTitleEl) aboutIntroTitleEl.value = settings.about_intro_title || '';
+                if (aboutMissionVisionTitleEl) aboutMissionVisionTitleEl.value = settings.about_mission_vision_title || '';
                 if (aboutHeading1El) aboutHeading1El.value = settings.about_us_heading_1 || '';
                 if (aboutHeading2El) aboutHeading2El.value = settings.about_us_heading_2 || '';
                 if (aboutHeading3El) aboutHeading3El.value = settings.about_us_heading_3 || '';
@@ -5993,6 +6015,9 @@
         window.saveAboutUsSettings = async function() {
             try {
                 const about_us_description = (document.getElementById('about-us-description')?.value || '').trim();
+                const about_page_title = (document.getElementById('about-page-title')?.value || '').trim();
+                const about_intro_title = (document.getElementById('about-intro-title')?.value || '').trim();
+                const about_mission_vision_title = (document.getElementById('about-mission-vision-title')?.value || '').trim();
                 const about_us_heading_1 = (document.getElementById('about-us-heading-1')?.value || '').trim();
                 const about_us_heading_2 = (document.getElementById('about-us-heading-2')?.value || '').trim();
                 const about_us_heading_3 = (document.getElementById('about-us-heading-3')?.value || '').trim();
@@ -6007,6 +6032,9 @@
                 showAlert('Saving About Us content...', 'info');
                 const response = await api.post('/admin/settings', {
                     about_us_description,
+                    about_page_title,
+                    about_intro_title,
+                    about_mission_vision_title,
                     about_us_heading_1,
                     about_us_heading_2,
                     about_us_heading_3,
