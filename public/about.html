@@ -35,24 +35,77 @@
             margin: 0 auto 2.5rem;
         }
 
+        .about-hero-meta {
+            margin-top: 1rem;
+            display: inline-flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .about-hero-chip {
+            padding: 0.35rem 0.65rem;
+            border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.95);
+            font-size: 0.8rem;
+            letter-spacing: 0.01em;
+        }
+
         .about-grid {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 0.95rem;
         }
 
         .about-card {
-            background: var(--surface);
+            background: linear-gradient(180deg, var(--surface), var(--bg-secondary));
             border: 1px solid var(--border-primary);
             border-radius: 14px;
-            padding: 1.05rem 1.05rem 1rem;
+            padding: 1.05rem 1.05rem 1.15rem;
             box-shadow: var(--shadow-sm);
             transition: transform 0.22s ease, box-shadow 0.22s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .about-card::before {
+            content: '';
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-600), var(--secondary-500));
         }
 
         .about-card:hover {
             transform: translateY(-3px);
             box-shadow: var(--shadow-md);
+        }
+
+        .about-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.6rem;
+            margin-bottom: 0.65rem;
+            padding-top: 0.15rem;
+        }
+
+        .about-card-title {
+            margin: 0;
+            font-size: 1.05rem;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .about-card-index {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--primary-700);
+            background: var(--primary-100);
+            border-radius: 999px;
+            padding: 0.2rem 0.5rem;
         }
 
         .about-card p {
@@ -149,6 +202,11 @@
     <section class="about-page-hero">
         <h1>About Us</h1>
         <p id="about-description">Loading About Us content...</p>
+        <div class="about-hero-meta" aria-hidden="true">
+            <span class="about-hero-chip">Mountain Sourced</span>
+            <span class="about-hero-chip">Quality Focused</span>
+            <span class="about-hero-chip">Trusted Delivery</span>
+        </div>
     </section>
 
     <main class="container about-page-wrap">
@@ -239,15 +297,11 @@
                 const settings = response?.settings || {};
 
                 const description = (settings.about_us_description || '').trim();
-                const blocks = [
-                    settings.about_us_paragraph_1,
-                    settings.about_us_paragraph_2,
-                    settings.about_us_paragraph_3,
-                    settings.about_us_paragraph_4,
-                    settings.about_us_paragraph_5
-                ]
-                    .map((item) => String(item || '').trim())
-                    .filter(Boolean);
+                const blocks = [1, 2, 3, 4, 5].map((idx) => ({
+                    heading: String(settings[`about_us_heading_${idx}`] || '').trim(),
+                    paragraph: String(settings[`about_us_paragraph_${idx}`] || '').trim(),
+                    index: idx
+                })).filter((item) => item.paragraph);
 
                 if (descEl) {
                     descEl.textContent = description || 'Learn more about our mission, quality promise, and mountain-fresh sourcing approach.';
@@ -261,7 +315,15 @@
                 }
 
                 gridEl.innerHTML = blocks
-                    .map((block) => `<article class="about-card">${renderBlock(block)}</article>`)
+                    .map((block) => `
+                        <article class="about-card">
+                            <header class="about-card-header">
+                                <h3 class="about-card-title">${escapeHtml(block.heading || `Section ${block.index}`)}</h3>
+                                <span class="about-card-index">0${block.index}</span>
+                            </header>
+                            ${renderBlock(block.paragraph)}
+                        </article>
+                    `)
                     .join('');
             } catch (error) {
                 console.error('Failed to load About Us content:', error);

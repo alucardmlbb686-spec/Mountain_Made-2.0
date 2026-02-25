@@ -2123,26 +2123,31 @@
 
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label class="form-label" for="about-us-paragraph-1">Paragraph 1</label>
+                            <input type="text" id="about-us-heading-1" class="form-input" placeholder="Heading for paragraph 1" style="margin-bottom:0.5rem;">
                             <textarea id="about-us-paragraph-1" class="form-input" rows="4" placeholder="Paragraph 1 content"></textarea>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label class="form-label" for="about-us-paragraph-2">Paragraph 2</label>
+                            <input type="text" id="about-us-heading-2" class="form-input" placeholder="Heading for paragraph 2" style="margin-bottom:0.5rem;">
                             <textarea id="about-us-paragraph-2" class="form-input" rows="4" placeholder="Paragraph 2 content"></textarea>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label class="form-label" for="about-us-paragraph-3">Paragraph 3</label>
+                            <input type="text" id="about-us-heading-3" class="form-input" placeholder="Heading for paragraph 3" style="margin-bottom:0.5rem;">
                             <textarea id="about-us-paragraph-3" class="form-input" rows="4" placeholder="Paragraph 3 content"></textarea>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label class="form-label" for="about-us-paragraph-4">Paragraph 4</label>
+                            <input type="text" id="about-us-heading-4" class="form-input" placeholder="Heading for paragraph 4" style="margin-bottom:0.5rem;">
                             <textarea id="about-us-paragraph-4" class="form-input" rows="4" placeholder="Paragraph 4 content"></textarea>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label class="form-label" for="about-us-paragraph-5">Paragraph 5</label>
+                            <input type="text" id="about-us-heading-5" class="form-input" placeholder="Heading for paragraph 5" style="margin-bottom:0.5rem;">
                             <textarea id="about-us-paragraph-5" class="form-input" rows="4" placeholder="Paragraph 5 content"></textarea>
                         </div>
 
@@ -5594,6 +5599,11 @@
                 }
 
                 const aboutDescriptionEl = document.getElementById('about-us-description');
+                const aboutHeading1El = document.getElementById('about-us-heading-1');
+                const aboutHeading2El = document.getElementById('about-us-heading-2');
+                const aboutHeading3El = document.getElementById('about-us-heading-3');
+                const aboutHeading4El = document.getElementById('about-us-heading-4');
+                const aboutHeading5El = document.getElementById('about-us-heading-5');
                 const aboutParagraph1El = document.getElementById('about-us-paragraph-1');
                 const aboutParagraph2El = document.getElementById('about-us-paragraph-2');
                 const aboutParagraph3El = document.getElementById('about-us-paragraph-3');
@@ -5601,6 +5611,11 @@
                 const aboutParagraph5El = document.getElementById('about-us-paragraph-5');
 
                 if (aboutDescriptionEl) aboutDescriptionEl.value = settings.about_us_description || '';
+                if (aboutHeading1El) aboutHeading1El.value = settings.about_us_heading_1 || '';
+                if (aboutHeading2El) aboutHeading2El.value = settings.about_us_heading_2 || '';
+                if (aboutHeading3El) aboutHeading3El.value = settings.about_us_heading_3 || '';
+                if (aboutHeading4El) aboutHeading4El.value = settings.about_us_heading_4 || '';
+                if (aboutHeading5El) aboutHeading5El.value = settings.about_us_heading_5 || '';
                 if (aboutParagraph1El) aboutParagraph1El.value = settings.about_us_paragraph_1 || '';
                 if (aboutParagraph2El) aboutParagraph2El.value = settings.about_us_paragraph_2 || '';
                 if (aboutParagraph3El) aboutParagraph3El.value = settings.about_us_paragraph_3 || '';
@@ -5978,6 +5993,11 @@
         window.saveAboutUsSettings = async function() {
             try {
                 const about_us_description = (document.getElementById('about-us-description')?.value || '').trim();
+                const about_us_heading_1 = (document.getElementById('about-us-heading-1')?.value || '').trim();
+                const about_us_heading_2 = (document.getElementById('about-us-heading-2')?.value || '').trim();
+                const about_us_heading_3 = (document.getElementById('about-us-heading-3')?.value || '').trim();
+                const about_us_heading_4 = (document.getElementById('about-us-heading-4')?.value || '').trim();
+                const about_us_heading_5 = (document.getElementById('about-us-heading-5')?.value || '').trim();
                 const about_us_paragraph_1 = (document.getElementById('about-us-paragraph-1')?.value || '').trim();
                 const about_us_paragraph_2 = (document.getElementById('about-us-paragraph-2')?.value || '').trim();
                 const about_us_paragraph_3 = (document.getElementById('about-us-paragraph-3')?.value || '').trim();
@@ -5987,6 +6007,11 @@
                 showAlert('Saving About Us content...', 'info');
                 const response = await api.post('/admin/settings', {
                     about_us_description,
+                    about_us_heading_1,
+                    about_us_heading_2,
+                    about_us_heading_3,
+                    about_us_heading_4,
+                    about_us_heading_5,
                     about_us_paragraph_1,
                     about_us_paragraph_2,
                     about_us_paragraph_3,

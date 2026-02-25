@@ -1483,6 +1483,11 @@ exports.updateSiteSettings = async (req, res) => {
       homepage_hero_image_url,
       homepage_hero_section_id,
       about_us_description,
+      about_us_heading_1,
+      about_us_heading_2,
+      about_us_heading_3,
+      about_us_heading_4,
+      about_us_heading_5,
       about_us_paragraph_1,
       about_us_paragraph_2,
       about_us_paragraph_3,
@@ -1530,6 +1535,21 @@ exports.updateSiteSettings = async (req, res) => {
     }
     if (about_us_description !== undefined) {
       updates.push({ key: 'about_us_description', value: String(about_us_description || '').trim() });
+    }
+    if (about_us_heading_1 !== undefined) {
+      updates.push({ key: 'about_us_heading_1', value: String(about_us_heading_1 || '').trim() });
+    }
+    if (about_us_heading_2 !== undefined) {
+      updates.push({ key: 'about_us_heading_2', value: String(about_us_heading_2 || '').trim() });
+    }
+    if (about_us_heading_3 !== undefined) {
+      updates.push({ key: 'about_us_heading_3', value: String(about_us_heading_3 || '').trim() });
+    }
+    if (about_us_heading_4 !== undefined) {
+      updates.push({ key: 'about_us_heading_4', value: String(about_us_heading_4 || '').trim() });
+    }
+    if (about_us_heading_5 !== undefined) {
+      updates.push({ key: 'about_us_heading_5', value: String(about_us_heading_5 || '').trim() });
     }
     if (about_us_paragraph_1 !== undefined) {
       updates.push({ key: 'about_us_paragraph_1', value: String(about_us_paragraph_1 || '').trim() });
