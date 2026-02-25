@@ -10,132 +10,129 @@
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
     <style>
         .about-page-hero {
-            padding: clamp(2rem, 6vw, 3.25rem) 1rem 1.35rem;
-            background: linear-gradient(135deg, var(--primary-800), var(--primary-600));
-            color: #fff;
+            padding: 1.25rem 1rem 0.6rem;
             text-align: center;
-            margin-bottom: 1.35rem;
         }
 
         .about-page-hero h1 {
             margin: 0;
-            font-size: clamp(1.9rem, 4vw, 2.8rem);
-            letter-spacing: -0.02em;
+            font-size: clamp(1.8rem, 3.8vw, 2.45rem);
+            color: var(--text-primary);
         }
 
         .about-page-hero p {
-            margin: 0.6rem auto 0;
-            max-width: 860px;
-            color: rgba(255,255,255,0.92);
-            line-height: 1.65;
-            font-size: clamp(0.95rem, 2vw, 1.08rem);
+            margin: 0.45rem auto 0;
+            max-width: 900px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.98rem;
         }
 
         .about-page-wrap {
             margin: 0 auto 2.5rem;
-        }
-
-        .about-hero-meta {
-            margin-top: 1rem;
-            display: inline-flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .about-hero-chip {
-            padding: 0.35rem 0.65rem;
-            border: 1px solid rgba(255,255,255,0.35);
-            border-radius: 999px;
-            background: rgba(255,255,255,0.12);
-            color: rgba(255,255,255,0.95);
-            font-size: 0.8rem;
-            letter-spacing: 0.01em;
-        }
-
-        .about-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 0.95rem;
+            gap: 1rem;
         }
 
-        .about-card {
-            background: linear-gradient(180deg, var(--surface), var(--bg-secondary));
+        .about-panel {
+            background: var(--surface);
             border: 1px solid var(--border-primary);
-            border-radius: 14px;
-            padding: 1.05rem 1.05rem 1.15rem;
+            border-radius: 10px;
             box-shadow: var(--shadow-sm);
-            transition: transform 0.22s ease, box-shadow 0.22s ease;
-            position: relative;
-            overflow: hidden;
+            padding: 1rem;
         }
 
-        .about-card::before {
-            content: '';
-            position: absolute;
-            inset: 0 0 auto 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary-600), var(--secondary-500));
-        }
-
-        .about-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .about-card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.6rem;
-            margin-bottom: 0.65rem;
-            padding-top: 0.15rem;
-        }
-
-        .about-card-title {
+        .about-panel-title {
             margin: 0;
-            font-size: 1.05rem;
+            color: #b00020;
+            font-size: 1.26rem;
+            font-weight: 800;
+            border-bottom: 2px solid #e11d48;
+            padding-bottom: 0.55rem;
+        }
+
+        .about-intro-subtitle {
+            margin: 0.85rem 0 0.45rem;
             color: var(--text-primary);
             font-weight: 700;
         }
 
-        .about-card-index {
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: var(--primary-700);
-            background: var(--primary-100);
-            border-radius: 999px;
-            padding: 0.2rem 0.5rem;
+        .about-intro-content p {
+            margin: 0;
+            color: var(--text-secondary);
+            line-height: 1.72;
+        }
+
+        .about-intro-content p + p {
+            margin-top: 0.52rem;
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 0.9rem;
+            margin-top: 0.65rem;
+        }
+
+        .about-card {
+            background: linear-gradient(160deg, #b00020, #e11d48);
+            border: 1px solid rgba(255,255,255,0.28);
+            border-radius: 10px;
+            padding: 1rem 1rem 1.05rem;
+            color: #fff;
+            box-shadow: var(--shadow-md);
+        }
+
+        .about-card-title {
+            margin: 0 0 0.6rem;
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.01em;
         }
 
         .about-card p {
             margin: 0;
-            color: var(--text-secondary);
+            color: rgba(255,255,255,0.95);
             line-height: 1.68;
         }
 
         .about-card p + p {
-            margin-top: 0.62rem;
+            margin-top: 0.55rem;
         }
 
         .about-list {
             margin: 0;
-            padding-left: 1.15rem;
-            color: var(--text-secondary);
+            padding-left: 0;
+            list-style: none;
+        }
+
+        .about-list li {
+            color: rgba(255,255,255,0.97);
             line-height: 1.68;
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+        }
+
+        .about-list li::before {
+            content: '✔';
+            font-weight: 700;
+            margin-top: 0.02rem;
         }
 
         .about-list li + li {
-            margin-top: 0.3rem;
+            margin-top: 0.4rem;
         }
 
         .about-empty {
             text-align: center;
             color: var(--text-secondary);
             border: 1px dashed var(--border-primary);
-            border-radius: 12px;
+            border-radius: 10px;
             background: var(--surface);
-            padding: 1.2rem;
+            padding: 1.1rem;
+            margin-top: 0.7rem;
         }
     </style>
 </head>
@@ -202,15 +199,19 @@
     <section class="about-page-hero">
         <h1>About Us</h1>
         <p id="about-description">Loading About Us content...</p>
-        <div class="about-hero-meta" aria-hidden="true">
-            <span class="about-hero-chip">Mountain Sourced</span>
-            <span class="about-hero-chip">Quality Focused</span>
-            <span class="about-hero-chip">Trusted Delivery</span>
-        </div>
     </section>
 
     <main class="container about-page-wrap">
-        <div id="about-grid" class="about-grid"></div>
+        <section class="about-panel">
+            <h2 id="about-intro-title" class="about-panel-title">Welcome to Mountain Made</h2>
+            <p id="about-intro-subtitle" class="about-intro-subtitle"></p>
+            <div id="about-intro-content" class="about-intro-content"></div>
+        </section>
+
+        <section class="about-panel">
+            <h2 class="about-panel-title">Our Mission &amp; Vision</h2>
+            <div id="about-grid" class="about-grid"></div>
+        </section>
     </main>
 
     <footer class="footer">
@@ -290,6 +291,9 @@
 
         async function loadAboutUsContent() {
             const descEl = document.getElementById('about-description');
+            const introTitleEl = document.getElementById('about-intro-title');
+            const introSubtitleEl = document.getElementById('about-intro-subtitle');
+            const introContentEl = document.getElementById('about-intro-content');
             const gridEl = document.getElementById('about-grid');
 
             try {
@@ -309,18 +313,32 @@
 
                 if (!gridEl) return;
 
+                if (!introTitleEl || !introSubtitleEl || !introContentEl) return;
+
                 if (blocks.length === 0) {
-                    gridEl.innerHTML = '<div class="about-empty">About content is not added yet. Please update it from Admin &gt; Site Settings.</div>';
+                    introTitleEl.textContent = 'Welcome to Mountain Made';
+                    introSubtitleEl.textContent = description || 'Learn about our mission and quality commitment.';
+                    introContentEl.innerHTML = '<p>About content is not added yet. Please update it from Admin &gt; Site Settings.</p>';
+                    gridEl.innerHTML = '<div class="about-empty">Mission and vision content will appear here after update.</div>';
                     return;
                 }
 
-                gridEl.innerHTML = blocks
+                const introBlock = blocks[0];
+                const cards = blocks.slice(1);
+
+                introTitleEl.textContent = introBlock.heading || 'Welcome to Mountain Made';
+                introSubtitleEl.textContent = description || 'Learn about our mission to preserve quality and deliver with trust.';
+                introContentEl.innerHTML = renderBlock(introBlock.paragraph);
+
+                if (cards.length === 0) {
+                    gridEl.innerHTML = '<div class="about-empty">Add more paragraph sections in Admin to display Mission &amp; Vision cards.</div>';
+                    return;
+                }
+
+                gridEl.innerHTML = cards
                     .map((block) => `
                         <article class="about-card">
-                            <header class="about-card-header">
-                                <h3 class="about-card-title">${escapeHtml(block.heading || `Section ${block.index}`)}</h3>
-                                <span class="about-card-index">0${block.index}</span>
-                            </header>
+                            <h3 class="about-card-title">${escapeHtml(block.heading || `Section ${block.index}`)}</h3>
                             ${renderBlock(block.paragraph)}
                         </article>
                     `)
