@@ -7,6 +7,7 @@ const multer = require('multer');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const { minify } = require('terser');
+const { minify: minifyHtml } = require('html-minifier-terser');
 require('dotenv').config();
 
 const database = require('./config/database');
@@ -514,56 +515,101 @@ app.get('/api/setup-super-admin', async (req, res) => {
 });
 
 // Serve HTML pages
+const minifiedHtmlCache = new Map();
+async function sendHtmlPage(req, res, fileName) {
+  try {
+    const filePath = path.join(__dirname, 'public', fileName);
+    if (process.env.NODE_ENV !== 'production') {
+      return res.sendFile(filePath);
+    }
+
+    const stat = await fs.promises.stat(filePath).catch(() => null);
+    if (!stat || !stat.isFile()) {
+      return res.status(404).send('Page not found');
+    }
+
+    const cacheKey = filePath;
+    const mtimeMs = Number(stat.mtimeMs || 0);
+    const cached = minifiedHtmlCache.get(cacheKey);
+    if (cached && cached.mtimeMs === mtimeMs) {
+      res.type('text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store');
+      return res.send(cached.html);
+    }
+
+    const rawHtml = await fs.promises.readFile(filePath, 'utf8');
+    const transformed = await minifyHtml(rawHtml, {
+      collapseWhitespace: true,
+      removeComments: true,
+      removeRedundantAttributes: true,
+      removeEmptyAttributes: true,
+      minifyCSS: true,
+      minifyJS: true,
+      keepClosingSlash: true,
+      caseSensitive: true
+    });
+
+    const finalHtml = String(transformed || rawHtml);
+    minifiedHtmlCache.set(cacheKey, { mtimeMs, html: finalHtml });
+    res.type('text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.send(finalHtml);
+  } catch (error) {
+    console.warn(`HTML minification fallback for ${fileName}:`, error?.message || error);
+    return res.sendFile(path.join(__dirname, 'public', fileName));
+  }
+}
+
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  return sendHtmlPage(req, res, 'index.html');
 });
 
 app.get('/products', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'products.html'));
+  return sendHtmlPage(req, res, 'products.html');
 });
 
 app.get('/cart', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'cart.html'));
+  return sendHtmlPage(req, res, 'cart.html');
 });
 
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  return sendHtmlPage(req, res, 'admin.html');
 });
 
 app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  return sendHtmlPage(req, res, 'login.html');
 });
 
 app.get('/register', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'register.html'));
+  return sendHtmlPage(req, res, 'register.html');
 });
 
 app.get('/checkout', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'checkout.html'));
+  return sendHtmlPage(req, res, 'checkout.html');
 });
 
 app.get('/orders', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'orders.html'));
+  return sendHtmlPage(req, res, 'orders.html');
 });
 
 app.get('/product-details', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'product-details.html'));
+  return sendHtmlPage(req, res, 'product-details.html');
 });
 
 app.get('/addresses', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'addresses.html'));
+  return sendHtmlPage(req, res, 'addresses.html');
 });
 
 app.get('/wholesale', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'wholesale.html'));
+  return sendHtmlPage(req, res, 'wholesale.html');
 });
 
 app.get('/contact', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'contact.html'));
+  return sendHtmlPage(req, res, 'contact.html');
 });
 
 app.get('/about', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'about.html'));
+  return sendHtmlPage(req, res, 'about.html');
 });
 
 // Error handling middleware
