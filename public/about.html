@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - Mountain Made</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/mobile-enhancements.css">
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <style>
+        .about-page-hero {
+            padding: clamp(2rem, 6vw, 3.25rem) 1rem 1.35rem;
+            background: linear-gradient(135deg, var(--primary-800), var(--primary-600));
+            color: #fff;
+            text-align: center;
+            margin-bottom: 1.35rem;
+        }
+
+        .about-page-hero h1 {
+            margin: 0;
+            font-size: clamp(1.9rem, 4vw, 2.8rem);
+            letter-spacing: -0.02em;
+        }
+
+        .about-page-hero p {
+            margin: 0.6rem auto 0;
+            max-width: 860px;
+            color: rgba(255,255,255,0.92);
+            line-height: 1.65;
+            font-size: clamp(0.95rem, 2vw, 1.08rem);
+        }
+
+        .about-page-wrap {
+            margin: 0 auto 2.5rem;
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.95rem;
+        }
+
+        .about-card {
+            background: var(--surface);
+            border: 1px solid var(--border-primary);
+            border-radius: 14px;
+            padding: 1.05rem 1.05rem 1rem;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.22s ease, box-shadow 0.22s ease;
+        }
+
+        .about-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .about-card p {
+            margin: 0;
+            color: var(--text-secondary);
+            line-height: 1.68;
+        }
+
+        .about-card p + p {
+            margin-top: 0.62rem;
+        }
+
+        .about-list {
+            margin: 0;
+            padding-left: 1.15rem;
+            color: var(--text-secondary);
+            line-height: 1.68;
+        }
+
+        .about-list li + li {
+            margin-top: 0.3rem;
+        }
+
+        .about-empty {
+            text-align: center;
+            color: var(--text-secondary);
+            border: 1px dashed var(--border-primary);
+            border-radius: 12px;
+            background: var(--surface);
+            padding: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">
+                <span class="logo-icon">🏔️</span>
+                Mountain Made
+            </a>
+
+            <ul class="navbar-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="/#categories">Categories</a></li>
+                <li><a href="/about" class="active">About</a></li>
+                <li><a href="/contact">Contact Us</a></li>
+                <li id="admin-link" class="hidden"><a href="/admin">Admin</a></li>
+            </ul>
+
+            <div class="navbar-actions">
+                <div id="auth-buttons">
+                    <a href="/login" class="btn btn-secondary btn-sm">Login</a>
+                    <a href="/register" class="btn btn-primary btn-sm">Register</a>
+                </div>
+
+                <div id="user-menu" class="hidden flex gap-2" style="align-items: center;">
+                    <a href="/cart" class="icon-button" title="Shopping Cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span id="cart-badge" class="cart-badge hidden">0</span>
+                    </a>
+                    <div class="account-menu">
+                        <button id="account-toggle" class="icon-button" title="Account">
+                            <i class="fas fa-user-circle"></i>
+                        </button>
+                        <div id="account-dropdown" class="account-dropdown hidden">
+                            <div class="account-section">
+                                <strong>Account</strong>
+                                <button class="account-link" onclick="openProfileModal()">Edit Profile</button>
+                                <a href="/orders" class="account-link">My Orders</a>
+                            </div>
+                            <div class="account-section">
+                                <strong>Account Management</strong>
+                                <button class="account-link" onclick="openAccountManagementModal()">Change Password</button>
+                            </div>
+                            <div class="account-section">
+                                <strong>Appearance</strong>
+                                <button id="theme-toggle" class="account-link">Toggle Dark / Light</button>
+                            </div>
+                            <div class="account-section">
+                                <button id="account-logout" class="account-link account-link-danger">Logout</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <section class="about-page-hero">
+        <h1>About Us</h1>
+        <p id="about-description">Loading About Us content...</p>
+    </section>
+
+    <main class="container about-page-wrap">
+        <div id="about-grid" class="about-grid"></div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Mountain Made 2.0</h3>
+                <p>Premium organic food products from mountain farms to your table.</p>
+            </div>
+
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="/products">Products</a></li>
+                    <li><a href="/#categories">Categories</a></li>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/register?type=wholesale">Wholesale</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3>Customer Service</h3>
+                <ul>
+                    <li><a href="/orders">My Orders</a></li>
+                    <li><a href="/cart">Shopping Cart</a></li>
+                    <li><a href="/contact">Contact Us</a></li>
+                    <li><a href="#">FAQs</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <ul>
+                    <li><i class="fas fa-envelope"></i> <span id="support-email-display">hello@mountain-made.com</span></li>
+                    <li><i class="fas fa-phone"></i> (555) 123-4567</li>
+                    <li><i class="fas fa-map-marker-alt"></i> India, Manipur</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 Mountain Made 2.0. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+    <script>
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderBlock(blockText) {
+            const normalized = String(blockText || '').replace(/\r\n/g, '\n').trim();
+            if (!normalized) return '';
+
+            const lines = normalized
+                .split('\n')
+                .map((line) => line.trim())
+                .filter(Boolean);
+
+            const allNumbered = lines.length > 0 && lines.every((line) => /^\d+[.)\-\s]/.test(line));
+            if (allNumbered) {
+                const items = lines
+                    .map((line) => line.replace(/^\d+[.)\-\s]*/, '').trim())
+                    .filter(Boolean)
+                    .map((line) => `<li>${escapeHtml(line)}</li>`)
+                    .join('');
+                return `<ol class="about-list">${items}</ol>`;
+            }
+
+            return lines.map((line) => `<p>${escapeHtml(line)}</p>`).join('');
+        }
+
+        async function loadAboutUsContent() {
+            const descEl = document.getElementById('about-description');
+            const gridEl = document.getElementById('about-grid');
+
+            try {
+                const response = await api.get('/products/settings');
+                const settings = response?.settings || {};
+
+                const description = (settings.about_us_description || '').trim();
+                const blocks = [
+                    settings.about_us_paragraph_1,
+                    settings.about_us_paragraph_2,
+                    settings.about_us_paragraph_3,
+                    settings.about_us_paragraph_4,
+                    settings.about_us_paragraph_5
+                ]
+                    .map((item) => String(item || '').trim())
+                    .filter(Boolean);
+
+                if (descEl) {
+                    descEl.textContent = description || 'Learn more about our mission, quality promise, and mountain-fresh sourcing approach.';
+                }
+
+                if (!gridEl) return;
+
+                if (blocks.length === 0) {
+                    gridEl.innerHTML = '<div class="about-empty">About content is not added yet. Please update it from Admin &gt; Site Settings.</div>';
+                    return;
+                }
+
+                gridEl.innerHTML = blocks
+                    .map((block) => `<article class="about-card">${renderBlock(block)}</article>`)
+                    .join('');
+            } catch (error) {
+                console.error('Failed to load About Us content:', error);
+                if (descEl) {
+                    descEl.textContent = 'Unable to load About Us content right now.';
+                }
+                if (gridEl) {
+                    gridEl.innerHTML = '<div class="about-empty">Please try again later.</div>';
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAboutUsContent();
+
+            const accountToggle = document.getElementById('account-toggle');
+            const accountDropdown = document.getElementById('account-dropdown');
+            if (accountToggle && accountDropdown) {
+                accountToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    accountDropdown.classList.toggle('hidden');
+                });
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.account-menu')) {
+                        accountDropdown.classList.add('hidden');
+                    }
+                });
+            }
+
+            const accountLogout = document.getElementById('account-logout');
+            if (accountLogout) {
+                accountLogout.addEventListener('click', async () => {
+                    if (await showConfirmDialog('Are you sure you want to logout?', { title: 'Logout', confirmText: 'Logout' })) {
+                        await auth.logout();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
