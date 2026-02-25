@@ -121,6 +121,8 @@ app.use((req, res, next) => {
     const publicOnlyPages = new Set([
       '/',
       '/index.html',
+      '/about',
+      '/about.html',
       '/products',
       '/products.html',
       '/orders',
@@ -485,6 +487,10 @@ app.get('/wholesale', (req, res) => {
 
 app.get('/contact', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'contact.html'));
+});
+
+app.get('/about', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'about.html'));
 });
 
 // Error handling middleware
