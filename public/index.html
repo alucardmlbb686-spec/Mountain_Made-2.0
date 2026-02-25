@@ -999,6 +999,7 @@
         let carouselProducts = [];
         let currentCarouselIndex = 0;
         let aboutUsHasContent = false;
+        let aboutSectionActivated = false;
 
         function wireCategoryCarouselNav() {
             const track = document.getElementById('categories-track');
@@ -1124,7 +1125,16 @@
             if (!aboutSection) return;
 
             const onAboutAnchor = (window.location.hash || '').toLowerCase() === '#about';
-            aboutSection.classList.toggle('hidden', !(aboutUsHasContent && onAboutAnchor));
+            aboutSection.classList.toggle('hidden', !(aboutUsHasContent && onAboutAnchor && aboutSectionActivated));
+        }
+
+        function wireAboutSectionActivation() {
+            document.querySelectorAll('a[href="#about"], a[href="/#about"]').forEach((link) => {
+                link.addEventListener('click', () => {
+                    aboutSectionActivated = true;
+                    setTimeout(syncAboutSectionVisibility, 0);
+                });
+            });
         }
 
         function renderHomepageAboutSection(settings) {
@@ -1667,11 +1677,14 @@
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
             wireCategoryCarouselNav();
+            wireAboutSectionActivation();
             loadCategories();
             loadHomepageSections();
             loadCarouselProducts();
 
             window.addEventListener('hashchange', syncAboutSectionVisibility);
+            const currentHash = (window.location.hash || '').toLowerCase();
+            aboutSectionActivated = currentHash === '#about' ? false : aboutSectionActivated;
             syncAboutSectionVisibility();
 
             // Wire carousel navigation
