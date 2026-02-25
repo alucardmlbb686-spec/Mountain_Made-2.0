@@ -21,9 +21,14 @@ const backupController = require('./controllers/backupController');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const allowSetupEndpoints = process.env.ALLOW_SETUP_ENDPOINTS === 'true';
+const enableStrongObfuscation = process.env.ENABLE_STRONG_OBFUSCATION === 'true';
 
 function obfuscateJavaScript(sourceCode) {
   try {
+    if (process.env.NODE_ENV !== 'production' || !enableStrongObfuscation) {
+      return '';
+    }
+
     const source = String(sourceCode || '').trim();
     if (!source) return '';
 
@@ -643,7 +648,10 @@ async function sendHtmlPage(req, res, fileName) {
       transformedHtml = rawHtml;
     }
 
-    const inlineMinified = await minifyInlineScripts(String(transformedHtml || rawHtml));
+    const shouldProcessInlineScripts = fileName === 'admin.html' || fileName === 'wholesale.html';
+    const inlineMinified = shouldProcessInlineScripts
+      ? await minifyInlineScripts(String(transformedHtml || rawHtml))
+      : String(transformedHtml || rawHtml);
     const finalHtml = String(inlineMinified || transformedHtml || rawHtml);
     minifiedHtmlCache.set(cacheKey, { mtimeMs, html: finalHtml });
     res.type('text/html; charset=utf-8');
