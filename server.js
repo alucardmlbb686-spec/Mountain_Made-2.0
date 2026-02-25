@@ -516,6 +516,48 @@ app.get('/api/setup-super-admin', async (req, res) => {
 
 // Serve HTML pages
 const minifiedHtmlCache = new Map();
+async function minifyInlineScripts(htmlText) {
+  const scriptRegex = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  let output = '';
+  let lastIndex = 0;
+  let match;
+
+  while ((match = scriptRegex.exec(htmlText)) !== null) {
+    const fullMatch = match[0];
+    const attributes = match[1] || '';
+    const scriptBody = match[2] || '';
+    const startIndex = match.index;
+
+    output += htmlText.slice(lastIndex, startIndex);
+    lastIndex = startIndex + fullMatch.length;
+
+    const hasSrc = /\bsrc\s*=\s*['"]/i.test(attributes);
+    const bodyTrimmed = scriptBody.trim();
+    if (hasSrc || !bodyTrimmed) {
+      output += fullMatch;
+      continue;
+    }
+
+    try {
+      const minifiedScript = await minify(scriptBody, {
+        compress: true,
+        mangle: true,
+        format: { comments: false }
+      });
+      const packedScript = String(minifiedScript?.code || '').trim();
+      output += packedScript
+        ? `<script${attributes}>${packedScript}</script>`
+        : fullMatch;
+    } catch (error) {
+      console.warn('Inline script minification skipped:', error?.message || error);
+      output += fullMatch;
+    }
+  }
+
+  output += htmlText.slice(lastIndex);
+  return output;
+}
+
 async function sendHtmlPage(req, res, fileName) {
   try {
     const filePath = path.join(__dirname, 'public', fileName);
@@ -538,18 +580,25 @@ async function sendHtmlPage(req, res, fileName) {
     }
 
     const rawHtml = await fs.promises.readFile(filePath, 'utf8');
-    const transformed = await minifyHtml(rawHtml, {
-      collapseWhitespace: true,
-      removeComments: true,
-      removeRedundantAttributes: true,
-      removeEmptyAttributes: true,
-      minifyCSS: true,
-      minifyJS: true,
-      keepClosingSlash: true,
-      caseSensitive: true
-    });
+    let transformedHtml = rawHtml;
+    try {
+      transformedHtml = await minifyHtml(rawHtml, {
+        collapseWhitespace: true,
+        removeComments: true,
+        removeRedundantAttributes: true,
+        removeEmptyAttributes: true,
+        minifyCSS: true,
+        minifyJS: false,
+        keepClosingSlash: true,
+        caseSensitive: true
+      });
+    } catch (htmlMinifyError) {
+      console.warn(`HTML minifier partial fallback for ${fileName}:`, htmlMinifyError?.message || htmlMinifyError);
+      transformedHtml = rawHtml;
+    }
 
-    const finalHtml = String(transformed || rawHtml);
+    const inlineMinified = await minifyInlineScripts(String(transformedHtml || rawHtml));
+    const finalHtml = String(inlineMinified || transformedHtml || rawHtml);
     minifiedHtmlCache.set(cacheKey, { mtimeMs, html: finalHtml });
     res.type('text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
