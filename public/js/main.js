@@ -1073,12 +1073,13 @@ function ensureProfileModal() {
     style.textContent = `
       .profile-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 2100; padding: 1rem; }
       .profile-modal.hidden { display: none; }
-      .profile-modal-dialog { background: var(--background, #fff); border-radius: 12px; max-width: 480px; width: 95%; padding: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.15); border: 1px solid var(--border, #e5e7eb); }
+      .profile-modal-dialog { background: var(--bg-primary, #fff); color: var(--text-primary, #111827); border-radius: 12px; max-width: 480px; width: 95%; padding: 1.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.15); border: 1px solid var(--border-primary, #e5e7eb); }
+      .profile-modal-dialog h3 { color: var(--text-primary, #111827); }
       .profile-modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
-      .profile-avatar-preview { width: 80px; height: 80px; border-radius: 50%; background: #f1f5f9; border: 2px dashed var(--border, #cbd5e1); display: grid; place-items: center; color: var(--text-light, #64748b); font-weight: 700; overflow: hidden; }
+      .profile-avatar-preview { width: 80px; height: 80px; border-radius: 50%; background: var(--bg-secondary, #f1f5f9); border: 2px dashed var(--border-primary, #cbd5e1); display: grid; place-items: center; color: var(--text-secondary, #64748b); font-weight: 700; overflow: hidden; }
       .profile-avatar-preview.has-photo { border-style: solid; background-size: cover; background-position: center; color: transparent; }
       .profile-avatar-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-      .profile-modal-sub { color: var(--text-light, #6b7280); margin-top: 0; margin-bottom: 1rem; }
+      .profile-modal-sub { color: var(--text-secondary, #6b7280); margin-top: 0; margin-bottom: 1rem; }
     `;
     document.head.appendChild(style);
   }
