@@ -1413,6 +1413,10 @@ small {
 .flex { display: flex; }
 .inline-flex { display: inline-flex; }
 
+/* Prevent auth UI blink before auth check */
+#auth-buttons { visibility: hidden; }
+body.auth-ready #auth-buttons { visibility: visible; }
+
 /* Flex */
 .flex-row { flex-direction: row; }
 .flex-column { flex-direction: column; }

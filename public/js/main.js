@@ -384,6 +384,8 @@ const auth = {
     const userMenu = document.getElementById('user-menu');
     const adminLink = document.getElementById('admin-link');
 
+    document.body.classList.add('auth-ready');
+
     if (!authButtons || !userMenu) return;
 
     if (this.isAuthenticated()) {
