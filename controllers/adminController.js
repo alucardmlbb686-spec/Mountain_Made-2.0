@@ -1661,8 +1661,8 @@ exports.updateSiteSettings = async (req, res) => {
 
     if (gpay_qr_image_url !== undefined) {
       const qrImageUrl = String(gpay_qr_image_url || '').trim();
-      if (qrImageUrl && !/^https?:\/\//i.test(qrImageUrl)) {
-        return res.status(400).json({ error: 'GPay QR image URL must start with http:// or https://.' });
+      if (qrImageUrl && !/^(https?:\/\/|\/uploads\/)/i.test(qrImageUrl)) {
+        return res.status(400).json({ error: 'GPay QR image must be an uploaded image path or a valid http/https URL.' });
       }
       updates.push({ key: 'gpay_qr_image_url', value: qrImageUrl });
     }

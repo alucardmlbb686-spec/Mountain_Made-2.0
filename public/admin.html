@@ -2214,10 +2214,14 @@
                         </div>
 
                         <div class="form-group" style="margin-bottom: 1rem; max-width: 640px;">
-                            <label class="form-label" for="gpay-qr-image-url">Fixed QR Image URL</label>
-                            <input type="url" id="gpay-qr-image-url" class="form-input" placeholder="https://.../gpay-qr.png">
+                            <label class="form-label" for="gpay-qr-image-file">GPay QR Code Image</label>
+                            <input type="file" id="gpay-qr-image-file" class="form-input" accept=".jpg,.jpeg,.png,image/*" onchange="handleGpayQrFileSelection(event)">
+                            <input type="hidden" id="gpay-qr-image-url">
+                            <div id="gpay-qr-preview-wrap" style="margin-top: 0.75rem; display: none;">
+                                <img id="gpay-qr-image-preview" alt="GPay QR Preview" style="max-width: 240px; width: 100%; border: 1px solid var(--border-primary); border-radius: 8px; background: #fff; object-fit: contain;">
+                            </div>
                             <small style="color: var(--text-muted); display:block; margin-top: 0.35rem;">
-                                Paste a public image URL for your fixed business QR code.
+                                Upload your business QR image here. It will be shown to customers during checkout.
                             </small>
                         </div>
 
@@ -5656,6 +5660,7 @@
                 if (gpayPhoneEl) gpayPhoneEl.value = settings.gpay_phone_number || '';
                 if (gpayBankEl) gpayBankEl.value = settings.gpay_bank_name || '';
                 if (gpayQrEl) gpayQrEl.value = settings.gpay_qr_image_url || '';
+                updateGpayQrImagePreview(settings.gpay_qr_image_url || '');
 
                 await loadAdminAccountSettings();
             } catch (error) {
@@ -6133,6 +6138,37 @@
             }
         };
 
+        window.handleGpayQrFileSelection = function(event) {
+            try {
+                const file = event?.target?.files?.[0];
+                if (!file) {
+                    const currentUrl = (document.getElementById('gpay-qr-image-url')?.value || '').trim();
+                    updateGpayQrImagePreview(currentUrl);
+                    return;
+                }
+                const previewUrl = URL.createObjectURL(file);
+                updateGpayQrImagePreview(previewUrl);
+            } catch (error) {
+                console.error('GPay QR preview error:', error);
+            }
+        };
+
+        function updateGpayQrImagePreview(url) {
+            const previewWrap = document.getElementById('gpay-qr-preview-wrap');
+            const previewImg = document.getElementById('gpay-qr-image-preview');
+            if (!previewWrap || !previewImg) return;
+
+            const finalUrl = String(url || '').trim();
+            if (!finalUrl) {
+                previewImg.removeAttribute('src');
+                previewWrap.style.display = 'none';
+                return;
+            }
+
+            previewImg.src = finalUrl;
+            previewWrap.style.display = 'block';
+        }
+
         window.saveGpayIntegrationSettings = async function() {
             try {
                 const gpay_enabled = !!document.getElementById('gpay-enabled')?.checked;
@@ -6140,7 +6176,21 @@
                 const gpay_upi_id = (document.getElementById('gpay-upi-id')?.value || '').trim();
                 const gpay_phone_number = (document.getElementById('gpay-phone-number')?.value || '').trim();
                 const gpay_bank_name = (document.getElementById('gpay-bank-name')?.value || '').trim();
-                const gpay_qr_image_url = (document.getElementById('gpay-qr-image-url')?.value || '').trim();
+                const gpayQrUrlEl = document.getElementById('gpay-qr-image-url');
+                const gpayQrFileEl = document.getElementById('gpay-qr-image-file');
+                const selectedQrFile = gpayQrFileEl?.files?.[0] || null;
+                let gpay_qr_image_url = (gpayQrUrlEl?.value || '').trim();
+
+                if (selectedQrFile) {
+                    showAlert('Uploading GPay QR image...', 'info');
+                    const uploadedQrUrl = await uploadProductImage(selectedQrFile);
+                    if (!uploadedQrUrl) {
+                        throw new Error('Failed to upload GPay QR image');
+                    }
+                    gpay_qr_image_url = uploadedQrUrl;
+                    if (gpayQrUrlEl) gpayQrUrlEl.value = uploadedQrUrl;
+                    updateGpayQrImagePreview(uploadedQrUrl);
+                }
 
                 showAlert('Saving GPay integration settings...', 'info');
                 const response = await api.post('/admin/settings', {
