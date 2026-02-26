@@ -1,4 +1,4 @@
-// Mountain Made 2.0 - Main JavaScript Utilities
+// Main JavaScript Utilities
 
 const APK_API_ORIGIN = 'https://mountain-made.onrender.com';
 const IS_NATIVE_CAPACITOR = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
@@ -1571,11 +1571,9 @@ function applySiteLogo(logoUrl, logoSizeValue) {
   navbarBrands.forEach(brand => {
     const logoHtml = normalizedLogo
       ? `<img src="${normalizedLogo}" alt="Site Logo" style="max-height: ${logoHeight}px; max-width: ${logoWidth}px; object-fit: contain;" decoding="async">`
-      : `<span class="logo-icon">🏔️</span>`;
+      : '';
 
-    const brandTextHtml = isAdminRoute
-      ? `<span style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); line-height: 1;">Mountain Made 2.0</span>`
-      : `<span style="font-size: clamp(1.1rem, 3.5vw, 1.5rem); font-weight: 700; color: var(--text-primary); line-height: 1;">Mountain Made 2.0</span>`;
+    const brandTextHtml = '';
 
     brand.innerHTML = `
       <span class="navbar-brand-main" style="display:inline-flex; align-items:center; gap:0.15rem; white-space:nowrap;">
