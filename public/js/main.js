@@ -1558,7 +1558,6 @@ function preloadLogoImage(logoUrl) {
 
 function applySiteLogo(logoUrl, logoSizeValue) {
   const normalizedLogo = (logoUrl && logoUrl !== 'default') ? logoUrl : null;
-  const brandTextImagePath = '/images/brand-text.png';
   const isAdminRoute = window.location.pathname.startsWith('/admin');
   const defaultLogoSize = isAdminRoute ? 28 : 40;
   const logoHeight = normalizeLogoSize(logoSizeValue, defaultLogoSize);
@@ -1574,14 +1573,14 @@ function applySiteLogo(logoUrl, logoSizeValue) {
       ? `<img src="${normalizedLogo}" alt="Site Logo" style="max-height: ${logoHeight}px; max-width: ${logoWidth}px; object-fit: contain;" decoding="async">`
       : `<span class="logo-icon">🏔️</span>`;
 
-    const textImageHtml = isAdminRoute
-      ? `<img src="${brandTextImagePath}" alt="Brand Text" style="height: 28px; max-width: 210px; width: auto; object-fit: contain; display: block;" onerror="this.style.display='none';">`
-      : `<img src="${brandTextImagePath}" alt="Brand Text" style="height: clamp(26px, 5.5vw, 36px); max-width: min(64vw, 340px); width: auto; object-fit: contain; display: block;" onerror="this.style.display='none';">`;
+    const brandTextHtml = isAdminRoute
+      ? `<span style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); line-height: 1;">Mountain Made 2.0</span>`
+      : `<span style="font-size: clamp(1.1rem, 3.5vw, 1.5rem); font-weight: 700; color: var(--text-primary); line-height: 1;">Mountain Made 2.0</span>`;
 
     brand.innerHTML = `
       <span class="navbar-brand-main" style="display:inline-flex; align-items:center; gap:0.15rem; white-space:nowrap;">
         ${logoHtml}
-        ${textImageHtml}
+        ${brandTextHtml}
       </span>
     `;
   });
