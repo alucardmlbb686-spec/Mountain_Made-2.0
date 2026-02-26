@@ -1479,6 +1479,7 @@ exports.updateSiteSettings = async (req, res) => {
 
     const {
       logo_url,
+      logo_size,
       homepage_hero_title,
       homepage_hero_subtitle,
       homepage_hero_image_url,
@@ -1524,6 +1525,13 @@ exports.updateSiteSettings = async (req, res) => {
 
     if (logo_url !== undefined) {
       updates.push({ key: 'logo_url', value: logo_url });
+    }
+    if (logo_size !== undefined) {
+      const parsedLogoSize = parseInt(logo_size, 10);
+      if (Number.isNaN(parsedLogoSize) || parsedLogoSize < 20 || parsedLogoSize > 80) {
+        return res.status(400).json({ error: 'Logo size must be a number between 20 and 80.' });
+      }
+      updates.push({ key: 'logo_size', value: String(parsedLogoSize) });
     }
     if (homepage_hero_title !== undefined) {
       updates.push({ key: 'homepage_hero_title', value: homepage_hero_title });

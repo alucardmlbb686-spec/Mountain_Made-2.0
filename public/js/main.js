@@ -1534,6 +1534,15 @@ if (document.readyState === 'loading') {
 
 // Load and apply custom logo
 const SITE_LOGO_CACHE_KEY = 'site_logo_url_cache';
+const SITE_LOGO_SIZE_CACHE_KEY = 'site_logo_size_cache';
+
+function normalizeLogoSize(value, defaultSize) {
+  const parsed = parseInt(value, 10);
+  if (Number.isNaN(parsed)) {
+    return defaultSize;
+  }
+  return Math.max(20, Math.min(parsed, 80));
+}
 
 function preloadLogoImage(logoUrl) {
   if (!logoUrl) return;
@@ -1547,10 +1556,13 @@ function preloadLogoImage(logoUrl) {
   document.head.appendChild(link);
 }
 
-function applySiteLogo(logoUrl) {
+function applySiteLogo(logoUrl, logoSizeValue) {
   const normalizedLogo = (logoUrl && logoUrl !== 'default') ? logoUrl : null;
   const brandTextImagePath = '/images/brand-text.png';
   const isAdminRoute = window.location.pathname.startsWith('/admin');
+  const defaultLogoSize = isAdminRoute ? 28 : 40;
+  const logoHeight = normalizeLogoSize(logoSizeValue, defaultLogoSize);
+  const logoWidth = Math.round(logoHeight * 4);
 
   if (normalizedLogo) {
     preloadLogoImage(normalizedLogo);
@@ -1559,7 +1571,7 @@ function applySiteLogo(logoUrl) {
   const navbarBrands = document.querySelectorAll('.navbar-brand');
   navbarBrands.forEach(brand => {
     const logoHtml = normalizedLogo
-      ? `<img src="${normalizedLogo}" alt="Site Logo" style="max-height: ${isAdminRoute ? '28px' : '40px'}; max-width: ${isAdminRoute ? '110px' : '160px'}; object-fit: contain;" decoding="async">`
+      ? `<img src="${normalizedLogo}" alt="Site Logo" style="max-height: ${logoHeight}px; max-width: ${logoWidth}px; object-fit: contain;" decoding="async">`
       : `<span class="logo-icon">🏔️</span>`;
 
     const textImageHtml = isAdminRoute
@@ -1582,8 +1594,9 @@ function applySiteLogo(logoUrl) {
 async function loadSiteLogo() {
   try {
     const cachedLogo = localStorage.getItem(SITE_LOGO_CACHE_KEY);
+    const cachedLogoSize = localStorage.getItem(SITE_LOGO_SIZE_CACHE_KEY);
     if (cachedLogo) {
-      applySiteLogo(cachedLogo);
+      applySiteLogo(cachedLogo, cachedLogoSize);
     }
 
     const response = await fetch(`${API_BASE}/products/settings`, {
@@ -1595,6 +1608,7 @@ async function loadSiteLogo() {
       const data = await response.json();
       const settings = data.settings || {};
       const logoUrl = settings.logo_url && settings.logo_url !== 'default' ? settings.logo_url : '';
+      const normalizedLogoSize = normalizeLogoSize(settings.logo_size, 40);
 
       if (logoUrl) {
         localStorage.setItem(SITE_LOGO_CACHE_KEY, logoUrl);
@@ -1602,7 +1616,9 @@ async function loadSiteLogo() {
         localStorage.removeItem(SITE_LOGO_CACHE_KEY);
       }
 
-      applySiteLogo(logoUrl);
+      localStorage.setItem(SITE_LOGO_SIZE_CACHE_KEY, String(normalizedLogoSize));
+
+      applySiteLogo(logoUrl, normalizedLogoSize);
     }
   } catch (error) {
     // Silently fail - keep default logo

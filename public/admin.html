@@ -1975,6 +1975,15 @@
                                 <label class="form-label">Upload Logo (JPG or PNG)</label>
                                 <input type="file" id="logo-upload" class="form-input" accept=".jpg,.jpeg,.png" onchange="previewLogo(event)">
                                 <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">Recommended size: 200x50px or similar aspect ratio. Max 2MB.</small>
+
+                                <div class="form-group" style="margin-top: 1rem; max-width: 320px;">
+                                    <label class="form-label" for="logo-size-input">Logo Size (height in px)</label>
+                                    <input type="number" id="logo-size-input" class="form-input" min="20" max="80" step="1" value="40">
+                                    <small style="color: var(--text-muted); display: block; margin-top: 0.35rem;">Allowed range: 20–80px. This controls navbar logo size across the site.</small>
+                                    <button class="btn btn-secondary" onclick="saveLogoSizeSettings()" style="margin-top: 0.75rem;">
+                                        <i class="fas fa-text-height"></i> Save Logo Size
+                                    </button>
+                                </div>
                                 
                                 <button class="btn btn-primary" onclick="uploadLogo()" style="margin-top: 1rem;">
                                     <i class="fas fa-upload"></i> Upload & Save Logo
@@ -5558,8 +5567,17 @@
                 
                 // Display current logo
                 const currentLogoImg = document.getElementById('current-logo-img');
+                const logoSizeInput = document.getElementById('logo-size-input');
+                const rawLogoSize = parseInt(settings.logo_size, 10);
+                const appliedLogoSize = Number.isNaN(rawLogoSize) ? 40 : Math.max(20, Math.min(rawLogoSize, 80));
+
+                if (logoSizeInput) {
+                    logoSizeInput.value = appliedLogoSize;
+                }
                 if (settings.logo_url && settings.logo_url !== 'default') {
                     currentLogoImg.src = settings.logo_url;
+                    currentLogoImg.style.maxHeight = `${appliedLogoSize}px`;
+                    currentLogoImg.style.maxWidth = `${appliedLogoSize * 4}px`;
                     currentLogoImg.style.display = 'block';
                 } else {
                     currentLogoImg.src = '';
@@ -5812,6 +5830,34 @@
             } catch (error) {
                 console.error('Upload logo error:', error);
                 showAlert(error.message || 'Failed to upload logo', 'error');
+            }
+        };
+
+        window.saveLogoSizeSettings = async function() {
+            try {
+                const sizeInput = document.getElementById('logo-size-input');
+                const parsedSize = parseInt(sizeInput?.value, 10);
+                const logo_size = Number.isNaN(parsedSize) ? 40 : Math.max(20, Math.min(parsedSize, 80));
+
+                if (sizeInput) {
+                    sizeInput.value = logo_size;
+                }
+
+                showAlert('Saving logo size...', 'info');
+                const response = await api.post('/admin/settings', { logo_size });
+
+                if (response && (response.success || response.message)) {
+                    showAlert('Logo size saved successfully!', 'success');
+                    await loadSiteSettings();
+                    if (window.loadSiteLogo) {
+                        await window.loadSiteLogo();
+                    }
+                } else {
+                    throw new Error(response?.error || 'Failed to save logo size');
+                }
+            } catch (error) {
+                console.error('Save logo size error:', error);
+                showAlert(error.message || 'Failed to save logo size', 'error');
             }
         };
 
