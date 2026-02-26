@@ -648,7 +648,8 @@ async function sendHtmlPage(req, res, fileName) {
       transformedHtml = rawHtml;
     }
 
-    const shouldProcessInlineScripts = fileName === 'admin.html' || fileName === 'wholesale.html';
+    const shouldProcessInlineScripts =
+      enableStrongObfuscation && (fileName === 'admin.html' || fileName === 'wholesale.html');
     const inlineMinified = shouldProcessInlineScripts
       ? await minifyInlineScripts(String(transformedHtml || rawHtml))
       : String(transformedHtml || rawHtml);
