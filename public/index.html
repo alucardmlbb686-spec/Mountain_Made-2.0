@@ -483,7 +483,8 @@
             transform-style: preserve-3d;
         }
 
-        .flip-card:hover .flip-card-inner {
+        .flip-card:hover .flip-card-inner,
+        .flip-card.auto-flipped .flip-card-inner {
             transform: rotateY(180deg);
         }
 
@@ -1396,6 +1397,34 @@
             'linear-gradient(90deg,#c62828,#b71c1c)'
         ];
 
+        let flipCardTimers = [];
+
+        function startFlipCardAutoFlip() {
+            // Clear any existing timers
+            flipCardTimers.forEach(t => t.type === 'interval' ? clearInterval(t.id) : clearTimeout(t.id));
+            flipCardTimers = [];
+
+            const cards = document.querySelectorAll('.flip-card');
+            if (!cards.length) return;
+
+            cards.forEach((card, idx) => {
+                // Stagger start so cards cascade (0ms, 400ms, 800ms, 1200ms, 1600ms)
+                const staggerDelay = idx * 400;
+
+                const tid = setTimeout(() => {
+                    let flipped = false;
+                    // Toggle flip every 2 seconds
+                    const iv = setInterval(() => {
+                        flipped = !flipped;
+                        card.classList.toggle('auto-flipped', flipped);
+                    }, 2000);
+                    flipCardTimers.push({ type: 'interval', id: iv });
+                }, staggerDelay);
+
+                flipCardTimers.push({ type: 'timeout', id: tid });
+            });
+        }
+
         function initFlipCards(settings) {
             const section = document.getElementById('flip-cards-section');
             const grid   = document.getElementById('flip-cards-grid');
@@ -1418,7 +1447,7 @@
                 return;
             }
 
-            grid.innerHTML = active.map((c, idx) => {
+            grid.innerHTML = active.map((c) => {
                 const ctaColor = FLIP_CTA_COLORS[(c.slot - 1) % FLIP_CTA_COLORS.length];
                 const labelText = c.label || 'Shop Now';
                 const backLabel = c.title || 'View Details';
@@ -1435,7 +1464,7 @@
 
                 return `
                 <div class="flip-card-wrap" data-slot="${c.slot}">
-                    <div class="flip-card" aria-label="${labelText} — hover to flip">
+                    <div class="flip-card" aria-label="${labelText} — auto-flipping card">
                         <div class="flip-card-inner">
                             <!-- Front -->
                             <div class="flip-card-front">
@@ -1456,6 +1485,8 @@
             }).join('');
 
             section.style.display = '';
+            // Start auto-flip after a short delay so images can load
+            setTimeout(startFlipCardAutoFlip, 800);
         }
 
         // Load dynamic homepage sections with products
