@@ -901,6 +901,21 @@
                 );
             }
 
+            /* Mobile-only dedicated bg layer — sits above slides, hides dots */
+            #mobile-hero-bg-wrap {
+                display: none;
+                position: absolute;
+                inset: 0;
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+                z-index: 2;
+            }
+
+            #mobile-hero-bg-wrap.active {
+                display: block;
+            }
+
             /* Clean white search input card */
             .search-input-wrapper {
                 background: #fff;
@@ -1174,6 +1189,8 @@
     <section class="search-section" id="hero-slider-section">
         <!-- 5-image background slider -->
         <div class="hero-slides-container" id="hero-slides-container">
+            <!-- Mobile-only dedicated background (overrides slider on small screens) -->
+            <div id="mobile-hero-bg-wrap"></div>
             <div class="hero-slide" id="hero-slide-1"></div>
             <div class="hero-slide" id="hero-slide-2"></div>
             <div class="hero-slide" id="hero-slide-3"></div>
@@ -1461,6 +1478,19 @@
                     const next = (heroSliderState.current + 1) % heroSliderState.total;
                     goToSlide(next);
                 }, 5000);
+            }
+
+            // Apply dedicated mobile background if set (overrides slider on mobile)
+            const mobileBgWrap = document.getElementById('mobile-hero-bg-wrap');
+            const mobileBgUrl = (settings.mobile_hero_bg || '').trim();
+            if (mobileBgWrap) {
+                if (mobileBgUrl) {
+                    mobileBgWrap.style.backgroundImage = `url('${mobileBgUrl}')`;
+                    mobileBgWrap.classList.add('active');
+                } else {
+                    mobileBgWrap.style.backgroundImage = '';
+                    mobileBgWrap.classList.remove('active');
+                }
             }
         }
 

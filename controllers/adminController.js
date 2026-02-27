@@ -1714,6 +1714,15 @@ exports.updateSiteSettings = async (req, res) => {
       }
     }
 
+    // Mobile hero background image
+    if (req.body.mobile_hero_bg !== undefined) {
+      const mbUrl = String(req.body.mobile_hero_bg || '').trim();
+      if (mbUrl && !/^(https?:\/\/|\/uploads\/)/i.test(mbUrl)) {
+        return res.status(400).json({ error: 'mobile_hero_bg must be an uploaded image path or a valid URL.' });
+      }
+      updates.push({ key: 'mobile_hero_bg', value: mbUrl });
+    }
+
     if (updates.length === 0) {
       // If nothing was provided, respond gracefully instead of erroring
       return res.json({ success: true, message: 'No changes to update.' });

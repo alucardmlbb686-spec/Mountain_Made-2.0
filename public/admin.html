@@ -6034,6 +6034,8 @@
 
                 // Populate slider images
                 loadSliderSettingsUI(settings);
+                // Populate mobile hero background
+                loadMobileBgUI(settings);
                 // Populate flip card images + texts
                 loadFlipCardSettingsUI(settings);
 
@@ -6820,6 +6822,90 @@
                 showAlert(err.message || 'Failed to save texts', 'error');
             }
         };
+
+        /* ── Mobile Hero Background Admin Functions ── */
+        window.handleMobileBgChange = function() {
+            const file = document.getElementById('mobile-hero-bg-file')?.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById('mobile-hero-bg-preview');
+                const placeholder = document.getElementById('mobile-hero-bg-placeholder');
+                if (preview) { preview.src = e.target.result; preview.style.display = 'block'; }
+                if (placeholder) placeholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.saveMobileBg = async function() {
+            try {
+                const fileInput = document.getElementById('mobile-hero-bg-file');
+                const urlInput  = document.getElementById('mobile-hero-bg-url');
+                const file = fileInput?.files?.[0];
+                let imageUrl = (urlInput?.value || '').trim();
+
+                if (file) {
+                    showAlert('Uploading mobile background...', 'info');
+                    const uploaded = await uploadProductImage(file);
+                    if (!uploaded) throw new Error('Upload failed');
+                    imageUrl = uploaded;
+                }
+
+                if (!imageUrl) { showAlert('No image selected', 'error'); return; }
+
+                showAlert('Saving...', 'info');
+                const resp = await api.post('/admin/settings', { mobile_hero_bg: imageUrl });
+                if (resp && (resp.success || resp.message)) {
+                    if (urlInput) urlInput.value = imageUrl;
+                    const preview = document.getElementById('mobile-hero-bg-preview');
+                    const placeholder = document.getElementById('mobile-hero-bg-placeholder');
+                    if (preview) { preview.src = imageUrl; preview.style.display = 'block'; }
+                    if (placeholder) placeholder.style.display = 'none';
+                    if (fileInput) fileInput.value = '';
+                    showAlert('Mobile background saved!', 'success');
+                } else {
+                    throw new Error(resp?.error || 'Save failed');
+                }
+            } catch (err) {
+                showAlert(err.message || 'Failed to save', 'error');
+            }
+        };
+
+        window.clearMobileBg = async function() {
+            try {
+                await api.post('/admin/settings', { mobile_hero_bg: '' });
+                const urlInput  = document.getElementById('mobile-hero-bg-url');
+                const fileInput = document.getElementById('mobile-hero-bg-file');
+                const preview   = document.getElementById('mobile-hero-bg-preview');
+                const placeholder = document.getElementById('mobile-hero-bg-placeholder');
+                if (urlInput) urlInput.value = '';
+                if (fileInput) fileInput.value = '';
+                if (preview) { preview.src = ''; preview.style.display = 'none'; }
+                if (placeholder) placeholder.style.display = '';
+                showAlert('Mobile background cleared', 'success');
+            } catch (err) {
+                showAlert('Failed to clear', 'error');
+            }
+        };
+
+        function loadMobileBgUI(settings) {
+            const url = (settings.mobile_hero_bg || '').trim();
+            const urlInput  = document.getElementById('mobile-hero-bg-url');
+            const preview   = document.getElementById('mobile-hero-bg-preview');
+            const placeholder = document.getElementById('mobile-hero-bg-placeholder');
+            if (urlInput) urlInput.value = url;
+            if (preview && placeholder) {
+                if (url) {
+                    preview.src = url;
+                    preview.style.display = 'block';
+                    placeholder.style.display = 'none';
+                } else {
+                    preview.src = '';
+                    preview.style.display = 'none';
+                    placeholder.style.display = '';
+                }
+            }
+        }
 
         function loadFlipCardSettingsUI(settings) {
             for (let i = 1; i <= 5; i++) {
