@@ -825,31 +825,30 @@
                 position: relative;
             }
 
-            /* 1. Search bar sits at the very top — clean white */
+            /* 1. Search bar at very top — clean white, compact */
             .search-container {
                 order: 1;
                 position: static;
                 z-index: 3;
                 background: #fff;
-                padding: 0.75rem 1rem 0.65rem;
+                padding: 0.75rem 1rem 0.7rem;
                 width: 100%;
                 max-width: 100%;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.09);
             }
 
-            /* Heading is inside .search-container in HTML but we lift it out
-               visually by making it absolute relative to .search-section,
-               positioned on top of the hero image below the search bar */
+            /* Pull heading OUT of search-container flow → float over image.
+               search-container height ≈ 12px pad + 52px input + 52px button + 10px pad = 126px
+               Add ~20px into the image = top: 146px */
             #search-hero-heading {
                 position: absolute;
-                /* ~68px = approx height of search bar area */
-                top: 68px;
+                top: 146px;
                 left: 0;
                 right: 0;
                 z-index: 5;
                 text-align: center;
-                padding: 1.2rem 1rem 0;
-                min-height: unset;
+                padding: 0.5rem 1rem 0;
+                min-height: 0;
                 margin: 0;
                 pointer-events: none;
             }
@@ -858,12 +857,17 @@
                 display: none;
             }
 
-            /* Keep invisible heading from reserving space */
+            /* Don't let .search-heading min-height reserve space */
             .search-heading {
                 min-height: 0 !important;
             }
 
-            /* 2. Hero image block below search bar */
+            /* Hide trust strip to keep search bar compact */
+            .home-trust-strip {
+                display: none;
+            }
+
+            /* 2. Hero image block below the search bar */
             .hero-slides-container {
                 order: 2;
                 position: relative;
@@ -887,13 +891,13 @@
                 z-index: 2;
             }
 
-            /* Darker overlay gradient so heading text is readable on image */
+            /* Stronger dark gradient at top so heading text stays readable */
             .hero-slide::after {
                 background: linear-gradient(
                     180deg,
-                    rgba(5,20,10,0.70) 0%,
-                    rgba(5,20,10,0.45) 60%,
-                    rgba(5,20,10,0.20) 100%
+                    rgba(5,20,10,0.78) 0%,
+                    rgba(5,20,10,0.48) 55%,
+                    rgba(5,20,10,0.15) 100%
                 );
             }
 
@@ -902,12 +906,7 @@
                 background: #fff;
                 border-radius: 12px;
                 border: 1.5px solid #e0e0e0;
-                box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-            }
-
-            /* Trust strip stays below search */
-            .home-trust-strip {
-                margin-top: 0.5rem;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.08);
             }
         }
 
