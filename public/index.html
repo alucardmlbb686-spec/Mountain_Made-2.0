@@ -147,13 +147,44 @@
             padding-bottom: 0;
         }
 
+        /* Zero container h-padding so banner can touch both edges */
+        #homepage-sections-container > section.container {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        /* Restore inner padding on text and grid */
+        #homepage-sections-container .homepage-section-heading-text {
+            padding-left: var(--space-6);
+            padding-right: var(--space-6);
+        }
+
+        #homepage-sections-container .grid {
+            padding-left: var(--space-6);
+            padding-right: var(--space-6);
+        }
+
+        /* Restore at each breakpoint to match container */
+        @media (max-width: 768px) {
+            #homepage-sections-container .homepage-section-heading-text,
+            #homepage-sections-container .grid {
+                padding-left: var(--space-4);
+                padding-right: var(--space-4);
+            }
+        }
+
+        @media (max-width: 575px) {
+            #homepage-sections-container .homepage-section-heading-text,
+            #homepage-sections-container .grid {
+                padding-left: var(--space-2);
+                padding-right: var(--space-2);
+            }
+        }
+
         .homepage-section-heading-image-box {
-            position: relative;
-            left: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            width: 100vw;
-            max-width: 100vw;
+            width: 100%;
+            max-width: 100%;
+            margin: 0 0 0.75rem 0;
             aspect-ratio: 20 / 8;
             max-height: clamp(140px, 22vw, 300px);
             border-radius: 0;
@@ -164,7 +195,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 0.75rem;
         }
 
         .homepage-section-heading-image-box.hidden {
@@ -769,14 +799,6 @@
             .homepage-section-heading-image-box {
                 aspect-ratio: 20 / 8;
                 max-height: clamp(120px, 40vw, 220px);
-                width: 100vw;
-                max-width: 100vw;
-                left: 50%;
-                margin-left: -50vw;
-                margin-right: -50vw;
-                border-radius: 0;
-                border: none;
-                box-shadow: none;
             }
 
             .search-input-wrapper {
