@@ -148,19 +148,23 @@
         }
 
         .homepage-section-heading-image-box {
-            width: 100%;
-            max-width: 100%;
-            margin: 0 auto 0.75rem auto;
+            position: relative;
+            left: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+            width: 100vw;
+            max-width: 100vw;
             aspect-ratio: 20 / 8;
             max-height: clamp(140px, 22vw, 300px);
-            border-radius: var(--radius-md);
+            border-radius: 0;
             overflow: hidden;
-            border: 1px solid var(--border-primary);
+            border: none;
             background: var(--bg-secondary);
-            box-shadow: var(--shadow-sm);
+            box-shadow: none;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin-bottom: 0.75rem;
         }
 
         .homepage-section-heading-image-box.hidden {
@@ -765,6 +769,14 @@
             .homepage-section-heading-image-box {
                 aspect-ratio: 20 / 8;
                 max-height: clamp(120px, 40vw, 220px);
+                width: 100vw;
+                max-width: 100vw;
+                left: 50%;
+                margin-left: -50vw;
+                margin-right: -50vw;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
             }
 
             .search-input-wrapper {
