@@ -265,3 +265,161 @@
    the site only goes dark when the in-site theme toggle
    adds the .dark-mode class on <body>. This keeps colors
    consistent across different browsers. */
+
+/* ============================================================================
+   AMAZON-STYLE MOBILE ECOMMERCE UX ENHANCEMENTS
+   ============================================================================ */
+
+@media (max-width: 768px) {
+
+  /* ── Larger touch targets for all interactive elements ── */
+  .btn, button, [role="button"],
+  .carousel-nav, .hero-dot,
+  .add-cart-cta, .product-action-row .btn {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  .hero-dot {
+    width: 10px;
+    height: 10px;
+    min-width: 10px;
+    min-height: 10px;
+    padding: 6px;
+    box-sizing: content-box;
+  }
+
+  /* ── Product card – elevated shadow + rounded corners ── */
+  .product-card {
+    border-radius: 14px !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.07) !important;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+
+  .product-card:active {
+    transform: scale(0.985);
+    box-shadow: 0 1px 6px rgba(0,0,0,0.10) !important;
+  }
+
+  /* ── Smooth scroll-snap for product grids ── */
+  .grid.grid-4,
+  .grid.grid-3,
+  .grid.grid-2 {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.75rem !important;
+    padding: 0.5rem 1rem 1rem !important;
+    scrollbar-width: none;
+  }
+
+  .grid.grid-4::-webkit-scrollbar,
+  .grid.grid-3::-webkit-scrollbar,
+  .grid.grid-2::-webkit-scrollbar {
+    display: none;
+  }
+
+  .grid.grid-4 > .product-card,
+  .grid.grid-3 > .product-card,
+  .grid.grid-2 > .product-card {
+    flex: 0 0 72vw !important;
+    max-width: 72vw !important;
+    scroll-snap-align: start;
+  }
+
+  /* ── Section headings – Amazon-style compact spacing ── */
+  .section-title {
+    padding: 1rem 1rem 0.5rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  .section-title h2 {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.01em;
+    margin: 0 !important;
+  }
+
+  #homepage-sections-container > section.container {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* ── Carousel items – snap + proper sizing ── */
+  .carousel-track {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+  }
+
+  .carousel-item {
+    scroll-snap-align: start;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.10) !important;
+  }
+
+  /* ── Sticky bottom "Add to Cart" bar – shown on product detail ── */
+  .sticky-cart-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 900;
+    background: var(--bg-primary, #fff);
+    border-top: 1px solid var(--border-primary, #e5e7eb);
+    padding: 0.65rem 1rem env(safe-area-inset-bottom, 0.65rem);
+    display: flex;
+    gap: 0.65rem;
+    align-items: center;
+    box-shadow: 0 -4px 18px rgba(0,0,0,0.11);
+    transition: transform 0.25s ease;
+  }
+
+  .sticky-cart-bar.hidden {
+    transform: translateY(110%);
+  }
+
+  .sticky-cart-bar .btn {
+    flex: 1;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    padding: 0.85rem 1rem !important;
+    border-radius: 10px !important;
+    min-height: 52px;
+  }
+
+  /* Reserve space at bottom so content isn't hidden behind sticky bar */
+  body.has-sticky-cart-bar {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ── Flip cards – tighter spacing on mobile ── */
+  .flip-cards-section {
+    padding: 1.25rem 0 1.5rem !important;
+  }
+
+  .flip-cards-container {
+    padding: 0 0.75rem !important;
+  }
+
+  /* ── Category track – more breathing room ── */
+  .category-carousel .carousel-track-container {
+    padding: 0.25rem 0 0.5rem;
+  }
+
+  /* ── Better badge / price contrast on cards ── */
+  .product-price {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+  }
+
+  /* ── Smoother page-level scroll ── */
+  html {
+    scroll-behavior: smooth;
+  }
+}
