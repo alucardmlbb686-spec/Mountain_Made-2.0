@@ -915,11 +915,11 @@
                 display: none;
             }
 
-            /* Keep search box readable over any image */
+            /* Keep search box readable but let image show through */
             .search-section.has-mobile-bg .search-container {
-                background: rgba(255,255,255,0.88);
-                backdrop-filter: blur(4px);
-                -webkit-backdrop-filter: blur(4px);
+                background: rgba(255,255,255,0.52);
+                backdrop-filter: blur(2px);
+                -webkit-backdrop-filter: blur(2px);
             }
 
             /* #mobile-hero-bg-wrap not used in the new approach */
@@ -1489,9 +1489,9 @@
                 }, 5000);
             }
 
-            // Apply dedicated mobile background — covers whole search section including behind search bar
+            // On mobile: use first slider image as full-section background (shows behind the search bar)
             const section = document.getElementById('hero-slider-section');
-            const mobileBgUrl = (settings.mobile_hero_bg || '').trim();
+            const mobileBgUrl = images[0] || '';
             if (section) {
                 if (mobileBgUrl) {
                     section.style.backgroundImage = `url('${mobileBgUrl}')`;
