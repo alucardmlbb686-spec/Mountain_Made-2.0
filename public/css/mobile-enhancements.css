@@ -273,11 +273,19 @@
 @media (max-width: 768px) {
 
   /* ── Larger touch targets for all interactive elements ── */
-  .btn, button, [role="button"],
+  .btn, button:not(.icon-button), [role="button"]:not(.icon-button),
   .carousel-nav, .hero-dot,
   .add-cart-cta, .product-action-row .btn {
     min-height: 48px;
     min-width: 48px;
+  }
+
+  /* Keep navbar icon buttons compact */
+  .icon-button {
+    min-height: unset !important;
+    min-width: unset !important;
+    width: 40px !important;
+    height: 40px !important;
   }
 
   .hero-dot {
