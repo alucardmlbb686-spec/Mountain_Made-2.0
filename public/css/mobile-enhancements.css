@@ -302,33 +302,28 @@
     box-shadow: 0 1px 6px rgba(0,0,0,0.10) !important;
   }
 
-  /* ── Smooth scroll-snap for product grids ── */
+  /* ── Product grids – restore normal responsive grid, vertical scroll ── */
   .grid.grid-4,
   .grid.grid-3,
   .grid.grid-2 {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    flex-direction: unset !important;
+    flex-wrap: unset !important;
+    overflow-x: unset !important;
+    scroll-snap-type: unset !important;
     gap: 0.75rem !important;
     padding: 0.5rem 1rem 1rem !important;
-    scrollbar-width: none;
-  }
-
-  .grid.grid-4::-webkit-scrollbar,
-  .grid.grid-3::-webkit-scrollbar,
-  .grid.grid-2::-webkit-scrollbar {
-    display: none;
+    scrollbar-width: auto;
   }
 
   .grid.grid-4 > .product-card,
   .grid.grid-3 > .product-card,
   .grid.grid-2 > .product-card {
-    flex: 0 0 72vw !important;
-    max-width: 72vw !important;
-    scroll-snap-align: start;
+    flex: unset !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    scroll-snap-align: unset;
   }
 
   /* ── Section headings – Amazon-style compact spacing ── */
