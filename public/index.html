@@ -901,20 +901,29 @@
                 );
             }
 
-            /* Mobile-only dedicated bg layer — sits above slides, hides dots */
-            #mobile-hero-bg-wrap {
-                display: none;
-                position: absolute;
-                inset: 0;
+            /* When a dedicated mobile bg is set, the whole section becomes the canvas */
+            .search-section.has-mobile-bg {
                 background-size: cover;
                 background-position: center;
                 background-repeat: no-repeat;
-                z-index: 2;
+                min-height: 300px;
             }
 
-            #mobile-hero-bg-wrap.active {
-                display: block;
+            /* Slide the search bar + dots out; bg fills the whole section */
+            .search-section.has-mobile-bg .hero-slides-container,
+            .search-section.has-mobile-bg .hero-slider-dots {
+                display: none;
             }
+
+            /* Keep search box readable over any image */
+            .search-section.has-mobile-bg .search-container {
+                background: rgba(255,255,255,0.88);
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+            }
+
+            /* #mobile-hero-bg-wrap not used in the new approach */
+            #mobile-hero-bg-wrap { display: none !important; }
 
             /* Clean white search input card */
             .search-input-wrapper {
@@ -1480,16 +1489,16 @@
                 }, 5000);
             }
 
-            // Apply dedicated mobile background if set (overrides slider on mobile)
-            const mobileBgWrap = document.getElementById('mobile-hero-bg-wrap');
+            // Apply dedicated mobile background — covers whole search section including behind search bar
+            const section = document.getElementById('hero-slider-section');
             const mobileBgUrl = (settings.mobile_hero_bg || '').trim();
-            if (mobileBgWrap) {
+            if (section) {
                 if (mobileBgUrl) {
-                    mobileBgWrap.style.backgroundImage = `url('${mobileBgUrl}')`;
-                    mobileBgWrap.classList.add('active');
+                    section.style.backgroundImage = `url('${mobileBgUrl}')`;
+                    section.classList.add('has-mobile-bg');
                 } else {
-                    mobileBgWrap.style.backgroundImage = '';
-                    mobileBgWrap.classList.remove('active');
+                    section.style.backgroundImage = '';
+                    section.classList.remove('has-mobile-bg');
                 }
             }
         }
