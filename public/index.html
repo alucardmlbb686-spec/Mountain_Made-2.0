@@ -11,28 +11,80 @@
     <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
     <style>
-        /* Search Section Styles */
+        /* ══ Hero Slider Section ══ */
         .search-section {
-            background-image: linear-gradient(180deg, rgba(15,56,35,0.72), rgba(15,56,35,0.58));
+            position: relative;
+            overflow: hidden;
+            padding: clamp(2.5rem, 8vw, 5rem) 1rem;
+            margin-bottom: 2.5rem;
+            min-height: clamp(220px, 38vw, 440px);
+            display: flex;
+            align-items: center;
+        }
+
+        /* Slide backgrounds — absolute, stacked, crossfade */
+        .hero-slides-container {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .hero-slide {
+            position: absolute;
+            inset: 0;
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            padding: clamp(2.5rem, 8vw, 5rem) 1rem;
-            margin-bottom: 2.5rem;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            background-color: #0f3823; /* fallback green */
         }
 
-
-        @media (min-width: 769px) {
-            .search-section {
-                background-image: linear-gradient(180deg, rgba(15,56,35,0.72), rgba(15,56,35,0.58)), url('/images/search-bg.gif');
-            }
-
+        .hero-slide.active {
+            opacity: 1;
         }
 
+        /* Dark overlay on every slide so text is readable */
+        .hero-slide::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(10,40,20,0.70) 0%, rgba(10,40,20,0.52) 100%);
+        }
+
+        /* Slider dot navigation */
+        .hero-slider-dots {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 3;
+        }
+
+        .hero-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.45);
+            cursor: pointer;
+            transition: background 0.3s, transform 0.3s;
+            border: none;
+        }
+
+        .hero-dot.active {
+            background: #fff;
+            transform: scale(1.3);
+        }
+
+        /* Content sits above slides */
         .search-container {
             max-width: 980px;
             margin: 0 auto;
             position: relative;
+            z-index: 2;
+            width: 100%;
         }
 
 
@@ -87,19 +139,28 @@
             margin: 0;
         }
 
+        /* Force section-title block when it contains a heading image */
+        .section-title:has(.homepage-section-heading-wrap) {
+            display: block;
+            width: 100%;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
         .homepage-section-heading-image-box {
-            /* Full-bleed banner: touch left/right viewport edges */
-            width: 100vw;
-            max-width: 100vw;
-            margin-left: calc(50% - 50vw);
-            margin-right: calc(50% - 50vw);
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto 0.75rem auto;
             aspect-ratio: 20 / 8;
             max-height: clamp(140px, 22vw, 300px);
-            border-radius: 0;
+            border-radius: var(--radius-md);
             overflow: hidden;
             border: 1px solid var(--border-primary);
             background: var(--bg-secondary);
             box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .homepage-section-heading-image-box.hidden {
@@ -813,8 +874,18 @@
         </div>
     </nav>
 
-    <!-- Search Bar Section -->
-    <section class="search-section">
+    <!-- Search Bar / Hero Slider Section -->
+    <section class="search-section" id="hero-slider-section">
+        <!-- 5-image background slider -->
+        <div class="hero-slides-container" id="hero-slides-container">
+            <div class="hero-slide" id="hero-slide-1"></div>
+            <div class="hero-slide" id="hero-slide-2"></div>
+            <div class="hero-slide" id="hero-slide-3"></div>
+            <div class="hero-slide" id="hero-slide-4"></div>
+            <div class="hero-slide" id="hero-slide-5"></div>
+        </div>
+        <!-- Navigation dots -->
+        <div class="hero-slider-dots" id="hero-slider-dots"></div>
         <div class="search-container">
             <div id="search-hero-heading" class="search-heading hidden">
                 <h1 id="homepage-hero-title-text"></h1>
@@ -1028,34 +1099,121 @@
             }
         }
 
+        /* ── Hero Background Slider ── */
+        let heroSliderState = { current: 0, total: 0, interval: null, images: [] };
+
+        function initHeroSlider(settings) {
+            const slides = document.querySelectorAll('.hero-slide');
+            const dotsWrap = document.getElementById('hero-slider-dots');
+            const images = [];
+
+            for (let i = 1; i <= 5; i++) {
+                const url = (settings[`slider_image_${i}`] || '').trim();
+                if (url) images.push(url);
+            }
+
+            heroSliderState.images = images;
+            heroSliderState.total = images.length;
+
+            if (images.length === 0) {
+                // Fallback: solid dark-green background, no dots
+                slides.forEach(s => { s.style.backgroundImage = ''; s.classList.remove('active'); });
+                slides[0].classList.add('active');
+                if (dotsWrap) dotsWrap.innerHTML = '';
+                return;
+            }
+
+            // Assign images to slide divs
+            images.forEach((url, idx) => {
+                if (slides[idx]) {
+                    slides[idx].style.backgroundImage = `url('${url}')`;
+                }
+            });
+
+            // Build dots (only for active images)
+            if (dotsWrap) {
+                dotsWrap.innerHTML = images.map((_, idx) =>
+                    `<span class="hero-dot${idx === 0 ? ' active' : ''}" data-idx="${idx}"></span>`
+                ).join('');
+                dotsWrap.querySelectorAll('.hero-dot').forEach(dot => {
+                    dot.addEventListener('click', () => {
+                        goToSlide(parseInt(dot.getAttribute('data-idx'), 10));
+                        resetHeroInterval();
+                    });
+                });
+            }
+
+            // Show first slide
+            showSlide(0);
+
+            if (heroSliderState.interval) clearInterval(heroSliderState.interval);
+            if (images.length > 1) {
+                heroSliderState.interval = setInterval(() => {
+                    const next = (heroSliderState.current + 1) % heroSliderState.total;
+                    goToSlide(next);
+                }, 5000);
+            }
+        }
+
+        function showSlide(idx) {
+            const slides = document.querySelectorAll('.hero-slide');
+            const dots = document.querySelectorAll('.hero-dot');
+            slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+            dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+            heroSliderState.current = idx;
+        }
+
+        function goToSlide(idx) {
+            showSlide(idx);
+        }
+
+        function resetHeroInterval() {
+            if (heroSliderState.interval) clearInterval(heroSliderState.interval);
+            if (heroSliderState.total > 1) {
+                heroSliderState.interval = setInterval(() => {
+                    const next = (heroSliderState.current + 1) % heroSliderState.total;
+                    goToSlide(next);
+                }, 5000);
+            }
+        }
+
         // Load dynamic homepage sections with products
         async function loadHomepageSections() {
+            // Fetch settings first (independently) so slider always initialises
+            // even if the sections endpoint fails.
+            let settings = {};
             try {
-                const [sectionsData, settingsData] = await Promise.all([
-                    api.get('/products/homepage-sections'),
-                    api.get('/products/settings')
-                ]);
+                const settingsResp = await api.get('/products/settings');
+                settings = (settingsResp && settingsResp.settings) || {};
+            } catch (e) {
+                console.warn('Could not load site settings:', e);
+            }
+            // Always init the hero slider with whatever settings we have
+            initHeroSlider(settings);
 
-                const data = sectionsData || {};
-                const settings = (settingsData && settingsData.settings) || {};
-                const sections = Array.isArray(data.sections) ? data.sections : [];
-
-                // Apply "Homepage Headings" settings to the Search Bar section
-                const heroWrap = document.getElementById('search-hero-heading');
-                const heroTitleEl = document.getElementById('homepage-hero-title-text');
-                const heroSubtitleEl = document.getElementById('homepage-hero-subtitle-text');
-                const heroTitle = (settings.homepage_hero_title || '').trim();
-                const heroSubtitle = (settings.homepage_hero_subtitle || '').trim();
-
-                if (heroWrap && heroTitleEl && heroSubtitleEl) {
-                    if (heroTitle || heroSubtitle) {
-                        heroTitleEl.textContent = heroTitle;
-                        heroSubtitleEl.textContent = heroSubtitle;
-                        heroWrap.classList.remove('hidden');
+            // Apply hero heading text immediately from settings
+            try {
+                const heroWrap0 = document.getElementById('search-hero-heading');
+                const heroTitleEl0 = document.getElementById('homepage-hero-title-text');
+                const heroSubtitleEl0 = document.getElementById('homepage-hero-subtitle-text');
+                const heroTitle0 = (settings.homepage_hero_title || '').trim();
+                const heroSubtitle0 = (settings.homepage_hero_subtitle || '').trim();
+                if (heroWrap0 && heroTitleEl0 && heroSubtitleEl0) {
+                    if (heroTitle0 || heroSubtitle0) {
+                        heroTitleEl0.textContent = heroTitle0;
+                        heroSubtitleEl0.textContent = heroSubtitle0;
+                        heroWrap0.classList.remove('hidden');
                     } else {
-                        heroWrap.classList.add('hidden');
+                        heroWrap0.classList.add('hidden');
                     }
                 }
+            } catch (_) {}
+
+            try {
+                const sectionsData = await api.get('/products/homepage-sections');
+
+                const data = sectionsData || {};
+                const sections = Array.isArray(data.sections) ? data.sections : [];
 
                 const container = document.getElementById('homepage-sections-container');
                 

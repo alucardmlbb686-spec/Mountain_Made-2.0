@@ -2028,6 +2028,88 @@
                     </div>
                 </div>
 
+                <!-- Homepage Hero Slider Images -->
+                <div class="data-table-container" style="margin-top: 1.5rem;">
+                    <div class="table-header">
+                        <h3><i class="fas fa-images"></i> Homepage Hero Slider Images</h3>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Upload up to 5 images for the homepage background slider. Loaded images auto-loop every 5 seconds. Recommended: 1400×500 px landscape images.</p>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem;">
+                            <!-- Slot 1 -->
+                            <div class="slider-slot" data-slot="1">
+                                <label class="form-label">Slide 1</label>
+                                <input type="hidden" id="slider-image-url-1">
+                                <div class="slider-preview-wrap" style="width:100%;aspect-ratio:16/6;background:#f0f0f0;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:0.5rem;border:1px solid var(--border);">
+                                    <img id="slider-preview-1" src="" alt="Slide 1" style="width:100%;height:100%;object-fit:cover;display:none;">
+                                    <span id="slider-placeholder-1" style="color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-image"></i> No image</span>
+                                </div>
+                                <input type="file" id="slider-file-1" class="form-input" accept=".jpg,.jpeg,.png,.gif,.webp" onchange="handleSliderFileChange(1)">
+                                <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                                    <button class="btn btn-primary btn-sm" onclick="saveSliderImage(1)"><i class="fas fa-save"></i> Save</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="clearSliderImage(1)"><i class="fas fa-trash"></i> Clear</button>
+                                </div>
+                            </div>
+                            <!-- Slot 2 -->
+                            <div class="slider-slot" data-slot="2">
+                                <label class="form-label">Slide 2</label>
+                                <input type="hidden" id="slider-image-url-2">
+                                <div class="slider-preview-wrap" style="width:100%;aspect-ratio:16/6;background:#f0f0f0;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:0.5rem;border:1px solid var(--border);">
+                                    <img id="slider-preview-2" src="" alt="Slide 2" style="width:100%;height:100%;object-fit:cover;display:none;">
+                                    <span id="slider-placeholder-2" style="color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-image"></i> No image</span>
+                                </div>
+                                <input type="file" id="slider-file-2" class="form-input" accept=".jpg,.jpeg,.png,.gif,.webp" onchange="handleSliderFileChange(2)">
+                                <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                                    <button class="btn btn-primary btn-sm" onclick="saveSliderImage(2)"><i class="fas fa-save"></i> Save</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="clearSliderImage(2)"><i class="fas fa-trash"></i> Clear</button>
+                                </div>
+                            </div>
+                            <!-- Slot 3 -->
+                            <div class="slider-slot" data-slot="3">
+                                <label class="form-label">Slide 3</label>
+                                <input type="hidden" id="slider-image-url-3">
+                                <div class="slider-preview-wrap" style="width:100%;aspect-ratio:16/6;background:#f0f0f0;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:0.5rem;border:1px solid var(--border);">
+                                    <img id="slider-preview-3" src="" alt="Slide 3" style="width:100%;height:100%;object-fit:cover;display:none;">
+                                    <span id="slider-placeholder-3" style="color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-image"></i> No image</span>
+                                </div>
+                                <input type="file" id="slider-file-3" class="form-input" accept=".jpg,.jpeg,.png,.gif,.webp" onchange="handleSliderFileChange(3)">
+                                <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                                    <button class="btn btn-primary btn-sm" onclick="saveSliderImage(3)"><i class="fas fa-save"></i> Save</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="clearSliderImage(3)"><i class="fas fa-trash"></i> Clear</button>
+                                </div>
+                            </div>
+                            <!-- Slot 4 -->
+                            <div class="slider-slot" data-slot="4">
+                                <label class="form-label">Slide 4</label>
+                                <input type="hidden" id="slider-image-url-4">
+                                <div class="slider-preview-wrap" style="width:100%;aspect-ratio:16/6;background:#f0f0f0;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:0.5rem;border:1px solid var(--border);">
+                                    <img id="slider-preview-4" src="" alt="Slide 4" style="width:100%;height:100%;object-fit:cover;display:none;">
+                                    <span id="slider-placeholder-4" style="color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-image"></i> No image</span>
+                                </div>
+                                <input type="file" id="slider-file-4" class="form-input" accept=".jpg,.jpeg,.png,.gif,.webp" onchange="handleSliderFileChange(4)">
+                                <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                                    <button class="btn btn-primary btn-sm" onclick="saveSliderImage(4)"><i class="fas fa-save"></i> Save</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="clearSliderImage(4)"><i class="fas fa-trash"></i> Clear</button>
+                                </div>
+                            </div>
+                            <!-- Slot 5 -->
+                            <div class="slider-slot" data-slot="5">
+                                <label class="form-label">Slide 5</label>
+                                <input type="hidden" id="slider-image-url-5">
+                                <div class="slider-preview-wrap" style="width:100%;aspect-ratio:16/6;background:#f0f0f0;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:0.5rem;border:1px solid var(--border);">
+                                    <img id="slider-preview-5" src="" alt="Slide 5" style="width:100%;height:100%;object-fit:cover;display:none;">
+                                    <span id="slider-placeholder-5" style="color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-image"></i> No image</span>
+                                </div>
+                                <input type="file" id="slider-file-5" class="form-input" accept=".jpg,.jpeg,.png,.gif,.webp" onchange="handleSliderFileChange(5)">
+                                <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                                    <button class="btn btn-primary btn-sm" onclick="saveSliderImage(5)"><i class="fas fa-save"></i> Save</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="clearSliderImage(5)"><i class="fas fa-trash"></i> Clear</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="data-table-container" style="margin-top: 1.5rem;">
                     <div class="table-header">
                         <h3>Admin Account Settings</h3>
@@ -5679,6 +5761,9 @@
                 if (gpayQrEl) gpayQrEl.value = settings.gpay_qr_image_url || '';
                 updateGpayQrImagePreview(settings.gpay_qr_image_url || '');
 
+                // Populate slider images
+                loadSliderSettingsUI(settings);
+
                 await loadAdminAccountSettings();
             } catch (error) {
                 console.error('Load site settings error:', error);
@@ -6259,13 +6344,115 @@
             }
         };
 
+        /* ── Homepage Hero Slider Admin Functions ── */
+        window.handleSliderFileChange = function(slot) {
+            const fileInput = document.getElementById(`slider-file-${slot}`);
+            const preview = document.getElementById(`slider-preview-${slot}`);
+            const placeholder = document.getElementById(`slider-placeholder-${slot}`);
+            const file = fileInput?.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (preview) { preview.src = e.target.result; preview.style.display = 'block'; }
+                if (placeholder) placeholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.saveSliderImage = async function(slot) {
+            try {
+                const fileInput = document.getElementById(`slider-file-${slot}`);
+                const urlInput = document.getElementById(`slider-image-url-${slot}`);
+                const file = fileInput?.files?.[0];
+                let imageUrl = (urlInput?.value || '').trim();
+
+                if (file) {
+                    showAlert(`Uploading slide ${slot} image...`, 'info');
+                    const uploaded = await uploadProductImage(file);
+                    if (!uploaded) throw new Error(`Failed to upload slide ${slot} image`);
+                    imageUrl = uploaded;
+                    if (urlInput) urlInput.value = uploaded;
+                }
+
+                if (!imageUrl) {
+                    showAlert(`No image selected for slide ${slot}`, 'error');
+                    return;
+                }
+
+                showAlert(`Saving slide ${slot}...`, 'info');
+                const payload = {};
+                payload[`slider_image_${slot}`] = imageUrl;
+                const response = await api.post('/admin/settings', payload);
+                if (response && (response.success || response.message)) {
+                    // Update the hidden URL input so future saves use the persisted URL
+                    const urlInputEl = document.getElementById(`slider-image-url-${slot}`);
+                    if (urlInputEl) urlInputEl.value = imageUrl;
+                    // Refresh preview with the persisted server URL
+                    const previewEl = document.getElementById(`slider-preview-${slot}`);
+                    const placeholderEl = document.getElementById(`slider-placeholder-${slot}`);
+                    if (previewEl) { previewEl.src = imageUrl; previewEl.style.display = 'block'; }
+                    if (placeholderEl) placeholderEl.style.display = 'none';
+                    // Clear file input so next click triggers fresh pick
+                    const fileInputEl = document.getElementById(`slider-file-${slot}`);
+                    if (fileInputEl) fileInputEl.value = '';
+                    showAlert(`Slide ${slot} saved successfully!`, 'success');
+                } else {
+                    throw new Error(response?.error || `Failed to save slide ${slot}`);
+                }
+            } catch (err) {
+                console.error('Save slider image error:', err);
+                showAlert(err.message || `Failed to save slide ${slot}`, 'error');
+            }
+        };
+
+        window.clearSliderImage = async function(slot) {
+            try {
+                const preview = document.getElementById(`slider-preview-${slot}`);
+                const placeholder = document.getElementById(`slider-placeholder-${slot}`);
+                const urlInput = document.getElementById(`slider-image-url-${slot}`);
+                const fileInput = document.getElementById(`slider-file-${slot}`);
+                if (urlInput) urlInput.value = '';
+                if (fileInput) fileInput.value = '';
+                if (preview) { preview.src = ''; preview.style.display = 'none'; }
+                if (placeholder) placeholder.style.display = '';
+
+                const payload = {};
+                payload[`slider_image_${slot}`] = '';
+                await api.post('/admin/settings', payload);
+                showAlert(`Slide ${slot} cleared`, 'success');
+            } catch (err) {
+                showAlert('Failed to clear slide', 'error');
+            }
+        };
+
+        function loadSliderSettingsUI(settings) {
+            for (let i = 1; i <= 5; i++) {
+                const url = (settings[`slider_image_${i}`] || '').trim();
+                const urlInput = document.getElementById(`slider-image-url-${i}`);
+                const preview = document.getElementById(`slider-preview-${i}`);
+                const placeholder = document.getElementById(`slider-placeholder-${i}`);
+                if (urlInput) urlInput.value = url;
+                if (preview && placeholder) {
+                    if (url) {
+                        preview.src = url;
+                        preview.style.display = 'block';
+                        placeholder.style.display = 'none';
+                    } else {
+                        preview.src = '';
+                        preview.style.display = 'none';
+                        placeholder.style.display = '';
+                    }
+                }
+            }
+        }
+
         async function loadCategoriesForUpload() {
             try {
                 const response = await api.get('/admin/categories');
                 const categories = response.categories || [];
                 window._categoriesCache = categories;
-                
-                const optionsHtml = '<option value="">Select Category</option>' + 
+
+                const optionsHtml = '<option value="">Select Category</option>' +
                     categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
                 const select = document.getElementById('product-category');

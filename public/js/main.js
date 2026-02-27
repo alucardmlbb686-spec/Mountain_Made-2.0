@@ -180,12 +180,12 @@ const api = {
   async uploadImage(file) {
     try {
       // Validate file type on client side
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-      const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
       const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
       
       if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
-        throw new Error('Invalid file type. Only JPG, PNG, and GIF images are allowed.');
+        throw new Error('Invalid file type. Only JPG, PNG, GIF, and WEBP images are allowed.');
       }
 
       // Check file size (5MB max)

@@ -1508,7 +1508,12 @@ exports.updateSiteSettings = async (req, res) => {
       gpay_upi_id,
       gpay_phone_number,
       gpay_bank_name,
-      gpay_qr_image_url
+      gpay_qr_image_url,
+      slider_image_1,
+      slider_image_2,
+      slider_image_3,
+      slider_image_4,
+      slider_image_5
     } = req.body || {};
 
     const hasLicenseChange =
@@ -1673,6 +1678,18 @@ exports.updateSiteSettings = async (req, res) => {
         return res.status(400).json({ error: 'GPay QR image must be an uploaded image path or a valid http/https URL.' });
       }
       updates.push({ key: 'gpay_qr_image_url', value: qrImageUrl });
+    }
+
+    // Homepage hero slider images (1–5)
+    for (let i = 1; i <= 5; i++) {
+      const sliderVal = req.body[`slider_image_${i}`];
+      if (sliderVal !== undefined) {
+        const imgUrl = String(sliderVal || '').trim();
+        if (imgUrl && !/^(https?:\/\/|\/uploads\/)/i.test(imgUrl)) {
+          return res.status(400).json({ error: `slider_image_${i} must be an uploaded image path or a valid http/https URL.` });
+        }
+        updates.push({ key: `slider_image_${i}`, value: imgUrl });
+      }
     }
 
     if (updates.length === 0) {

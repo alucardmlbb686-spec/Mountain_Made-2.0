@@ -103,8 +103,8 @@ const storage = multer.diskStorage({
 
 // File filter - Only JPG/PNG/GIF allowed
 const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
-  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
     const ext = path.extname(file.originalname).toLowerCase();
     const mimeType = file.mimetype.toLowerCase();
     

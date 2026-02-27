@@ -8,17 +8,16 @@ const db = require('../config/database');
 // Use memory storage so we can persist to DB (avoids losing files on redeploy)
 const storage = multer.memoryStorage();
 
-// Dynamic file filter - accept JPG/PNG/GIF
+// Dynamic file filter - accept JPG/PNG/GIF/WEBP
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
-    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
-    const ext = path.extname(file.originalname).toLowerCase();
-    
-    // Only accept JPG/PNG/GIF files
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();    
+    // Only accept JPG/PNG/GIF/WEBP files
     if (allowedTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
         cb(null, true);
     } else {
-        cb(new Error('Invalid file type. Only JPG, PNG, and GIF images are allowed.'), false);
+        cb(new Error('Invalid file type. Only JPG, PNG, GIF, and WEBP images are allowed.'), false);
     }
 };
 
