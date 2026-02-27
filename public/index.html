@@ -415,6 +415,203 @@
             color: #facc15;
         }
 
+        /* ══ Flip Cards Section ══ */
+        .flip-cards-section {
+            padding: 2.5rem 0 3rem;
+            background: linear-gradient(135deg, #f0f7ff 0%, #f9fbe7 100%);
+        }
+
+        .flip-cards-container {
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .flip-cards-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .flip-cards-header h2 {
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+
+        .flip-cards-header .fc-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: linear-gradient(90deg, #ff5722, #e64a19);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .flip-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.1rem;
+        }
+
+        .flip-card-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .flip-card {
+            perspective: 1000px;
+            width: 100%;
+            aspect-ratio: 3/4;
+            cursor: pointer;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.72s cubic-bezier(0.35, 0.15, 0.15, 1);
+            transform-style: preserve-3d;
+        }
+
+        .flip-card:hover .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front,
+        .flip-card-back {
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            overflow: hidden;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+        }
+
+        .flip-card-front {
+            background: linear-gradient(145deg, #fce4ec, #e3f2fd);
+        }
+
+        .flip-card-back {
+            transform: rotateY(180deg);
+            background: linear-gradient(145deg, #e8f5e9, #ede7f6);
+        }
+
+        .flip-card-img-wrap {
+            width: 100%;
+            height: 72%;
+            overflow: hidden;
+        }
+
+        .flip-card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.5s;
+        }
+
+        .flip-card-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: #ccc;
+            background: linear-gradient(135deg, #f5f5f5, #eeeeee);
+        }
+
+        .flip-card-ad-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(4px);
+            color: #fff;
+            font-size: 0.62rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.08em;
+            z-index: 2;
+        }
+
+        .flip-card-cta-bar {
+            height: 28%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            padding: 0.4rem 0.5rem;
+            line-height: 1.25;
+            letter-spacing: 0.01em;
+        }
+
+        /* CTA color schemes per card slot */
+        .flip-card-wrap:nth-child(1) .flip-card-front .flip-card-cta-bar,
+        .flip-card-wrap[data-slot="1"] .flip-card-front .flip-card-cta-bar {
+            background: linear-gradient(90deg, #1e88e5, #1565c0);
+        }
+        .flip-card-wrap:nth-child(2) .flip-card-front .flip-card-cta-bar,
+        .flip-card-wrap[data-slot="2"] .flip-card-front .flip-card-cta-bar {
+            background: linear-gradient(90deg, #ff8c00, #e07000);
+        }
+        .flip-card-wrap:nth-child(3) .flip-card-front .flip-card-cta-bar,
+        .flip-card-wrap[data-slot="3"] .flip-card-front .flip-card-cta-bar {
+            background: linear-gradient(90deg, #2e8b57, #1b5e20);
+        }
+        .flip-card-wrap:nth-child(4) .flip-card-front .flip-card-cta-bar,
+        .flip-card-wrap[data-slot="4"] .flip-card-front .flip-card-cta-bar {
+            background: linear-gradient(90deg, #7b1fa2, #4a148c);
+        }
+        .flip-card-wrap:nth-child(5) .flip-card-front .flip-card-cta-bar,
+        .flip-card-wrap[data-slot="5"] .flip-card-front .flip-card-cta-bar {
+            background: linear-gradient(90deg, #c62828, #b71c1c);
+        }
+
+        .flip-card-back .flip-card-cta-bar {
+            background: linear-gradient(90deg, rgba(0,0,0,0.72), rgba(0,0,0,0.55));
+            backdrop-filter: blur(6px);
+        }
+
+        .flip-card-back .flip-card-ad-badge {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .flip-card-subtitle {
+            margin-top: 0.55rem;
+            font-size: 0.83rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 1100px) {
+            .flip-cards-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 640px) {
+            .flip-cards-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+            .flip-cards-header h2 { font-size: 1.2rem; }
+        }
+
         /* Carousel Styles */
         .carousel-section {
             background: var(--bg-secondary);
@@ -930,6 +1127,19 @@
         </div>
     </section>
 
+    <!-- Featured Deals Flip Cards -->
+    <section class="flip-cards-section" id="flip-cards-section" style="display:none;">
+        <div class="flip-cards-container">
+            <div class="flip-cards-header">
+                <h2>Featured Deals</h2>
+                <span class="fc-badge"><i class="fas fa-bolt"></i> Hot</span>
+            </div>
+            <div class="flip-cards-grid" id="flip-cards-grid">
+                <!-- Dynamically rendered by initFlipCards() -->
+            </div>
+        </div>
+    </section>
+
     <!-- Categories Section -->
     <section id="categories" class="container">
         <div class="section-title">
@@ -1177,6 +1387,77 @@
             }
         }
 
+        /* ── Flip Cards Section ── */
+        const FLIP_CTA_COLORS = [
+            'linear-gradient(90deg,#1e88e5,#1565c0)',
+            'linear-gradient(90deg,#ff8c00,#e07000)',
+            'linear-gradient(90deg,#2e8b57,#1b5e20)',
+            'linear-gradient(90deg,#7b1fa2,#4a148c)',
+            'linear-gradient(90deg,#c62828,#b71c1c)'
+        ];
+
+        function initFlipCards(settings) {
+            const section = document.getElementById('flip-cards-section');
+            const grid   = document.getElementById('flip-cards-grid');
+            if (!section || !grid) return;
+
+            const cards = [];
+            for (let i = 1; i <= 5; i++) {
+                cards.push({
+                    slot:  i,
+                    front: (settings[`flip_card_front_${i}`] || '').trim(),
+                    back:  (settings[`flip_card_back_${i}`]  || '').trim(),
+                    label: (settings[`flip_card_label_${i}`] || '').trim(),
+                    title: (settings[`flip_card_title_${i}`] || '').trim()
+                });
+            }
+
+            const active = cards.filter(c => c.front || c.back);
+            if (active.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            grid.innerHTML = active.map((c, idx) => {
+                const ctaColor = FLIP_CTA_COLORS[(c.slot - 1) % FLIP_CTA_COLORS.length];
+                const labelText = c.label || 'Shop Now';
+                const backLabel = c.title || 'View Details';
+
+                const frontImgHtml = c.front
+                    ? `<img src="${c.front}" alt="${labelText}" class="flip-card-img" loading="lazy" onerror="this.style.display='none'">`
+                    : `<div class="flip-card-placeholder"><i class="fas fa-image"></i></div>`;
+
+                const backImgHtml = c.back
+                    ? `<img src="${c.back}" alt="${backLabel}" class="flip-card-img" loading="lazy" onerror="this.style.display='none'">`
+                    : (c.front
+                        ? `<img src="${c.front}" alt="${backLabel}" class="flip-card-img" loading="lazy">`
+                        : `<div class="flip-card-placeholder"><i class="fas fa-star"></i></div>`);
+
+                return `
+                <div class="flip-card-wrap" data-slot="${c.slot}">
+                    <div class="flip-card" aria-label="${labelText} — hover to flip">
+                        <div class="flip-card-inner">
+                            <!-- Front -->
+                            <div class="flip-card-front">
+                                <div class="flip-card-img-wrap">${frontImgHtml}</div>
+                                <span class="flip-card-ad-badge">AD</span>
+                                <div class="flip-card-cta-bar" style="background:${ctaColor}">${labelText}</div>
+                            </div>
+                            <!-- Back -->
+                            <div class="flip-card-back">
+                                <div class="flip-card-img-wrap">${backImgHtml}</div>
+                                <span class="flip-card-ad-badge">AD</span>
+                                <div class="flip-card-cta-bar">${backLabel}</div>
+                            </div>
+                        </div>
+                    </div>
+                    ${c.title ? `<div class="flip-card-subtitle">${c.title}</div>` : ''}
+                </div>`;
+            }).join('');
+
+            section.style.display = '';
+        }
+
         // Load dynamic homepage sections with products
         async function loadHomepageSections() {
             // Fetch settings first (independently) so slider always initialises
@@ -1188,8 +1469,9 @@
             } catch (e) {
                 console.warn('Could not load site settings:', e);
             }
-            // Always init the hero slider with whatever settings we have
+            // Always init the hero slider and flip cards with whatever settings we have
             initHeroSlider(settings);
+            initFlipCards(settings);
 
             // Apply hero heading text immediately from settings
             try {

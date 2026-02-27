@@ -2112,6 +2112,83 @@
 
                 <div class="data-table-container" style="margin-top: 1.5rem;">
                     <div class="table-header">
+                        <h3><i class="fas fa-layer-group"></i> Featured Deals – Flip Cards</h3>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+                            Upload <strong>front</strong> and <strong>back</strong> images for each of the 5 flip cards displayed below Featured Products on the homepage.
+                            Add a <strong>CTA label</strong> (shown on the front banner, e.g. "Shop now", "Just ₹999") and an optional <strong>subtitle</strong> shown beneath the card.
+                            Hover a card on the homepage to see the flip effect.
+                        </p>
+                        <div style="display:flex;flex-direction:column;gap:2rem;">
+                            <!-- Card slots 1-5 -->
+                            <script>
+                            (function() {
+                                const ctaDefaults = ['Shop now', 'Limited time deal', 'Explore now', 'Best seller', 'From ₹999'];
+                                const colors = ['#1e88e5','#ff8c00','#2e8b57','#7b1fa2','#c62828'];
+                                for (let n = 1; n <= 5; n++) {
+                                    document.write(`
+                                    <div class="data-table-container" style="border:2px solid ${colors[n-1]}22;border-radius:12px;overflow:hidden;">
+                                        <div class="table-header" style="background:${colors[n-1]}18;border-bottom:2px solid ${colors[n-1]}33;padding:0.85rem 1.25rem;display:flex;align-items:center;gap:0.6rem;">
+                                            <span style="background:${colors[n-1]};color:#fff;font-size:0.75rem;font-weight:800;padding:2px 9px;border-radius:20px;">CARD ${n}</span>
+                                            <span style="font-weight:700;color:var(--text-primary);font-size:1rem;">Flip Card ${n}</span>
+                                        </div>
+                                        <div style="padding:1.5rem;">
+                                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1rem;">
+                                                <!-- Front image -->
+                                                <div>
+                                                    <label class="form-label" style="font-weight:700;"><i class="fas fa-image" style="color:#1e88e5;"></i> Front Image</label>
+                                                    <input type="hidden" id="fc-front-url-${n}">
+                                                    <div id="fc-front-wrap-${n}" style="width:100%;aspect-ratio:3/4;background:#f0f0f0;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:0.5rem;border:1.5px dashed #ccc;">
+                                                        <img id="fc-front-preview-${n}" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none;">
+                                                        <span id="fc-front-placeholder-${n}" style="color:var(--text-muted);font-size:0.82rem;text-align:center;"><i class="fas fa-image" style="font-size:1.5rem;display:block;margin-bottom:0.3rem;"></i>No image</span>
+                                                    </div>
+                                                    <input type="file" id="fc-front-file-${n}" class="form-input" accept=".jpg,.jpeg,.png,.gif,.webp" onchange="handleFlipCardFileChange(${n},'front')" style="margin-bottom:0.5rem;">
+                                                    <div style="display:flex;gap:0.5rem;">
+                                                        <button class="btn btn-primary btn-sm" onclick="saveFlipCardImage(${n},'front')"><i class="fas fa-save"></i> Save Front</button>
+                                                        <button class="btn btn-secondary btn-sm" onclick="clearFlipCardImage(${n},'front')"><i class="fas fa-trash"></i> Clear</button>
+                                                    </div>
+                                                </div>
+                                                <!-- Back image -->
+                                                <div>
+                                                    <label class="form-label" style="font-weight:700;"><i class="fas fa-redo" style="color:#e64a19;"></i> Back Image</label>
+                                                    <input type="hidden" id="fc-back-url-${n}">
+                                                    <div id="fc-back-wrap-${n}" style="width:100%;aspect-ratio:3/4;background:#f0f0f0;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:0.5rem;border:1.5px dashed #ccc;">
+                                                        <img id="fc-back-preview-${n}" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none;">
+                                                        <span id="fc-back-placeholder-${n}" style="color:var(--text-muted);font-size:0.82rem;text-align:center;"><i class="fas fa-redo" style="font-size:1.5rem;display:block;margin-bottom:0.3rem;"></i>No image</span>
+                                                    </div>
+                                                    <input type="file" id="fc-back-file-${n}" class="form-input" accept=".jpg,.jpeg,.png,.gif,.webp" onchange="handleFlipCardFileChange(${n},'back')" style="margin-bottom:0.5rem;">
+                                                    <div style="display:flex;gap:0.5rem;">
+                                                        <button class="btn btn-primary btn-sm" onclick="saveFlipCardImage(${n},'back')"><i class="fas fa-save"></i> Save Back</button>
+                                                        <button class="btn btn-secondary btn-sm" onclick="clearFlipCardImage(${n},'back')"><i class="fas fa-trash"></i> Clear</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- Text fields -->
+                                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.5rem;">
+                                                <div>
+                                                    <label class="form-label"><i class="fas fa-tag"></i> Front CTA Label <small style="color:var(--text-muted);">(banner text)</small></label>
+                                                    <input type="text" id="fc-label-${n}" class="form-input" placeholder="${ctaDefaults[n-1]}" maxlength="40">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label"><i class="fas fa-align-left"></i> Card Subtitle <small style="color:var(--text-muted);">(below card)</small></label>
+                                                    <input type="text" id="fc-title-${n}" class="form-input" placeholder="e.g. Sun expert" maxlength="50">
+                                                </div>
+                                            </div>
+                                            <div style="margin-top:0.85rem;">
+                                                <button class="btn btn-success btn-sm" onclick="saveFlipCardTexts(${n})"><i class="fas fa-check-circle"></i> Save Texts for Card ${n}</button>
+                                            </div>
+                                        </div>
+                                    </div>`);
+                                }
+                            })();
+                            </script>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-table-container" style="margin-top: 1.5rem;">
+                    <div class="table-header">
                         <h3>Admin Account Settings</h3>
                     </div>
                     <div style="padding: 2rem;">
@@ -5763,6 +5840,8 @@
 
                 // Populate slider images
                 loadSliderSettingsUI(settings);
+                // Populate flip card images + texts
+                loadFlipCardSettingsUI(settings);
 
                 await loadAdminAccountSettings();
             } catch (error) {
@@ -6443,6 +6522,119 @@
                         placeholder.style.display = '';
                     }
                 }
+            }
+        }
+
+        /* ── Flip Card Admin Functions ── */
+
+        function _fcSetPreview(slot, side, url) {
+            const preview = document.getElementById(`fc-${side}-preview-${slot}`);
+            const placeholder = document.getElementById(`fc-${side}-placeholder-${slot}`);
+            const urlInput = document.getElementById(`fc-${side}-url-${slot}`);
+            if (urlInput) urlInput.value = url || '';
+            if (preview && placeholder) {
+                if (url) {
+                    preview.src = url;
+                    preview.style.display = 'block';
+                    placeholder.style.display = 'none';
+                } else {
+                    preview.src = '';
+                    preview.style.display = 'none';
+                    placeholder.style.display = '';
+                }
+            }
+        }
+
+        window.handleFlipCardFileChange = function(slot, side) {
+            const fileInput = document.getElementById(`fc-${side}-file-${slot}`);
+            const file = fileInput?.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById(`fc-${side}-preview-${slot}`);
+                const placeholder = document.getElementById(`fc-${side}-placeholder-${slot}`);
+                if (preview) { preview.src = e.target.result; preview.style.display = 'block'; }
+                if (placeholder) placeholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.saveFlipCardImage = async function(slot, side) {
+            try {
+                const fileInput = document.getElementById(`fc-${side}-file-${slot}`);
+                const urlInput = document.getElementById(`fc-${side}-url-${slot}`);
+                const file = fileInput?.files?.[0];
+                let imageUrl = (urlInput?.value || '').trim();
+
+                if (file) {
+                    showAlert(`Uploading card ${slot} ${side} image...`, 'info');
+                    const uploaded = await uploadProductImage(file);
+                    if (!uploaded) throw new Error('Upload failed');
+                    imageUrl = uploaded;
+                }
+
+                if (!imageUrl) { showAlert(`No image selected for card ${slot} ${side}`, 'error'); return; }
+
+                showAlert(`Saving card ${slot} ${side}...`, 'info');
+                const payload = {};
+                payload[`flip_card_${side}_${slot}`] = imageUrl;
+                const resp = await api.post('/admin/settings', payload);
+                if (resp && (resp.success || resp.message)) {
+                    _fcSetPreview(slot, side, imageUrl);
+                    const fi = document.getElementById(`fc-${side}-file-${slot}`);
+                    if (fi) fi.value = '';
+                    showAlert(`Card ${slot} ${side} image saved!`, 'success');
+                } else {
+                    throw new Error(resp?.error || 'Save failed');
+                }
+            } catch (err) {
+                console.error('saveFlipCardImage error:', err);
+                showAlert(err.message || 'Failed to save', 'error');
+            }
+        };
+
+        window.clearFlipCardImage = async function(slot, side) {
+            try {
+                const payload = {};
+                payload[`flip_card_${side}_${slot}`] = '';
+                await api.post('/admin/settings', payload);
+                _fcSetPreview(slot, side, '');
+                const fi = document.getElementById(`fc-${side}-file-${slot}`);
+                if (fi) fi.value = '';
+                showAlert(`Card ${slot} ${side} cleared`, 'success');
+            } catch (err) {
+                showAlert('Failed to clear', 'error');
+            }
+        };
+
+        window.saveFlipCardTexts = async function(slot) {
+            try {
+                const label = (document.getElementById(`fc-label-${slot}`)?.value || '').trim();
+                const title = (document.getElementById(`fc-title-${slot}`)?.value || '').trim();
+                const payload = {
+                    [`flip_card_label_${slot}`]: label,
+                    [`flip_card_title_${slot}`]: title
+                };
+                showAlert(`Saving card ${slot} texts...`, 'info');
+                const resp = await api.post('/admin/settings', payload);
+                if (resp && (resp.success || resp.message)) {
+                    showAlert(`Card ${slot} texts saved!`, 'success');
+                } else {
+                    throw new Error(resp?.error || 'Save failed');
+                }
+            } catch (err) {
+                showAlert(err.message || 'Failed to save texts', 'error');
+            }
+        };
+
+        function loadFlipCardSettingsUI(settings) {
+            for (let i = 1; i <= 5; i++) {
+                _fcSetPreview(i, 'front', (settings[`flip_card_front_${i}`] || '').trim());
+                _fcSetPreview(i, 'back',  (settings[`flip_card_back_${i}`]  || '').trim());
+                const labelEl = document.getElementById(`fc-label-${i}`);
+                const titleEl = document.getElementById(`fc-title-${i}`);
+                if (labelEl) labelEl.value = (settings[`flip_card_label_${i}`] || '').trim();
+                if (titleEl) titleEl.value = (settings[`flip_card_title_${i}`] || '').trim();
             }
         }
 

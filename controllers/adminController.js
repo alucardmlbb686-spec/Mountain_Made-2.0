@@ -1692,6 +1692,28 @@ exports.updateSiteSettings = async (req, res) => {
       }
     }
 
+    // Featured Deals flip cards (1–5): front image, back image, label text, title text
+    for (let i = 1; i <= 5; i++) {
+      for (const side of ['front', 'back']) {
+        const imgVal = req.body[`flip_card_${side}_${i}`];
+        if (imgVal !== undefined) {
+          const imgUrl = String(imgVal || '').trim();
+          if (imgUrl && !/^(https?:\/\/|\/uploads\/)/i.test(imgUrl)) {
+            return res.status(400).json({ error: `flip_card_${side}_${i} must be an uploaded image path or a valid URL.` });
+          }
+          updates.push({ key: `flip_card_${side}_${i}`, value: imgUrl });
+        }
+      }
+      const labelVal = req.body[`flip_card_label_${i}`];
+      if (labelVal !== undefined) {
+        updates.push({ key: `flip_card_label_${i}`, value: String(labelVal || '').trim().slice(0, 80) });
+      }
+      const titleVal = req.body[`flip_card_title_${i}`];
+      if (titleVal !== undefined) {
+        updates.push({ key: `flip_card_title_${i}`, value: String(titleVal || '').trim().slice(0, 100) });
+      }
+    }
+
     if (updates.length === 0) {
       // If nothing was provided, respond gracefully instead of erroring
       return res.json({ success: true, message: 'No changes to update.' });
