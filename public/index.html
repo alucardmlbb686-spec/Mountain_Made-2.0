@@ -812,7 +812,7 @@
             }
         }
 
-        /* ── Mobile hero: image on top with heading overlay, search bar below clean ── */
+        /* ── Mobile hero: search bar top, image+heading below ── */
         @media (max-width: 768px) {
             .search-section {
                 display: flex;
@@ -821,32 +821,60 @@
                 padding: 0;
                 min-height: unset;
                 margin-bottom: 1.5rem;
-                background: transparent;
+                background: #fff;
+                position: relative;
             }
 
-            /* 1. Hero image block fills top */
-            .hero-slides-container {
+            /* 1. Search bar sits at the very top — clean white */
+            .search-container {
                 order: 1;
+                position: static;
+                z-index: 3;
+                background: #fff;
+                padding: 0.75rem 1rem 0.65rem;
+                width: 100%;
+                max-width: 100%;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            }
+
+            /* Heading is inside .search-container in HTML but we lift it out
+               visually by making it absolute relative to .search-section,
+               positioned on top of the hero image below the search bar */
+            #search-hero-heading {
+                position: absolute;
+                /* ~68px = approx height of search bar area */
+                top: 68px;
+                left: 0;
+                right: 0;
+                z-index: 5;
+                text-align: center;
+                padding: 1.2rem 1rem 0;
+                min-height: unset;
+                margin: 0;
+                pointer-events: none;
+            }
+
+            #search-hero-heading.hidden {
+                display: none;
+            }
+
+            /* Keep invisible heading from reserving space */
+            .search-heading {
+                min-height: 0 !important;
+            }
+
+            /* 2. Hero image block below search bar */
+            .hero-slides-container {
+                order: 2;
                 position: relative;
                 inset: auto;
                 width: 100%;
-                height: 240px;
+                height: 220px;
                 z-index: 1;
                 overflow: hidden;
             }
 
-            /* 2. Search container comes right after the image */
-            .search-container {
-                order: 2;
-                position: relative;
-                z-index: 3;
-                background: transparent;
-                padding: 0.85rem 1rem 0.6rem;
-                width: 100%;
-                max-width: 100%;
-            }
-
-            /* 3. Dots sit under search bar */
+            /* 3. Dots below image */
             .hero-slider-dots {
                 order: 3;
                 position: relative;
@@ -854,41 +882,32 @@
                 left: auto;
                 transform: none;
                 padding: 0.35rem 0 0.3rem;
-                background: #0d3b1e;
+                background: #f0f0f0;
                 justify-content: center;
                 z-index: 2;
             }
 
-            /* Pull heading up so it sits ON TOP of the image */
-            #search-hero-heading {
-                position: absolute;
-                top: -185px;
-                left: 0;
-                right: 0;
-                z-index: 4;
-                text-align: center;
-                padding: 0 1rem;
-                min-height: unset;
-                margin: 0;
-                pointer-events: none;
-            }
-
-            /* When heading is hidden, don't reserve space */
-            #search-hero-heading.hidden {
-                display: none;
-            }
-
-            /* Slightly darker overlay so heading text stays readable */
+            /* Darker overlay gradient so heading text is readable on image */
             .hero-slide::after {
-                background: linear-gradient(180deg, rgba(5,20,10,0.62) 0%, rgba(5,20,10,0.38) 100%);
+                background: linear-gradient(
+                    180deg,
+                    rgba(5,20,10,0.70) 0%,
+                    rgba(5,20,10,0.45) 60%,
+                    rgba(5,20,10,0.20) 100%
+                );
             }
 
-            /* Search input wrapper: white card below image */
+            /* Clean white search input card */
             .search-input-wrapper {
                 background: #fff;
                 border-radius: 12px;
-                border: none;
-                box-shadow: 0 4px 18px rgba(0,0,0,0.14);
+                border: 1.5px solid #e0e0e0;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+            }
+
+            /* Trust strip stays below search */
+            .home-trust-strip {
+                margin-top: 0.5rem;
             }
         }
 
