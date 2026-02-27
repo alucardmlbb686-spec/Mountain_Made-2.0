@@ -16,7 +16,7 @@
             position: relative;
             padding: clamp(2.5rem, 8vw, 5rem) 1rem;
             margin-bottom: 2.5rem;
-            min-height: clamp(220px, 38vw, 440px);
+            min-height: clamp(320px, 45vw, 520px);
             display: flex;
             align-items: center;
         }
@@ -873,7 +873,7 @@
                 position: relative;
                 inset: auto;
                 width: 100%;
-                height: 220px;
+                height: clamp(200px, 52vw, 320px);
                 z-index: 1;
                 overflow: hidden;
             }
@@ -904,7 +904,7 @@
             /* When a dedicated mobile bg is set, the whole section becomes the canvas */
             .search-section.has-mobile-bg {
                 background-size: cover;
-                background-position: center;
+                background-position: center top;
                 background-repeat: no-repeat;
             }
 
