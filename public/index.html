@@ -1207,20 +1207,19 @@
 <body>
     <!-- Navigation -->
     <nav class="navbar">
+        <span class="nav-corner nav-corner-tl" aria-hidden="true"></span>
+        <span class="nav-corner nav-corner-tr" aria-hidden="true"></span>
+        <span class="nav-corner nav-corner-bl" aria-hidden="true"></span>
+        <span class="nav-corner nav-corner-br" aria-hidden="true"></span>
         <div class="navbar-container">
+            <button class="mobile-menu-toggle" aria-label="Open navigation menu">
+                <i class="fas fa-bars"></i>
+            </button>
             <a href="/" class="navbar-brand">
                 
                 Mountain Made
+                <span class="navbar-tagline">GOURMET GROCERIES</span>
             </a>
-            
-            <ul class="navbar-menu">
-                <li><a href="/" class="active">Home</a></li>
-                <li><a href="/products">Products</a></li>
-                <li><a href="#categories">Categories</a></li>
-                <li><a href="/about">About</a></li>
-                <li><a href="/contact">Contact Us</a></li>
-                <li id="admin-link" class="hidden"><a href="/admin">Admin</a></li>
-            </ul>
             
             <div class="navbar-actions">
                 <div id="auth-buttons">
@@ -1257,12 +1256,16 @@
                         </div>
                     </div>
                 </div>
-                
-                <button class="mobile-menu-toggle">
-                    <i class="fas fa-bars"></i>
-                </button>
             </div>
         </div>
+        <ul class="navbar-menu">
+            <li><a href="/" class="active">Home</a></li>
+            <li><a href="/products">Products</a></li>
+            <li><a href="#categories">Categories</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/contact">Contact Us</a></li>
+            <li id="admin-link" class="hidden"><a href="/admin">Admin</a></li>
+        </ul>
     </nav>
 
     <!-- Search Bar / Hero Slider Section -->
