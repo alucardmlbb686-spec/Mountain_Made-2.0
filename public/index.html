@@ -1204,6 +1204,36 @@
                 background: var(--bg-secondary);
             }
         }
+
+        /* Dark mode: Featured Deals flip cards */
+        html[data-theme="dark"] .flip-cards-section {
+            background: linear-gradient(135deg, #151a20 0%, #111510 100%);
+        }
+
+        html[data-theme="dark"] .flip-cards-header h2 {
+            color: var(--text-primary);
+        }
+
+        html[data-theme="dark"] .flip-card-front {
+            background: linear-gradient(145deg, #1a1f2b, #1b2030);
+        }
+
+        html[data-theme="dark"] .flip-card-back {
+            background: linear-gradient(145deg, #15201a, #1c1828);
+        }
+
+        html[data-theme="dark"] .flip-card-placeholder {
+            background: linear-gradient(135deg, #1e2328, #23292e);
+            color: #4a5260;
+        }
+
+        html[data-theme="dark"] .flip-card-subtitle {
+            color: var(--text-secondary);
+        }
+
+        html[data-theme="dark"] .flip-card-ad-badge {
+            background: rgba(255,255,255,0.12);
+        }
     </style>
 </head>
 <body>
