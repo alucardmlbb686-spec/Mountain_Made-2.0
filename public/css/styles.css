@@ -383,6 +383,14 @@ html[data-theme="dark"] .btn-danger {
   border-color: #952020 #7a1818 #641414;
 }
 
+/* ── Dark mode global color fixes ── */
+html[data-theme="dark"] .product-price {
+  color: #ff8c7a;
+}
+html[data-theme="dark"] .price-discount {
+  color: #34d399;
+}
+
 /* ── Corner bracket ornaments ── */
 .nav-corner {
   position: absolute;

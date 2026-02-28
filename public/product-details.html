@@ -425,13 +425,13 @@
         .quantity-controls {
             display: flex;
             align-items: center;
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-primary);
             border-radius: 4px;
         }
         
         .quantity-controls button {
             padding: 0.5rem 1rem;
-            background: var(--surface);
+            background: var(--bg-secondary);
             border: none;
             cursor: pointer;
             font-size: 1.2rem;
@@ -447,7 +447,7 @@
         }
         
         .quantity-controls button:hover {
-            background: var(--hover);
+            background: var(--bg-tertiary);
         }
         
         .quantity-controls input {
@@ -491,7 +491,7 @@
         .product-description {
             margin-top: 2rem;
             padding-top: 2rem;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border-primary);
         }
         
         @media (max-width: 768px) {
@@ -773,6 +773,90 @@
             color: var(--text-secondary);
             margin-top: 0.25rem;
             padding: 0.25rem 0;
+        }
+
+        /* ── Dark mode overrides ── */
+        html[data-theme="dark"] .product-main-image,
+        html[data-theme="dark"] .product-thumbnail {
+            background: var(--bg-secondary);
+            border-color: var(--border-primary);
+        }
+
+        html[data-theme="dark"] .product-price-section {
+            background: var(--bg-tertiary);
+            border-color: var(--border-secondary);
+        }
+
+        html[data-theme="dark"] .delivery-info {
+            background: rgba(6, 125, 98, 0.12);
+            border-left-color: #059669;
+        }
+
+        html[data-theme="dark"] .delivery-info h4,
+        html[data-theme="dark"] .delivery-option {
+            color: var(--text-primary);
+        }
+
+        html[data-theme="dark"] .product-stock {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.30);
+            color: #6ee7b7;
+        }
+
+        html[data-theme="dark"] .product-stock.low {
+            background: rgba(217, 119, 6, 0.15);
+            border-color: rgba(217, 119, 6, 0.30);
+            color: #fcd34d;
+        }
+
+        html[data-theme="dark"] .product-stock.out {
+            background: rgba(192, 57, 43, 0.15);
+            border-color: rgba(192, 57, 43, 0.30);
+            color: #fca5a5;
+        }
+
+        html[data-theme="dark"] .quantity-controls {
+            border-color: var(--border-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        html[data-theme="dark"] .quantity-controls button {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        html[data-theme="dark"] .quantity-controls button:hover {
+            background: var(--border-secondary);
+        }
+
+        html[data-theme="dark"] .quantity-controls input {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        html[data-theme="dark"] .spec-item {
+            background: var(--bg-tertiary);
+            border-color: var(--border-secondary);
+        }
+
+        html[data-theme="dark"] .product-share-menu {
+            background: var(--bg-tertiary);
+            border-color: var(--border-secondary);
+            box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+        }
+
+        html[data-theme="dark"] .product-share-menu button:hover {
+            background: var(--border-primary);
+        }
+
+        html[data-theme="dark"] .modal-content {
+            background: var(--bg-primary);
+            border-color: var(--border-secondary);
+        }
+
+        html[data-theme="dark"] .image-lightbox {
+            background: rgba(0,0,0,0.92);
         }
 
     </style>
