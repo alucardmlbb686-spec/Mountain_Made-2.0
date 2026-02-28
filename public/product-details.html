@@ -1613,15 +1613,16 @@
                 statusEl.innerHTML = '<span style="color:var(--text-secondary);font-size:0.82rem;">No pincode found for selected address.</span>';
                 return;
             }
+            // If no pincodes configured → COD is available everywhere
             if (!quickCodPincodes.length) {
-                statusEl.innerHTML = '<span style="color:#f59e0b;font-size:0.82rem;"><i class="fas fa-exclamation-circle"></i> COD availability not confirmed for your pincode. Contact us to verify.</span>';
+                statusEl.innerHTML = '<span style="color:#22c55e;font-size:0.82rem;"><i class="fas fa-check-circle"></i> Cash on Delivery is available at your pincode.</span>';
                 return;
             }
             const available = quickCodPincodes.includes(pin);
             if (available) {
                 statusEl.innerHTML = '<span style="color:#22c55e;font-size:0.82rem;"><i class="fas fa-check-circle"></i> Cash on Delivery is available at your pincode.</span>';
             } else {
-                statusEl.innerHTML = '<span style="color:#ef4444;font-size:0.82rem;"><i class="fas fa-times-circle"></i> Your Pincode is not available for COD.</span>';
+                statusEl.innerHTML = '<span style="color:#ef4444;font-size:0.82rem;"><i class="fas fa-times-circle"></i> COD is not available at your pincode. Please choose GPay to continue.</span>';
             }
         }
 

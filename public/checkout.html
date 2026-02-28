@@ -1530,9 +1530,9 @@
 
             displayEl.textContent = pincode;
 
-            // If no pincodes configured → show neutral warning (admin hasn't set up the list)
+            // If no pincodes configured → COD is available everywhere
             if (!checkoutCodPincodes.length) {
-                statusEl.innerHTML = '<span style="color: #f59e0b; font-size: 0.85rem;"><i class="fas fa-exclamation-circle"></i> COD availability not confirmed for your pincode. Contact us to verify.</span>';
+                statusEl.innerHTML = '<span style="color: #22c55e; font-size: 0.85rem;"><i class="fas fa-check-circle"></i> Cash on Delivery is available at your pincode.</span>';
                 return;
             }
 
@@ -1540,7 +1540,7 @@
             if (available) {
                 statusEl.innerHTML = '<span style="color: #22c55e; font-size: 0.85rem;"><i class="fas fa-check-circle"></i> Cash on Delivery is available at your pincode.</span>';
             } else {
-                statusEl.innerHTML = '<span style="color: #ef4444; font-size: 0.85rem;"><i class="fas fa-times-circle"></i> Your Pincode is not available for COD.</span>';
+                statusEl.innerHTML = '<span style="color: #ef4444; font-size: 0.85rem;"><i class="fas fa-times-circle"></i> COD is not available at your pincode. Please choose GPay to continue.</span>';
             }
         }
 
