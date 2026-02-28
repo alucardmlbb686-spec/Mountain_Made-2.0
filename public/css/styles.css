@@ -363,11 +363,11 @@ html[data-theme="dark"] .navbar {
   max-width: 1500px;
   margin: 0 auto;
   padding: 0 var(--space-6);
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   min-height: 62px;
-  gap: 0;
+  gap: var(--space-3);
   width: 100%;
   box-sizing: border-box;
   position: relative;
@@ -733,6 +733,13 @@ html[data-theme="dark"] .navbar {
    DESKTOP NAVBAR LAYOUT — logo left, links inline in bar, no hamburger (≥768px)
    ============================================================================ */
 @media (min-width: 768px) {
+  /* Switch container to flex so brand+menu+actions flow inline */
+  .navbar-container {
+    display: flex;
+    grid-template-columns: unset;
+    gap: 0;
+  }
+
   /* Hide hamburger on desktop */
   .mobile-menu-toggle {
     display: none !important;
