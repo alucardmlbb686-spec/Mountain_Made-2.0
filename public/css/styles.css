@@ -487,6 +487,16 @@ html[data-theme="dark"] .navbar {
   color: var(--orange-400);
 }
 
+.navbar-brand img {
+  max-height: 52px;
+  height: auto;
+  width: auto;
+  max-width: 200px;
+  display: block;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
 .navbar-menu {
   display: flex;
   align-items: center;

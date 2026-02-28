@@ -3215,9 +3215,9 @@
                             </div>
 
                             <div style="margin-top: 1.5rem;">
-                                <label class="form-label" for="homepage-hero-image-upload">Heading Rectangle Image (JPG or PNG)</label>
-                                <input type="file" id="homepage-hero-image-upload" class="form-input" accept=".jpg,.jpeg,.png" onchange="previewHomepageHeroImage(event)">
-                                <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">Recommended ratio: 16:9 (e.g., 1200x675). Optional.</small>
+                                <label class="form-label" for="homepage-hero-image-upload">Heading Banner Image (JPG, PNG or GIF)</label>
+                                <input type="file" id="homepage-hero-image-upload" class="form-input" accept=".jpg,.jpeg,.png,.gif" onchange="previewHomepageHeroImage(event)">
+                                <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">Recommended ratio: 16:9 (e.g., 1200x675). GIFs are uploaded as-is without cropping. Optional.</small>
                                 <input type="hidden" id="homepage-hero-image-current" value="">
                             </div>
 
@@ -3283,9 +3283,9 @@
                             </div>
 
                             <div style="margin-top: 1.5rem;">
-                                <label class="form-label" for="edit-homepage-hero-image-upload">Heading Rectangle Image (JPG or PNG)</label>
-                                <input type="file" id="edit-homepage-hero-image-upload" class="form-input" accept=".jpg,.jpeg,.png" onchange="previewEditHomepageHeroImage(event)">
-                                <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">Optional: upload to replace heading image for this section.</small>
+                                <label class="form-label" for="edit-homepage-hero-image-upload">Heading Banner Image (JPG, PNG or GIF)</label>
+                                <input type="file" id="edit-homepage-hero-image-upload" class="form-input" accept=".jpg,.jpeg,.png,.gif" onchange="previewEditHomepageHeroImage(event)">
+                                <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">Optional: upload to replace heading image. GIFs are uploaded as-is without cropping.</small>
                                 <input type="hidden" id="edit-homepage-hero-image-current" value="">
                             </div>
 
@@ -6291,17 +6291,28 @@
                 return;
             }
 
+            const isGif = file.name.toLowerCase().endsWith('.gif') || file.type === 'image/gif';
+            const cropControls = document.querySelector('#add-heading-crop-x')?.closest('.modal-body > div:last-of-type');
+            if (cropControls) cropControls.style.display = isGif ? 'none' : '';
+
             (async () => {
                 try {
                     window._addSectionHeadingSourceFile = file;
 
-                    const addCropX = document.getElementById('add-heading-crop-x');
-                    const addCropY = document.getElementById('add-heading-crop-y');
-                    if (addCropX) addCropX.value = 50;
-                    if (addCropY) addCropY.value = 50;
+                    if (isGif) {
+                        // GIF: skip canvas crop, use original file directly
+                        window._addSectionHeadingCroppedFile = file;
+                        await setImagePreviewFromFile(file, 'homepage-hero-image-preview', 'homepage-hero-image-placeholder');
+                        showAlert('GIF uploaded. It will be displayed as-is (no cropping for animated GIFs).', 'success');
+                    } else {
+                        const addCropX = document.getElementById('add-heading-crop-x');
+                        const addCropY = document.getElementById('add-heading-crop-y');
+                        if (addCropX) addCropX.value = 50;
+                        if (addCropY) addCropY.value = 50;
 
-                    await buildAndPreviewAddSectionCrop();
-                    showAlert('Image cropped. Adjust sliders for manual crop.', 'success');
+                        await buildAndPreviewAddSectionCrop();
+                        showAlert('Image cropped. Adjust sliders for manual crop.', 'success');
+                    }
                 } catch (error) {
                     console.error('Add heading image crop error:', error);
                     window._addSectionHeadingSourceFile = null;
@@ -8908,11 +8919,23 @@
                 return;
             }
 
+            const isGif = file.name.toLowerCase().endsWith('.gif') || file.type === 'image/gif';
+            const editCropControls = document.querySelector('#edit-heading-crop-x')?.closest('.modal-body > div:last-of-type');
+            if (editCropControls) editCropControls.style.display = isGif ? 'none' : '';
+
             (async () => {
                 try {
                     window._editSectionHeadingSourceFile = file;
-                    await buildAndPreviewEditSectionCrop();
-                    showAlert('Image cropped. Adjust sliders for manual crop.', 'success');
+
+                    if (isGif) {
+                        // GIF: skip canvas crop, use original file directly
+                        window._editSectionHeadingCroppedFile = file;
+                        await setImagePreviewFromFile(file, 'edit-homepage-hero-image-preview', 'edit-homepage-hero-image-placeholder');
+                        showAlert('GIF uploaded. It will be displayed as-is (no cropping for animated GIFs).', 'success');
+                    } else {
+                        await buildAndPreviewEditSectionCrop();
+                        showAlert('Image cropped. Adjust sliders for manual crop.', 'success');
+                    }
                 } catch (error) {
                     console.error('Edit heading image crop error:', error);
                     window._editSectionHeadingSourceFile = null;

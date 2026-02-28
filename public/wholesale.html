@@ -608,6 +608,90 @@
                 text-align: left;
             }
         }
+
+        /* =============================================
+           DARK MODE OVERRIDES FOR WHOLESALE
+           ============================================= */
+        html[data-theme="dark"] .info-item {
+            background: var(--bg-secondary);
+        }
+
+        html[data-theme="dark"] .info-item p {
+            color: var(--text-primary);
+        }
+
+        html[data-theme="dark"] .info-item h4 {
+            color: var(--text-secondary);
+        }
+
+        html[data-theme="dark"] .wholesale-section h2 {
+            color: var(--wholesale-accent);
+            border-bottom-color: var(--border-primary);
+        }
+
+        html[data-theme="dark"] .action-card {
+            border-left-color: var(--wholesale-accent);
+        }
+
+        html[data-theme="dark"] .action-card h3 {
+            color: var(--wholesale-accent);
+        }
+
+        html[data-theme="dark"] .wholesale-product-name {
+            color: var(--text-primary);
+        }
+
+        html[data-theme="dark"] .wholesale-price-main {
+            color: #60a5fa;
+        }
+
+        html[data-theme="dark"] .wholesale-stock-row {
+            color: var(--text-secondary);
+        }
+
+        html[data-theme="dark"] .wholesale-stock-row.low {
+            color: #fbbf24;
+        }
+
+        html[data-theme="dark"] .wholesale-stock-row.out {
+            color: #f87171;
+        }
+
+        html[data-theme="dark"] .wholesale-catalog-summary {
+            color: var(--text-secondary);
+        }
+
+        html[data-theme="dark"] .wholesale-catalog-empty {
+            background: var(--bg-secondary);
+            border-color: var(--border-primary);
+            color: var(--text-secondary);
+        }
+
+        html[data-theme="dark"] .wholesale-guard {
+            background: var(--bg-secondary);
+            border-color: var(--wholesale-secondary);
+        }
+
+        html[data-theme="dark"] .wholesale-moq-badge {
+            background: #1e3a8a;
+            color: #93c5fd;
+            border-color: #1e40af;
+        }
+
+        html[data-theme="dark"] .wholesale-category-label {
+            color: var(--text-tertiary);
+        }
+
+        html[data-theme="dark"] .wholesale-price-compare {
+            color: var(--text-tertiary);
+        }
+
+        html[data-theme="dark"] .wholesale-catalog-toolbar .form-input,
+        html[data-theme="dark"] .wholesale-catalog-toolbar .form-select {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-color: var(--border-primary);
+        }
     </style>
 </head>
 <body>

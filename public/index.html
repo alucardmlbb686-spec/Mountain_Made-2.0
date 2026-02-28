@@ -1158,6 +1158,50 @@
             margin-top: 0.25rem;
             padding: 0.25rem 0;
         }
+
+        /* Enhanced Shop by Category heading decoration */
+        #categories .section-title {
+            display: block;
+            border-left: 4px solid var(--primary-500);
+            padding-left: 0.85rem;
+            border-bottom: 2px solid var(--primary-300, #86efac);
+            border-radius: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #categories .section-title h2 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #categories .section-title h2::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--primary-500);
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        html[data-theme="dark"] #categories .section-title {
+            border-color: var(--primary-600) var(--primary-700);
+        }
+
+        /* Dark mode: fix hardcoded white backgrounds in mobile search section */
+        @media (max-width: 768px) {
+            html[data-theme="dark"] .search-section {
+                background-color: var(--bg-secondary) !important;
+            }
+            html[data-theme="dark"] .search-container {
+                background: var(--bg-secondary) !important;
+            }
+            html[data-theme="dark"] .hero-slider-dots {
+                background: var(--bg-secondary);
+            }
+        }
     </style>
 </head>
 <body>
