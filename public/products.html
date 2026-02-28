@@ -410,13 +410,15 @@
                 width: 80%;
                 max-width: 320px;
                 position: fixed;
-                top: 70px; /* roughly below navbar */
+                top: 62px; /* matches navbar height */
                 left: 0;
-                height: calc(100vh - 70px);
+                height: calc(100vh - 62px);
                 overflow-y: auto;
                 z-index: 900;
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
+                background-color: var(--bg-primary);
+                box-shadow: 4px 0 24px rgba(0,0,0,0.22);
             }
 
             .filter-sidebar.is-open {

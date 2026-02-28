@@ -335,6 +335,54 @@ html[data-theme="dark"] .navbar {
   border-bottom-color: rgba(212,175,55,0.4);
 }
 
+/* ── Dark mode button overrides ── */
+html[data-theme="dark"] .btn-primary {
+  background: linear-gradient(to bottom, #23a356 0%, #177a3e 100%);
+  border-color: #0e5c2a #0b4f22 #09401b;
+  color: #fff;
+}
+html[data-theme="dark"] .btn-primary:hover {
+  background: linear-gradient(to bottom, #1e9c50 0%, #137035 100%);
+  color: #fff;
+}
+
+html[data-theme="dark"] .btn-secondary {
+  background: linear-gradient(to bottom, #2a2f36 0%, #1e2228 100%);
+  color: #d1d5d9;
+  border-color: #4a7a55 #3a6645 #2e5236;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 1px 2px rgba(0,0,0,0.30);
+}
+html[data-theme="dark"] .btn-secondary:hover {
+  background: linear-gradient(to bottom, #323840 0%, #252b33 100%);
+  color: #e2e6ea;
+  border-color: #3a6645 #2e5236 #24412a;
+}
+
+html[data-theme="dark"] .btn-accent {
+  background: linear-gradient(to bottom, #c9a430 0%, #9e7c1a 100%);
+  color: #fff9e6;
+  border-color: #7a5d0a #644d08 #503d06;
+}
+html[data-theme="dark"] .btn-accent:hover {
+  background: linear-gradient(to bottom, #bf9a2c 0%, #937218 100%);
+  color: #fff9e6;
+}
+
+html[data-theme="dark"] .btn-success {
+  background: linear-gradient(to bottom, #c9a430 0%, #9e7c1a 100%);
+  color: #fff9e6;
+  border-color: #7a5d0a #644d08 #503d06;
+}
+html[data-theme="dark"] .btn-success:hover {
+  background: linear-gradient(to bottom, #bf9a2c 0%, #937218 100%);
+  color: #fff9e6;
+}
+
+html[data-theme="dark"] .btn-danger {
+  background: linear-gradient(to bottom, #e84040 0%, #c52020 100%);
+  border-color: #952020 #7a1818 #641414;
+}
+
 /* ── Corner bracket ornaments ── */
 .nav-corner {
   position: absolute;
