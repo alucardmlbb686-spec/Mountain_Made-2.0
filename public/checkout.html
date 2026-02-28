@@ -1530,9 +1530,9 @@
 
             displayEl.textContent = pincode;
 
-            // If no pincodes configured, COD is available everywhere
+            // If no pincodes configured → show neutral warning (admin hasn't set up the list)
             if (!checkoutCodPincodes.length) {
-                statusEl.innerHTML = '<span style="color: #22c55e; font-size: 0.85rem;"><i class="fas fa-check-circle"></i> Cash on Delivery is available at your pincode.</span>';
+                statusEl.innerHTML = '<span style="color: #f59e0b; font-size: 0.85rem;"><i class="fas fa-exclamation-circle"></i> COD availability not confirmed for your pincode. Contact us to verify.</span>';
                 return;
             }
 

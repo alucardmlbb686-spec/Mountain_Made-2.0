@@ -1614,7 +1614,7 @@
                 return;
             }
             if (!quickCodPincodes.length) {
-                statusEl.innerHTML = '<span style="color:#22c55e;font-size:0.82rem;"><i class="fas fa-check-circle"></i> Cash on Delivery is available at your pincode.</span>';
+                statusEl.innerHTML = '<span style="color:#f59e0b;font-size:0.82rem;"><i class="fas fa-exclamation-circle"></i> COD availability not confirmed for your pincode. Contact us to verify.</span>';
                 return;
             }
             const available = quickCodPincodes.includes(pin);
@@ -1691,6 +1691,19 @@
             await cart.fetch();
             await loadProduct();
             await loadUserAddresses();
+
+            // Auto-trigger quick buy modal if arriving from homepage Buy Now
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('quickbuy') === '1') {
+                const qtyParam = parseInt(urlParams.get('qty'), 10);
+                if (qtyParam > 0) {
+                    selectedQuantity = qtyParam;
+                    const qtyInput = document.getElementById('quantity');
+                    if (qtyInput) qtyInput.value = qtyParam;
+                }
+                // Small delay to let the page render first
+                setTimeout(() => handleBuyNow(), 300);
+            }
 
             // Close share menu on outside click
             document.addEventListener('click', () => {

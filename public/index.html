@@ -1942,7 +1942,7 @@
             }
         }
         
-        // Buy now function - route through checkout with selected quantity
+        // Buy now function - go to product details page with buyNow trigger
         async function buyNow(productId) {
             try {
                 const user = await auth.checkAuth();
@@ -1950,39 +1950,16 @@
                 if (!user) {
                     showAlert('Please login to buy products', 'error');
                     setTimeout(() => {
-                        window.location.href = '/login?redirect=/checkout';
+                        window.location.href = '/login?redirect=/product-details/' + productId;
                     }, 1500);
                     return;
                 }
 
                 const quantity = getHomeQuantity(productId);
-                
-                // Mark as direct buy before cart operations
-                sessionStorage.setItem('directBuy', 'true');
-                
-                // Clear cart and add product
-                await cart.clear();
-                const addSuccess = await cart.add(productId, quantity);
-                
-                if (!addSuccess) {
-                    sessionStorage.removeItem('directBuy');
-                    showAlert('Failed to add product to cart. Please try again.', 'error');
-                    return;
-                }
-                
-                // Verify cart has items before redirecting
-                const cartCheck = await cart.fetch();
-                if (!cartCheck || !cartCheck.cartItems || cartCheck.cartItems.length === 0) {
-                    sessionStorage.removeItem('directBuy');
-                    showAlert('Failed to prepare checkout. Please try again.', 'error');
-                    return;
-                }
-                
-                // Redirect to checkout
-                window.location.replace('/checkout');
+                // Navigate to product details with quick-buy modal auto-opened
+                window.location.href = `/product-details/${productId}?quickbuy=1&qty=${quantity}`;
             } catch (error) {
                 console.error('Buy now error:', error);
-                sessionStorage.removeItem('directBuy');
                 showAlert(error.message || 'Failed to start checkout', 'error');
             }
         }
