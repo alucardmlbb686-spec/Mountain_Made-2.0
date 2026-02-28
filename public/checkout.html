@@ -156,6 +156,17 @@
                             </div>
                             <div class="form-help" id="gpay-prefill-hint">Prefilled from your Billing Management details.</div>
                         </div>
+                        <!-- COD details shown when Cash on Delivery is selected -->
+                        <div id="cod-details" class="hidden" style="margin-bottom: 1rem;">
+                            <div id="cod-pincode-info" style="padding: 0.9rem 1rem; border-radius: 8px; border: 1px solid var(--border-primary); background: var(--bg-secondary); font-size: 0.92rem;">
+                                <div style="display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.35rem;">
+                                    <i class="fas fa-map-marker-alt" style="color: var(--primary);"></i>
+                                    <strong>Delivery Pincode</strong>
+                                </div>
+                                <div id="cod-pincode-display" style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.4rem;">—</div>
+                                <div id="cod-pincode-status"></div>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label class="form-label">Order Notes (Optional)</label>
                             <textarea id="notes" class="form-textarea"></textarea>
@@ -789,6 +800,8 @@
             bankName: '',
             qrImageUrl: ''
         };
+        // COD pincode list – empty = available everywhere
+        let checkoutCodPincodes = [];
 
         // Navigate back to appropriate home based on user role
         function navigateBack() {
@@ -1086,6 +1099,11 @@
             // Hide manual form
             document.getElementById('address-form').style.display = 'none';
             setManualAddressRequired(false);
+
+            // Refresh COD pincode check when address changes
+            if (document.getElementById('payment_method')?.value === 'cash_on_delivery') {
+                updateCodPincodeCheck();
+            }
         }
 
         function showManualAddressForm() {
@@ -1472,12 +1490,57 @@
         function toggleGpayDetails() {
             const paymentSelect = document.getElementById('payment_method');
             const gpaySection = document.getElementById('gpay-details');
+            const codSection = document.getElementById('cod-details');
             if (!paymentSelect || !gpaySection) return;
             const isGpay = paymentSelect.value === 'gpay';
+            const isCod = paymentSelect.value === 'cash_on_delivery';
             paymentSelect.classList.toggle('payment-method-gpay', isGpay);
             gpaySection.classList.toggle('hidden', !isGpay);
+            if (codSection) codSection.classList.toggle('hidden', !isCod);
             if (isGpay) {
                 updateGpayLabelAndPrefill();
+            }
+            if (isCod) {
+                updateCodPincodeCheck();
+            }
+        }
+
+        function getSelectedPincode() {
+            // Try to get pincode from selected address
+            if (selectedAddressId) {
+                const addr = userAddresses.find(a => a.id === selectedAddressId);
+                if (addr && addr.postal_code) return String(addr.postal_code).trim();
+            }
+            // Fall back to manual zip input
+            const zipEl = document.getElementById('zip');
+            return zipEl ? String(zipEl.value || '').trim() : '';
+        }
+
+        function updateCodPincodeCheck() {
+            const pincode = getSelectedPincode();
+            const displayEl = document.getElementById('cod-pincode-display');
+            const statusEl = document.getElementById('cod-pincode-status');
+            if (!displayEl || !statusEl) return;
+
+            if (!pincode) {
+                displayEl.textContent = '—';
+                statusEl.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.85rem;">Enter your delivery address to check COD availability.</span>';
+                return;
+            }
+
+            displayEl.textContent = pincode;
+
+            // If no pincodes configured, COD is available everywhere
+            if (!checkoutCodPincodes.length) {
+                statusEl.innerHTML = '<span style="color: #22c55e; font-size: 0.85rem;"><i class="fas fa-check-circle"></i> Cash on Delivery is available at your pincode.</span>';
+                return;
+            }
+
+            const available = checkoutCodPincodes.includes(pincode);
+            if (available) {
+                statusEl.innerHTML = '<span style="color: #22c55e; font-size: 0.85rem;"><i class="fas fa-check-circle"></i> Cash on Delivery is available at your pincode.</span>';
+            } else {
+                statusEl.innerHTML = '<span style="color: #ef4444; font-size: 0.85rem;"><i class="fas fa-times-circle"></i> Your Pincode is not available for COD.</span>';
             }
         }
 
@@ -1511,6 +1574,16 @@
             if (paymentSelect) {
                 paymentSelect.addEventListener('change', toggleGpayDetails);
                 toggleGpayDetails();
+            }
+
+            // Refresh COD check when zip is manually typed
+            const zipInput = document.getElementById('zip');
+            if (zipInput) {
+                zipInput.addEventListener('input', () => {
+                    if (document.getElementById('payment_method')?.value === 'cash_on_delivery') {
+                        updateCodPincodeCheck();
+                    }
+                });
             }
 
             if (manageBtn) {
@@ -1556,6 +1629,16 @@
                 checkoutGpaySettings.phoneNumber = String(settings.gpay_phone_number || '').trim();
                 checkoutGpaySettings.bankName = String(settings.gpay_bank_name || '').trim();
                 checkoutGpaySettings.qrImageUrl = String(settings.gpay_qr_image_url || '').trim();
+
+                // Load COD pincode list (comma-separated from admin)
+                const rawCodPincodes = String(settings.cod_available_pincodes || '').trim();
+                checkoutCodPincodes = rawCodPincodes
+                    ? rawCodPincodes.split(',').map(p => p.trim()).filter(Boolean)
+                    : [];
+                // Refresh COD section if already visible
+                if (document.getElementById('payment_method')?.value === 'cash_on_delivery') {
+                    updateCodPincodeCheck();
+                }
 
                 const fastOption = document.getElementById('fast-delivery-option');
                 const fastLabel = document.getElementById('fast-delivery-charge-label');

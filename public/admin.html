@@ -2591,6 +2591,28 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- COD Availability Section -->
+                <div class="data-table-container" style="margin-top: 1.5rem;">
+                    <div class="table-header">
+                        <h3><i class="fas fa-truck"></i> Cash on Delivery – Pincode Availability</h3>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">
+                            Enter the pincodes (comma-separated) where Cash on Delivery is available. Leave empty to allow COD for <strong>all</strong> pincodes.
+                        </p>
+                        <div class="form-group" style="max-width: 640px;">
+                            <label class="form-label" for="cod-available-pincodes">COD Available Pincodes</label>
+                            <textarea id="cod-available-pincodes" class="form-textarea" rows="4" placeholder="e.g. 110001, 110002, 400001, 500001&#10;Leave empty = COD available everywhere"></textarea>
+                            <small style="color: var(--text-muted); display:block; margin-top: 0.35rem;">
+                                Separate pincodes with commas or newlines. Customers with pincodes not in this list will see a warning at checkout.
+                            </small>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveCodPincodeSettings()">
+                            <i class="fas fa-save"></i> Save COD Pincodes
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Admin License Section -->
@@ -6032,6 +6054,9 @@
                 if (gpayQrEl) gpayQrEl.value = settings.gpay_qr_image_url || '';
                 updateGpayQrImagePreview(settings.gpay_qr_image_url || '');
 
+                const codPincodesEl = document.getElementById('cod-available-pincodes');
+                if (codPincodesEl) codPincodesEl.value = settings.cod_available_pincodes || '';
+
                 // Populate slider images
                 loadSliderSettingsUI(settings);
                 // Populate mobile hero background
@@ -6627,6 +6652,28 @@
             } catch (error) {
                 console.error('Save GPay integration settings error:', error);
                 showAlert(error.message || 'Failed to save GPay integration settings', 'error');
+            }
+        };
+
+        /* ── Homepage Hero Slider Admin Functions ── */
+        window.saveCodPincodeSettings = async function() {
+            try {
+                const raw = (document.getElementById('cod-available-pincodes')?.value || '').trim();
+                // Normalize: split by comma or newline, trim each, rejoin with comma
+                const normalized = raw
+                    ? raw.split(/[\n,]+/).map(p => p.trim()).filter(Boolean).join(',')
+                    : '';
+                const response = await api.post('/admin/settings', { cod_available_pincodes: normalized });
+                if (response && (response.success || response.message)) {
+                    const codPincodesEl = document.getElementById('cod-available-pincodes');
+                    if (codPincodesEl) codPincodesEl.value = normalized.replace(/,/g, ', ');
+                    showAlert('COD pincode settings saved successfully!', 'success');
+                } else {
+                    throw new Error(response?.error || 'Failed to save COD pincode settings');
+                }
+            } catch (error) {
+                console.error('Save COD pincode settings error:', error);
+                showAlert(error.message || 'Failed to save COD pincode settings', 'error');
             }
         };
 

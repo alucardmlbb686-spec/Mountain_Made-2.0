@@ -929,6 +929,7 @@
         let product = null;
         let selectedQuantity = 1;
         let userAddresses = [];
+        let quickCodPincodes = []; // loaded from admin settings on first Buy Now click
 
         function getQuantityStep() {
             const isWholesaleUser = !!(auth && typeof auth.isWholesale === 'function' && auth.isWholesale());
@@ -1461,6 +1462,17 @@
                 await loadUserAddresses();
             }
 
+            // Load COD pincodes from admin settings (once)
+            if (!quickCodPincodes.length) {
+                try {
+                    const resp = await api.get('/products/settings');
+                    const raw = String((resp.settings || {}).cod_available_pincodes || '').trim();
+                    quickCodPincodes = raw ? raw.split(',').map(p => p.trim()).filter(Boolean) : [];
+                } catch (e) {
+                    quickCodPincodes = [];
+                }
+            }
+
             // If user has addresses, show selection modal
             if (userAddresses.length > 0) {
                 showAddressSelectionModal();
@@ -1524,6 +1536,17 @@
                                 <div class="form-help">This is shared only with the owner for payment confirmation.</div>
                             </div>
                         </div>
+                        <!-- COD pincode check -->
+                        <div id="quick-cod-details">
+                            <div style="padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-secondary); font-size: 0.9rem;">
+                                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.3rem;">
+                                    <i class="fas fa-map-marker-alt" style="color:var(--primary);"></i>
+                                    <strong>Delivery Pincode</strong>
+                                </div>
+                                <div id="quick-cod-pincode-display" style="font-size:1rem; font-weight:600; color:var(--text-primary); margin-bottom:0.3rem;">${defaultAddress.postal_code || '—'}</div>
+                                <div id="quick-cod-pincode-status"></div>
+                            </div>
+                        </div>
                     </div>
                     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                         <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
@@ -1540,6 +1563,8 @@
                 paymentSelect.addEventListener('change', toggleQuickGpayDetails);
             }
             toggleQuickGpayDetails();
+            // Initialize COD pincode check for the default address
+            updateQuickCodPincodeCheck(defaultAddress.postal_code);
         }
 
         function formatQuickGpayLabel(type) {
@@ -1551,6 +1576,7 @@
         function toggleQuickGpayDetails() {
             const paymentSelect = document.getElementById('quick_payment_method');
             const gpaySection = document.getElementById('quick-gpay-details');
+            const codSection = document.getElementById('quick-cod-details');
             const typeSelect = document.getElementById('quick-gpay-detail-type');
             const labelEl = document.getElementById('quick-gpay-detail-label');
             const valueInput = document.getElementById('quick-gpay-detail-value');
@@ -1558,6 +1584,7 @@
 
             const isGpay = paymentSelect.value === 'gpay';
             gpaySection.classList.toggle('hidden', !isGpay);
+            if (codSection) codSection.style.display = isGpay ? 'none' : '';
 
             if (typeSelect && labelEl) {
                 labelEl.textContent = formatQuickGpayLabel(typeSelect.value);
@@ -1565,6 +1592,36 @@
                     labelEl.textContent = formatQuickGpayLabel(typeSelect.value);
                     if (valueInput) valueInput.placeholder = typeSelect.value === 'phone' ? 'e.g. +91 98765 43210' : (typeSelect.value === 'qr' ? 'e.g. link or description' : 'e.g. name@upi');
                 };
+            }
+
+            // Refresh COD check when switching to COD
+            if (!isGpay) {
+                const addr = userAddresses.find(a => a.id === window.selectedAddressId);
+                updateQuickCodPincodeCheck(addr ? addr.postal_code : '');
+            }
+        }
+
+        function updateQuickCodPincodeCheck(pincode) {
+            const displayEl = document.getElementById('quick-cod-pincode-display');
+            const statusEl = document.getElementById('quick-cod-pincode-status');
+            if (!displayEl || !statusEl) return;
+
+            const pin = String(pincode || '').trim();
+            displayEl.textContent = pin || '—';
+
+            if (!pin) {
+                statusEl.innerHTML = '<span style="color:var(--text-secondary);font-size:0.82rem;">No pincode found for selected address.</span>';
+                return;
+            }
+            if (!quickCodPincodes.length) {
+                statusEl.innerHTML = '<span style="color:#22c55e;font-size:0.82rem;"><i class="fas fa-check-circle"></i> Cash on Delivery is available at your pincode.</span>';
+                return;
+            }
+            const available = quickCodPincodes.includes(pin);
+            if (available) {
+                statusEl.innerHTML = '<span style="color:#22c55e;font-size:0.82rem;"><i class="fas fa-check-circle"></i> Cash on Delivery is available at your pincode.</span>';
+            } else {
+                statusEl.innerHTML = '<span style="color:#ef4444;font-size:0.82rem;"><i class="fas fa-times-circle"></i> Your Pincode is not available for COD.</span>';
             }
         }
 
@@ -1574,6 +1631,9 @@
                 el.style.borderColor = 'var(--border)';
             });
             event.currentTarget.style.borderColor = 'var(--primary)';
+            // Refresh COD pincode check for newly selected address
+            const addr = userAddresses.find(a => a.id === addressId);
+            if (addr) updateQuickCodPincodeCheck(addr.postal_code);
         }
 
         async function confirmBuyNow() {
