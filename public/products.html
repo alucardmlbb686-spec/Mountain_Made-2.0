@@ -993,50 +993,16 @@
                 if (!user) {
                     showAlert('Please login to buy products', 'error');
                     setTimeout(() => {
-                        window.location.href = '/login?redirect=/checkout';
+                        window.location.href = `/login?redirect=/product-details?id=${productId}`;
                     }, 1500);
                     return;
                 }
 
-                const product = products.find(p => p.id === productId);
-                if (!product) {
-                    showAlert('Product not found', 'error');
-                    return;
-                }
-
-                if (product.stock_quantity < 1) {
-                    showAlert('Product is out of stock', 'error');
-                    return;
-                }
-
                 const quantity = getProductQuantity(productId);
-                
-                // Mark as direct buy before cart operations
-                sessionStorage.setItem('directBuy', 'true');
-                
-                // Clear cart and add product
-                await cart.clear();
-                const addSuccess = await cart.add(productId, quantity);
-                
-                if (!addSuccess) {
-                    sessionStorage.removeItem('directBuy');
-                    showAlert('Failed to add product to cart. Please try again.', 'error');
-                    return;
-                }
-                
-                // Verify cart has items before redirecting
-                const cartCheck = await cart.fetch();
-                if (!cartCheck || !cartCheck.cartItems || cartCheck.cartItems.length === 0) {
-                    sessionStorage.removeItem('directBuy');
-                    showAlert('Failed to prepare checkout. Please try again.', 'error');
-                    return;
-                }
-                
-                // Redirect to checkout
-                window.location.replace('/checkout');
+                // Navigate to product details with quick-buy modal auto-opened
+                window.location.href = `/product-details?id=${productId}&quickbuy=1&qty=${quantity}`;
             } catch (err) {
                 console.error('Buy now error:', err);
-                sessionStorage.removeItem('directBuy');
                 showAlert(err.message || 'Failed to start checkout', 'error');
             }
         }

@@ -1957,7 +1957,7 @@
 
                 const quantity = getHomeQuantity(productId);
                 // Navigate to product details with quick-buy modal auto-opened
-                window.location.href = `/product-details/${productId}?quickbuy=1&qty=${quantity}`;
+                window.location.href = `/product-details?id=${productId}&quickbuy=1&qty=${quantity}`;
             } catch (error) {
                 console.error('Buy now error:', error);
                 showAlert(error.message || 'Failed to start checkout', 'error');
