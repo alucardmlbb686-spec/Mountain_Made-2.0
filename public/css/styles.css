@@ -432,8 +432,8 @@ html[data-theme="dark"] .navbar {
 /* Delivery bar */
 .deliver-bar {
   width: 100%;
-  background: var(--primary-700);
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  background: #0a2e12;
+  border-bottom: 2px solid rgba(212,175,55,0.35);
 }
 
 .deliver-bar-container {
@@ -463,8 +463,8 @@ html[data-theme="dark"] .navbar {
 }
 
 .deliver-bar-link:hover {
-  border-color: #ffffff;
-  background: transparent;
+  border-color: rgba(212,175,55,0.65);
+  background: rgba(212,175,55,0.07);
   box-shadow: none;
   text-decoration: none;
 }
@@ -484,7 +484,7 @@ html[data-theme="dark"] .navbar {
 .deliver-bar-label {
   font-size: 0.65rem;
   font-weight: var(--font-normal);
-  color: rgba(255,255,255,0.72);
+  color: rgba(212,175,55,0.80);
   letter-spacing: 0.01em;
   text-transform: none;
 }
@@ -863,47 +863,48 @@ html[data-theme="dark"] .navbar {
   outline-offset: 2px;
 }
 
-/* Add to Cart — Green */
+/* Add to Cart — Deep Forest Green matching navbar */
 .btn-primary {
-  background: linear-gradient(to bottom, #2ecc71 0%, #27ae60 100%);
+  background: linear-gradient(to bottom, #1e7a3a 0%, #145524 100%);
   color: #fff;
-  border-color: #1e8449 #1a7a42 #166534;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.28) inset, 0 1px 2px rgba(0,0,0,0.22);
-  text-shadow: 0 1px 0 rgba(0,0,0,0.10);
+  border-color: #0e4419 #0b3815 #093011;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.18) inset, 0 1px 3px rgba(0,0,0,0.30);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.18);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(to bottom, #27c065 0%, #22a053 100%);
-  border-color: #1a7a42 #166534 #14532d;
+  background: linear-gradient(to bottom, #228040 0%, #175e29 100%);
+  border-color: #0b3815 #093011 #07260d;
   color: #fff;
 }
 
-/* Secondary — subtle gradient like Amazon secondary */
+/* Secondary — refined pearl with deep green tint border */
 .btn-secondary {
-  background: linear-gradient(to bottom, #f7f8f8 0%, #e7e9ec 100%);
-  color: var(--text-primary);
-  border-color: #adb1b8 #a2a6ac #8d9096;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 1px 2px rgba(0,0,0,0.14);
+  background: linear-gradient(to bottom, #f5f7f5 0%, #e3e8e4 100%);
+  color: #1a3d20;
+  border-color: #5a8a65 #4a7a55 #3a6645;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.65) inset, 0 1px 2px rgba(0,0,0,0.14);
 }
 
 .btn-secondary:hover {
-  background: linear-gradient(to bottom, #e8e9ec 0%, #d4d6da 100%);
-  border-color: #a2a6ac #979aa0 #82858e;
-  color: var(--text-primary);
+  background: linear-gradient(to bottom, #e6ebe6 0%, #cdd6ce 100%);
+  border-color: #4a7a55 #3a6645 #2e5236;
+  color: #122b18;
 }
 
-/* Accent — Orange (Buy Now) */
+/* Accent — Gold (matching navbar ornaments) */
 .btn-accent {
-  background: linear-gradient(to bottom, #ffa41c 0%, #ff8f00 100%);
-  color: #111;
-  border-color: #c6610f #bc5c0d #a04b08;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 1px 2px rgba(0,0,0,0.22);
-  text-shadow: 0 1px 0 rgba(255,255,255,0.25);
+  background: linear-gradient(to bottom, #d4af37 0%, #b08a20 100%);
+  color: #1a1200;
+  border-color: #9a6e10 #84600d #6e4f08;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.30) inset, 0 1px 3px rgba(0,0,0,0.28);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.15);
 }
 
 .btn-accent:hover {
-  background: linear-gradient(to bottom, #f59b18 0%, #f08200 100%);
-  color: #111;
+  background: linear-gradient(to bottom, #c9a430 0%, #a07e1c 100%);
+  border-color: #84600d #6e4f08 #5a3f05;
+  color: #120e00;
 }
 
 /* Danger */
@@ -919,18 +920,18 @@ html[data-theme="dark"] .navbar {
   color: #fff;
 }
 
-/* Success / Buy Now — deep orange-amber, distinct from green Add to Cart */
+/* Success / Buy Now — premium gold, matching navbar ornament gold */
 .btn-success {
-  background: linear-gradient(to bottom, #ff8c00 0%, #e07000 100%);
-  color: #fff;
-  border-color: #b85800 #a04c00 #8a3c00;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.22) inset, 0 1px 2px rgba(0,0,0,0.22);
-  text-shadow: 0 1px 0 rgba(0,0,0,0.10);
+  background: linear-gradient(to bottom, #d4af37 0%, #a8851a 100%);
+  color: #1a1200;
+  border-color: #8c6a10 #76580d #60440a;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.28) inset, 0 1px 3px rgba(0,0,0,0.26);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.12);
 }
 
 .btn-success:hover {
-  background: linear-gradient(to bottom, #f08000 0%, #d06200 100%);
-  color: #fff;
+  background: linear-gradient(to bottom, #c8a430 0%, #9c7a16 100%);
+  color: #120e00;
 }
 
 /* Info */
