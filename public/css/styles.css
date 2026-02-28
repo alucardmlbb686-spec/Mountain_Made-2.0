@@ -366,7 +366,7 @@ html[data-theme="dark"] .navbar {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  min-height: 100px;
+  min-height: 62px;
   gap: var(--space-3);
   width: 100%;
   box-sizing: border-box;
@@ -602,7 +602,7 @@ html[data-theme="dark"] .navbar {
 /* Dropdown when active — works on ALL screen sizes */
 .navbar-menu.mobile-active {
   position: fixed;
-  top: 100px;
+  top: 62px;
   left: 0;
   right: 0;
   width: 100vw;
@@ -727,6 +727,119 @@ html[data-theme="dark"] .navbar {
 .mobile-menu-toggle:hover {
   border-color: rgba(212,175,55,0.75);
   background: rgba(212,175,55,0.12);
+}
+
+/* ============================================================================
+   DESKTOP NAVBAR LAYOUT — logo left, links inline, no hamburger (≥768px)
+   ============================================================================ */
+@media (min-width: 768px) {
+  /* Single-row flex: [container: logo] [menu: links] [actions: icons] */
+  .navbar {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  /* Navbar container: just holds the logo, no grid needed */
+  .navbar-container {
+    display: flex;
+    grid-template-columns: unset;
+    min-height: 62px;
+    padding: 0 0 0 var(--space-5);
+    margin: 0;
+    max-width: none;
+    flex: 0 0 auto;
+    gap: 0;
+  }
+
+  /* Hide hamburger on desktop */
+  .mobile-menu-toggle {
+    display: none !important;
+  }
+
+  /* Logo left-aligned, row layout */
+  .navbar-brand {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    gap: 0.65rem;
+    padding: 0.3rem 1rem 0.3rem 0;
+    justify-content: flex-start;
+  }
+
+  .navbar-brand img {
+    max-height: 44px;
+  }
+
+  .navbar-brand .logo-icon {
+    font-size: 1.6rem;
+  }
+
+  .navbar-tagline {
+    font-size: 0.48rem;
+    letter-spacing: 0.18em;
+  }
+
+  /* Nav links — horizontal, inline, in the bar */
+  .navbar-menu {
+    display: flex !important;
+    flex-direction: row;
+    flex: 1;
+    list-style: none;
+    margin: 0;
+    position: static !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    max-height: none !important;
+    top: auto !important;
+    align-items: stretch;
+    justify-content: center;
+    overflow: visible;
+    z-index: 2;
+  }
+
+  .navbar-menu li {
+    width: auto;
+    display: flex;
+    align-items: stretch;
+  }
+
+  .navbar-menu a {
+    padding: 0 var(--space-4);
+    font-size: 0.84rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    border-radius: 0;
+    border-top: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+    border-left: none;
+    border-right: none;
+    background: transparent;
+  }
+
+  .navbar-menu a:hover,
+  .navbar-menu a.active {
+    border-bottom-color: rgba(212,175,55,0.80);
+    border-top-color: transparent;
+    border-left: none;
+    border-right: none;
+    background: rgba(212,175,55,0.07);
+    color: #ffffff;
+  }
+
+  /* Actions at far right with padding */
+  .navbar-actions {
+    flex: 0 0 auto;
+    padding-right: var(--space-5);
+    align-items: center;
+    display: flex;
+    min-height: 62px;
+  }
 }
 
 /* ============================================================================
@@ -1604,7 +1717,7 @@ body.auth-ready #auth-buttons { visibility: visible; }
   }
 
   .navbar-container {
-    min-height: 80px;
+    min-height: 58px;
     padding: 0 var(--space-3);
     gap: var(--space-2);
   }
@@ -1630,10 +1743,10 @@ body.auth-ready #auth-buttons { visibility: visible; }
   #user-menu { gap: var(--space-1); }
   #user-name { display: none; }
 
-  /* Dropdown now positioned relative to 80px mobile navbar */
+  /* Dropdown now positioned relative to 58px mobile navbar */
   .navbar-menu.mobile-active {
-    top: 80px;
-    max-height: calc(100vh - 80px);
+    top: 58px;
+    max-height: calc(100vh - 58px);
   }
 
   .hero { padding: var(--space-10) var(--space-3); }

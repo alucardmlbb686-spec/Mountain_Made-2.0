@@ -184,12 +184,12 @@
     max-width: 100%;
   }
   
-  /* Sticky header improvements */
+  /* Sticky header improvements — use background-color only so botanical SVG texture is preserved */
   .navbar {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background: var(--primary-900);
+    background-color: #0d3d18;
     box-shadow: 0 2px 8px rgba(0,0,0,0.24);
   }
   
