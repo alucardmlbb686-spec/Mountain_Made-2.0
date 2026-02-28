@@ -505,7 +505,7 @@ const auth = {
     const line1 = String(address?.address_line1 || '').trim();
 
     const primaryArea = [city, state].filter(Boolean).join(', ');
-    const locationText = primaryArea || line1 || 'Add delivery address';
+    const locationText = [primaryArea, line1].filter(Boolean).join(', ') || 'Add delivery address';
 
     if (deliverBar?.bar && deliverBar.label && deliverBar.value) {
       deliverBar.label.textContent = `Deliver to ${shortName}`;
