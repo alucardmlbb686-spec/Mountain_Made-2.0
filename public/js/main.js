@@ -959,6 +959,128 @@ async function uploadProductImage(fileOrInput) {
 
 function createAlertContainer() { /* legacy — replaced by mm-toast-container */ return document.createElement('div'); }
 
+// ─── Mobile Bottom Navigation Bar ────────────────────────────────────────────
+(function () {
+  const EXCLUDED_PAGES = ['/login', '/register', '/admin', '/admin_backup', '/wholesale'];
+
+  function shouldShowBottomNav() {
+    const path = window.location.pathname.replace(/\/+$/, '') || '/';
+    return !EXCLUDED_PAGES.some(p => path === p || path.startsWith(p + '/'));
+  }
+
+  function getActivePage() {
+    const path = window.location.pathname.replace(/\/+$/, '') || '/';
+    if (path === '/') return 'home';
+    if (path.startsWith('/products')) return 'products';
+    if (path.startsWith('/orders')) return 'orders';
+    if (path.startsWith('/cart')) return 'cart';
+    return 'menu';
+  }
+
+  function openMobileMenu() {
+    const menu = document.querySelector('.navbar-menu');
+    const toggle = document.querySelector('.mobile-menu-toggle');
+    if (menu) {
+      menu.classList.toggle('mobile-active');
+      if (toggle) {
+        const icon = toggle.querySelector('i');
+        if (icon) {
+          icon.className = menu.classList.contains('mobile-active')
+            ? 'fas fa-times'
+            : 'fas fa-bars';
+        }
+      }
+      // Close when clicking outside
+      if (menu.classList.contains('mobile-active')) {
+        const close = (e) => {
+          if (!menu.contains(e.target) && e.target !== toggle && !toggle.contains(e.target)) {
+            menu.classList.remove('mobile-active');
+            if (toggle) { const ic = toggle.querySelector('i'); if (ic) ic.className = 'fas fa-bars'; }
+            document.removeEventListener('click', close);
+          }
+        };
+        setTimeout(() => document.addEventListener('click', close), 50);
+      }
+    }
+  }
+
+  function syncCartBadge(nav) {
+    const badge = nav.querySelector('#mm-bnav-cart-badge');
+    if (!badge) return;
+    const existing = document.getElementById('cart-badge');
+    const count = existing ? (existing.textContent || '').trim() : '0';
+    const num = parseInt(count, 10) || 0;
+    badge.textContent = num > 99 ? '99+' : String(num);
+    badge.classList.toggle('hidden', num <= 0);
+  }
+
+  function init() {
+    if (!shouldShowBottomNav()) return;
+    if (document.getElementById('mm-bottom-nav')) return;
+
+    const active = getActivePage();
+
+    const nav = document.createElement('nav');
+    nav.id = 'mm-bottom-nav';
+    nav.className = 'mm-bottom-nav';
+    nav.setAttribute('aria-label', 'Bottom navigation');
+    nav.innerHTML = `
+      <a href="/" class="mm-bnav-item ${active === 'home' ? 'mm-bnav-active' : ''}" aria-label="Home">
+        <span class="mm-bnav-ripple"></span>
+        <span class="mm-bnav-icon-wrap"><i class="fas fa-home"></i></span>
+        <span class="mm-bnav-label">Home</span>
+      </a>
+      <a href="/products" class="mm-bnav-item ${active === 'products' ? 'mm-bnav-active' : ''}" aria-label="Products">
+        <span class="mm-bnav-ripple"></span>
+        <span class="mm-bnav-icon-wrap">
+          <i class="fas fa-store"></i>
+        </span>
+        <span class="mm-bnav-label">Shop</span>
+      </a>
+      <a href="/cart" class="mm-bnav-item ${active === 'cart' ? 'mm-bnav-active' : ''}" aria-label="Cart">
+        <span class="mm-bnav-ripple"></span>
+        <span class="mm-bnav-icon-wrap">
+          <i class="fas fa-shopping-basket"></i>
+          <span id="mm-bnav-cart-badge" class="mm-bnav-badge hidden">0</span>
+        </span>
+        <span class="mm-bnav-label">Cart</span>
+      </a>
+      <a href="/orders" class="mm-bnav-item ${active === 'orders' ? 'mm-bnav-active' : ''}" aria-label="Orders">
+        <span class="mm-bnav-ripple"></span>
+        <span class="mm-bnav-icon-wrap"><i class="fas fa-box-open"></i></span>
+        <span class="mm-bnav-label">Orders</span>
+      </a>
+      <button type="button" class="mm-bnav-item ${active === 'menu' ? 'mm-bnav-active' : ''}" aria-label="Menu" id="mm-bnav-menu-btn">
+        <span class="mm-bnav-ripple"></span>
+        <span class="mm-bnav-icon-wrap"><i class="fas fa-grip-horizontal"></i></span>
+        <span class="mm-bnav-label">Menu</span>
+      </button>
+    `;
+
+    document.body.appendChild(nav);
+    document.body.classList.add('has-bottom-nav');
+
+    // Menu button → open hamburger nav
+    const menuBtn = nav.querySelector('#mm-bnav-menu-btn');
+    if (menuBtn) menuBtn.addEventListener('click', openMobileMenu);
+
+    // Sync cart badge immediately and whenever it changes
+    syncCartBadge(nav);
+    const cartBadgeSource = document.getElementById('cart-badge');
+    if (cartBadgeSource) {
+      new MutationObserver(() => syncCartBadge(nav))
+        .observe(cartBadgeSource, { childList: true, characterData: true, subtree: true });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+
 const APP_DIALOG_STYLE_ID = 'app-dialog-styles';
 
 function ensureAppDialogStyles() {
