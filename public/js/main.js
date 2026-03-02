@@ -1180,8 +1180,12 @@ function createAlertContainer() { /* legacy — replaced by mm-toast-container *
 
     // Theme toggle
     overlay.querySelector('#mm-ps-theme-toggle').addEventListener('click', () => {
-      if (window.theme && typeof window.theme.toggle === 'function') window.theme.toggle();
-      // Update icon/label immediately
+      // theme is a const in outer scope — call directly
+      if (typeof theme !== 'undefined' && typeof theme.toggle === 'function') {
+        theme.toggle();
+      }
+      // updateToggleButtons already runs inside theme.toggle → theme.apply → theme.updateToggleButtons
+      // but update the sheet label/icon as well just in case
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       const icon = overlay.querySelector('#mm-ps-theme-icon');
       const label = overlay.querySelector('#mm-ps-theme-label');
@@ -1243,10 +1247,21 @@ function createAlertContainer() { /* legacy — replaced by mm-toast-container *
     let role = 'Customer';
     if (user.role === 'admin' || user.role === 'super_admin') role = 'Admin';
     else if (user.role === 'wholesale' && user.is_approved) role = 'Wholesale';
+    const photo = user.profile_photo || '';
 
     // Bottom nav tab avatar
     const tabAvatar = document.getElementById('mm-bnav-profile-avatar');
-    if (tabAvatar) tabAvatar.textContent = initial;
+    if (tabAvatar) {
+      if (photo) {
+        tabAvatar.style.backgroundImage = `url(${photo})`;
+        tabAvatar.style.backgroundSize = 'cover';
+        tabAvatar.style.backgroundPosition = 'center';
+        tabAvatar.textContent = '';
+      } else {
+        tabAvatar.style.backgroundImage = '';
+        tabAvatar.textContent = initial;
+      }
+    }
 
     // Profile sheet (if already created)
     const sheet = document.getElementById('mm-profile-sheet');
@@ -1254,7 +1269,17 @@ function createAlertContainer() { /* legacy — replaced by mm-toast-container *
       const avatarEl = sheet.querySelector('#mm-ps-avatar');
       const nameEl   = sheet.querySelector('#mm-ps-name');
       const roleEl   = sheet.querySelector('#mm-ps-role');
-      if (avatarEl) avatarEl.textContent = initial;
+      if (avatarEl) {
+        if (photo) {
+          avatarEl.style.backgroundImage = `url(${photo})`;
+          avatarEl.style.backgroundSize = 'cover';
+          avatarEl.style.backgroundPosition = 'center';
+          avatarEl.textContent = '';
+        } else {
+          avatarEl.style.backgroundImage = '';
+          avatarEl.textContent = initial;
+        }
+      }
       if (nameEl)   nameEl.textContent   = name;
       if (roleEl)   roleEl.textContent   = role;
     }
@@ -1771,6 +1796,7 @@ function renderProfilePreview(url) {
 }
 
 function applyProfilePhoto(url) {
+  // ── Desktop top-navbar account-toggle ──
   const toggleButtons = document.querySelectorAll('#account-toggle');
   toggleButtons.forEach((btn) => {
     const icon = btn.querySelector('i');
@@ -1787,6 +1813,38 @@ function applyProfilePhoto(url) {
       if (icon) icon.style.display = '';
     }
   });
+
+  // ── Mobile bottom-nav profile tab avatar ──
+  const tabAvatar = document.getElementById('mm-bnav-profile-avatar');
+  if (tabAvatar) {
+    if (url) {
+      tabAvatar.style.backgroundImage = `url(${url})`;
+      tabAvatar.style.backgroundSize = 'cover';
+      tabAvatar.style.backgroundPosition = 'center';
+      tabAvatar.textContent = '';
+    } else {
+      tabAvatar.style.backgroundImage = '';
+      // Restore initial from auth user if available
+      const name = String(auth.currentUser?.full_name || auth.currentUser?.email || 'U').trim();
+      tabAvatar.textContent = name.charAt(0).toUpperCase();
+    }
+  }
+
+  // ── Mobile profile sheet large avatar ──
+  const sheetAvatar = document.getElementById('mm-ps-avatar');
+  if (sheetAvatar) {
+    if (url) {
+      sheetAvatar.style.backgroundImage = `url(${url})`;
+      sheetAvatar.style.backgroundSize = 'cover';
+      sheetAvatar.style.backgroundPosition = 'center';
+      sheetAvatar.textContent = '';
+    } else {
+      sheetAvatar.style.backgroundImage = '';
+      const name = String(auth.currentUser?.full_name || auth.currentUser?.email || 'U').trim();
+      sheetAvatar.textContent = name.charAt(0).toUpperCase();
+    }
+  }
+
   renderProfilePreview(url || '');
 }
 
