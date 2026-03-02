@@ -172,22 +172,34 @@
                         <button id="account-toggle" class="icon-button" title="Account">
                             <i class="fas fa-user-circle"></i>
                         </button>
-                        <div id="account-dropdown" class="account-dropdown hidden">
-                            <div class="account-section">
-                                <strong>Account</strong>
-                                <button class="account-link" onclick="openProfileModal()">Edit Profile</button>
-                                <a href="/orders" class="account-link">My Orders</a>
+                                                <div id="account-dropdown" class="account-dropdown hidden">
+                            <div class="accd-header">
+                                <div class="accd-avatar" id="account-avatar">U</div>
+                                <div class="accd-user">
+                                    <div class="accd-name" id="account-display-name">User</div>
+                                    <div class="accd-role" id="account-display-role">Member</div>
+                                </div>
                             </div>
-                            <div class="account-section">
-                                <strong>Account Management</strong>
-                                <button class="account-link" onclick="openAccountManagementModal()">Change Password</button>
+                            <div class="accd-group">
+                                <button class="accd-item" onclick="openProfileModal()">
+                                    <span class="accd-icon"><i class="fas fa-user-edit"></i></span>Edit Profile
+                                </button>
+                                <a href="/orders" class="accd-item">
+                                    <span class="accd-icon"><i class="fas fa-box-open"></i></span>My Orders
+                                </a>
+                                <button class="accd-item" onclick="openAccountManagementModal()">
+                                    <span class="accd-icon"><i class="fas fa-key"></i></span>Change Password
+                                </button>
                             </div>
-                            <div class="account-section">
-                                <strong>Appearance</strong>
-                                <button id="theme-toggle" class="account-link">Toggle Dark / Light</button>
+                            <div class="accd-group">
+                                <button id="theme-toggle" class="accd-item">
+                                    <span class="accd-icon"><i class="fas fa-moon"></i></span>Switch to Dark Mode
+                                </button>
                             </div>
-                            <div class="account-section">
-                                <button id="account-logout" class="account-link account-link-danger">Logout</button>
+                            <div class="accd-group accd-group-last">
+                                <button id="account-logout" class="accd-item accd-item-danger">
+                                    <span class="accd-icon"><i class="fas fa-sign-out-alt"></i></span>Logout
+                                </button>
                             </div>
                         </div>
                     </div>

@@ -295,7 +295,21 @@ const theme = {
     const toggleButtons = document.querySelectorAll('#theme-toggle');
     const text = themeName === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
     toggleButtons.forEach(btn => {
-      btn.textContent = text;
+      const iconSpan = btn.querySelector('.accd-icon');
+      if (iconSpan) {
+        // New design: update icon and preserve the icon span
+        const iconEl = iconSpan.querySelector('i');
+        if (iconEl) {
+          iconEl.className = themeName === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+        // Update text node (the text after the span)
+        let textNode = null;
+        btn.childNodes.forEach(n => { if (n.nodeType === 3 && n.textContent.trim()) textNode = n; });
+        if (textNode) textNode.textContent = text;
+        else btn.appendChild(document.createTextNode(text));
+      } else {
+        btn.textContent = text;
+      }
     });
   }
 };
@@ -527,30 +541,22 @@ const auth = {
   updateAccountDropdownIdentity() {
     const dropdowns = document.querySelectorAll('#account-dropdown');
     dropdowns.forEach((dropdown) => {
-      const accountSection = dropdown.querySelector('.account-section');
-      if (!accountSection) return;
+      const nameEl   = dropdown.querySelector('#account-display-name');
+      const roleEl   = dropdown.querySelector('#account-display-role');
+      const avatarEl = dropdown.querySelector('#account-avatar');
 
-      let identityEl = accountSection.querySelector('.account-user-name');
-
-      if (!this.isAuthenticated()) {
-        if (identityEl) identityEl.remove();
-        return;
-      }
-
-      if (!identityEl) {
-        identityEl = document.createElement('div');
-        identityEl.className = 'account-text account-user-name';
-
-        const firstAction = accountSection.querySelector('.account-link');
-        if (firstAction) {
-          accountSection.insertBefore(identityEl, firstAction);
-        } else {
-          accountSection.appendChild(identityEl);
-        }
-      }
+      if (!this.isAuthenticated()) return;
 
       const name = String(this.currentUser?.full_name || this.currentUser?.email || 'User').trim();
-      identityEl.textContent = name;
+
+      if (nameEl)   nameEl.textContent   = name;
+      if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+
+      if (roleEl) {
+        if (this.isAdmin())      roleEl.textContent = 'Admin';
+        else if (this.isWholesale()) roleEl.textContent = 'Wholesale';
+        else                         roleEl.textContent = 'Customer';
+      }
     });
   },
 

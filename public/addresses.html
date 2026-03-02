@@ -237,81 +237,7 @@
             }
         }
 
-        /* Account Dropdown Styles */
-        .account-menu {
-            position: relative;
-        }
-
-        .account-dropdown {
-            position: absolute;
-            right: 0;
-            top: calc(100% + 0.5rem);
-            background: var(--bg-primary);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-xl);
-            min-width: 280px;
-            z-index: 1000;
-            border: 1px solid var(--border-primary);
-        }
-
-        .account-dropdown.hidden {
-            display: none;
-        }
-
-        .account-section {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-primary);
-        }
-
-        .account-section:last-child {
-            border-bottom: none;
-        }
-
-        .account-section strong {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--text-primary);
-            font-size: 0.875rem;
-            font-weight: 600;
-        }
-
-        .account-link {
-            width: 100%;
-            padding: 0.5rem 0.75rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-primary);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            font-size: 0.875rem;
-            color: var(--text-primary);
-            transition: all 0.2s;
-            display: block;
-            text-align: left;
-            margin-top: 0.5rem;
-        }
-
-        .account-link:hover {
-            background: var(--primary-100);
-            border-color: var(--primary-400);
-        }
-
-        .account-link-danger {
-            background: var(--error-bg);
-            color: var(--error);
-            border-color: var(--error);
-        }
-
-        .account-link-danger:hover {
-            background: var(--error);
-            color: white;
-        }
-
-        .account-text {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 0.25rem;
-            padding: 0.25rem 0;
-        }
+        /* account dropdown styles moved to styles.css */
     </style>
 </head>
 <body>
@@ -340,22 +266,34 @@
                         <button id="account-toggle" class="icon-button" title="Account">
                             <i class="fas fa-user-circle"></i>
                         </button>
-                        <div id="account-dropdown" class="account-dropdown hidden">
-                            <div class="account-section">
-                                <strong>Account</strong>
-                                <button class="account-link" onclick="openProfileModal()">Edit Profile</button>
-                                <a href="/orders" class="account-link">My Orders</a>
+                                                <div id="account-dropdown" class="account-dropdown hidden">
+                            <div class="accd-header">
+                                <div class="accd-avatar" id="account-avatar">U</div>
+                                <div class="accd-user">
+                                    <div class="accd-name" id="account-display-name">User</div>
+                                    <div class="accd-role" id="account-display-role">Member</div>
+                                </div>
                             </div>
-                            <div class="account-section">
-                                <strong>Account Management</strong>
-                                <button class="account-link" onclick="openAccountManagementModal()">Change Password</button>
+                            <div class="accd-group">
+                                <button class="accd-item" onclick="openProfileModal()">
+                                    <span class="accd-icon"><i class="fas fa-user-edit"></i></span>Edit Profile
+                                </button>
+                                <a href="/orders" class="accd-item">
+                                    <span class="accd-icon"><i class="fas fa-box-open"></i></span>My Orders
+                                </a>
+                                <button class="accd-item" onclick="openAccountManagementModal()">
+                                    <span class="accd-icon"><i class="fas fa-key"></i></span>Change Password
+                                </button>
                             </div>
-                            <div class="account-section">
-                                <strong>Appearance</strong>
-                                <button id="theme-toggle" class="account-link">Toggle Dark / Light</button>
+                            <div class="accd-group">
+                                <button id="theme-toggle" class="accd-item">
+                                    <span class="accd-icon"><i class="fas fa-moon"></i></span>Switch to Dark Mode
+                                </button>
                             </div>
-                            <div class="account-section">
-                                <button id="account-logout" class="account-link account-link-danger">Logout</button>
+                            <div class="accd-group accd-group-last">
+                                <button id="account-logout" class="accd-item accd-item-danger">
+                                    <span class="accd-icon"><i class="fas fa-sign-out-alt"></i></span>Logout
+                                </button>
                             </div>
                         </div>
                     </div>
