@@ -311,6 +311,12 @@ const theme = {
         btn.textContent = text;
       }
     });
+
+    // Sync mobile profile sheet theme toggle
+    const psThemeIcon  = document.getElementById('mm-ps-theme-icon');
+    const psThemeLabel = document.getElementById('mm-ps-theme-label');
+    if (psThemeIcon)  psThemeIcon.className  = themeName === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    if (psThemeLabel) psThemeLabel.textContent = text;
   }
 };
 
@@ -563,6 +569,11 @@ const auth = {
         else                         roleEl.textContent = 'Customer';
       }
     });
+
+    // Also sync the mobile bottom nav profile tab + sheet
+    if (this.isAuthenticated() && typeof window.mmBnavUpdateProfile === 'function') {
+      window.mmBnavUpdateProfile(this.currentUser);
+    }
   },
 
   updateNavigationLinks() {
@@ -1055,10 +1066,12 @@ function createAlertContainer() { /* legacy — replaced by mm-toast-container *
         <span class="mm-bnav-icon-wrap"><i class="fas fa-box-open"></i></span>
         <span class="mm-bnav-label">Orders</span>
       </a>
-      <button type="button" class="mm-bnav-item ${active === 'menu' ? 'mm-bnav-active' : ''}" aria-label="Menu" id="mm-bnav-menu-btn">
+      <button type="button" class="mm-bnav-item" aria-label="Profile" id="mm-bnav-profile-btn">
         <span class="mm-bnav-ripple"></span>
-        <span class="mm-bnav-icon-wrap"><i class="fas fa-grip-horizontal"></i></span>
-        <span class="mm-bnav-label">Menu</span>
+        <span class="mm-bnav-icon-wrap">
+          <span class="mm-bnav-avatar" id="mm-bnav-profile-avatar">U</span>
+        </span>
+        <span class="mm-bnav-label">Profile</span>
       </button>
     `;
 
@@ -1068,9 +1081,9 @@ function createAlertContainer() { /* legacy — replaced by mm-toast-container *
     nav.style.display = 'none';
     document.body.classList.remove('has-bottom-nav');
 
-    // Menu button → open hamburger nav
-    const menuBtn = nav.querySelector('#mm-bnav-menu-btn');
-    if (menuBtn) menuBtn.addEventListener('click', openMobileMenu);
+    // Profile button → open profile sheet
+    const profileBtn = nav.querySelector('#mm-bnav-profile-btn');
+    if (profileBtn) profileBtn.addEventListener('click', openProfileSheet);
 
     // Sync cart badge immediately and whenever it changes
     syncCartBadge(nav);
@@ -1086,6 +1099,166 @@ function createAlertContainer() { /* legacy — replaced by mm-toast-container *
   } else {
     init();
   }
+
+  // ── Profile Sheet ──────────────────────────────────────────────
+  function getOrCreateProfileSheet() {
+    let overlay = document.getElementById('mm-profile-sheet');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'mm-profile-sheet';
+    overlay.className = 'mm-ps-overlay';
+    overlay.innerHTML = `
+      <div class="mm-ps-panel" id="mm-ps-panel">
+        <div class="mm-ps-handle"></div>
+        <div class="mm-ps-header">
+          <div class="mm-ps-avatar-lg" id="mm-ps-avatar">U</div>
+          <div class="mm-ps-info">
+            <div class="mm-ps-user-name" id="mm-ps-name">User</div>
+            <div class="mm-ps-user-role" id="mm-ps-role">Member</div>
+          </div>
+        </div>
+        <div class="mm-ps-body">
+          <div class="mm-ps-group">
+            <button class="mm-ps-item" id="mm-ps-edit-profile">
+              <span class="mm-ps-item-icon"><i class="fas fa-user-edit"></i></span>
+              <span class="mm-ps-item-label">Edit Profile</span>
+              <i class="fas fa-chevron-right mm-ps-chevron"></i>
+            </button>
+            <a href="/orders" class="mm-ps-item">
+              <span class="mm-ps-item-icon"><i class="fas fa-box-open"></i></span>
+              <span class="mm-ps-item-label">My Orders</span>
+              <i class="fas fa-chevron-right mm-ps-chevron"></i>
+            </a>
+            <a href="/addresses" class="mm-ps-item">
+              <span class="mm-ps-item-icon"><i class="fas fa-map-marker-alt"></i></span>
+              <span class="mm-ps-item-label">My Addresses</span>
+              <i class="fas fa-chevron-right mm-ps-chevron"></i>
+            </a>
+            <button class="mm-ps-item" id="mm-ps-change-password">
+              <span class="mm-ps-item-icon"><i class="fas fa-key"></i></span>
+              <span class="mm-ps-item-label">Change Password</span>
+              <i class="fas fa-chevron-right mm-ps-chevron"></i>
+            </button>
+          </div>
+          <div class="mm-ps-group">
+            <button class="mm-ps-item" id="mm-ps-theme-toggle">
+              <span class="mm-ps-item-icon"><i class="fas fa-moon" id="mm-ps-theme-icon"></i></span>
+              <span class="mm-ps-item-label" id="mm-ps-theme-label">Switch to Dark Mode</span>
+              <i class="fas fa-chevron-right mm-ps-chevron"></i>
+            </button>
+          </div>
+          <div class="mm-ps-group">
+            <button class="mm-ps-item mm-ps-item-danger" id="mm-ps-logout">
+              <span class="mm-ps-item-icon"><i class="fas fa-sign-out-alt"></i></span>
+              <span class="mm-ps-item-label">Logout</span>
+              <i class="fas fa-chevron-right mm-ps-chevron"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Close when tapping backdrop (outside panel)
+    overlay.addEventListener('click', (e) => {
+      if (!e.target.closest('#mm-ps-panel')) closeProfileSheet();
+    });
+
+    // Edit Profile
+    overlay.querySelector('#mm-ps-edit-profile').addEventListener('click', () => {
+      closeProfileSheet();
+      setTimeout(() => { if (typeof window.openProfileModal === 'function') window.openProfileModal(); }, 220);
+    });
+
+    // Change Password
+    overlay.querySelector('#mm-ps-change-password').addEventListener('click', () => {
+      closeProfileSheet();
+      setTimeout(() => { if (typeof window.openAccountManagementModal === 'function') window.openAccountManagementModal(); }, 220);
+    });
+
+    // Theme toggle
+    overlay.querySelector('#mm-ps-theme-toggle').addEventListener('click', () => {
+      if (window.theme && typeof window.theme.toggle === 'function') window.theme.toggle();
+      // Update icon/label immediately
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const icon = overlay.querySelector('#mm-ps-theme-icon');
+      const label = overlay.querySelector('#mm-ps-theme-label');
+      if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+      if (label) label.textContent = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    });
+
+    // Logout
+    overlay.querySelector('#mm-ps-logout').addEventListener('click', async () => {
+      closeProfileSheet();
+      if (typeof showConfirmDialog === 'function') {
+        const ok = await showConfirmDialog('Are you sure you want to logout?', { title: 'Logout', confirmText: 'Logout' });
+        if (ok && window.auth) await window.auth.logout();
+      } else if (window.auth) {
+        await window.auth.logout();
+      }
+    });
+
+    return overlay;
+  }
+
+  function openProfileSheet() {
+    const overlay = getOrCreateProfileSheet();
+    // Sync current theme label
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const icon = overlay.querySelector('#mm-ps-theme-icon');
+    const label = overlay.querySelector('#mm-ps-theme-label');
+    if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    if (label) label.textContent = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    // Mark profile tab active
+    const profileBtn = document.getElementById('mm-bnav-profile-btn');
+    if (profileBtn) profileBtn.classList.add('mm-bnav-profile-active');
+    // Show
+    overlay.style.display = '';
+    requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('mm-ps-open')));
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeProfileSheet() {
+    const overlay = document.getElementById('mm-profile-sheet');
+    if (!overlay) return;
+    overlay.classList.remove('mm-ps-open');
+    const profileBtn = document.getElementById('mm-bnav-profile-btn');
+    if (profileBtn) profileBtn.classList.remove('mm-bnav-profile-active');
+    document.body.style.overflow = '';
+    setTimeout(() => { if (overlay) overlay.style.display = 'none'; }, 380);
+  }
+
+  // Handle back gesture / escape key to close sheet
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeProfileSheet();
+  });
+
+  // Public: sync avatar+name+role in profile sheet and bottom-nav tab from auth data
+  window.mmBnavUpdateProfile = function (user) {
+    if (!user) return;
+    const name = String(user.full_name || user.email || 'User').trim();
+    const initial = name.charAt(0).toUpperCase();
+    let role = 'Customer';
+    if (user.role === 'admin' || user.role === 'super_admin') role = 'Admin';
+    else if (user.role === 'wholesale' && user.is_approved) role = 'Wholesale';
+
+    // Bottom nav tab avatar
+    const tabAvatar = document.getElementById('mm-bnav-profile-avatar');
+    if (tabAvatar) tabAvatar.textContent = initial;
+
+    // Profile sheet (if already created)
+    const sheet = document.getElementById('mm-profile-sheet');
+    if (sheet) {
+      const avatarEl = sheet.querySelector('#mm-ps-avatar');
+      const nameEl   = sheet.querySelector('#mm-ps-name');
+      const roleEl   = sheet.querySelector('#mm-ps-role');
+      if (avatarEl) avatarEl.textContent = initial;
+      if (nameEl)   nameEl.textContent   = name;
+      if (roleEl)   roleEl.textContent   = role;
+    }
+  };
 
   // Called by auth.updateUI() to show/hide based on login state
   window.mmBnavSetAuth = function (isLoggedIn) {
