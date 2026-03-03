@@ -2061,33 +2061,20 @@ async function initApp() {
     });
   }
 
-  // Global back button on non-home pages (excluding wholesale dashboard)
-  try {
-    const existingBack = document.querySelector('.page-back-button');
-    const hasLocalBackButton = document.querySelector('[data-back-button], .section-back-button, #back-btn, button[onclick*="navigateBack"]');
-    const hasNavbar = document.querySelector('.navbar');
-    const path = window.location.pathname || '/';
-    const isHome = path === '/' || path === '/index.html';
-    const isWholesaleDashboard = path === '/wholesale' || path === '/wholesale.html';
-
-    if (!existingBack && !hasLocalBackButton && hasNavbar && !isHome && !isWholesaleDashboard) {
-      const backBtn = document.createElement('button');
-      backBtn.className = 'page-back-button btn-sm';
-      backBtn.type = 'button';
-      backBtn.innerHTML = '<i class="fas fa-arrow-left"></i><span>Back</span>';
-
-      backBtn.addEventListener('click', () => {
-        if (window.history.length > 1) {
-          window.history.back();
-        } else {
-          window.location.href = document.referrer || '/';
-        }
-      });
-
-      document.body.appendChild(backBtn);
-    }
-  } catch (e) {
-    console.warn('Back button init failed:', e);
+  // Capacitor hardware back button — navigate back instead of closing the app
+  if (IS_NATIVE_CAPACITOR && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+    window.Capacitor.Plugins.App.addListener('backButton', () => {
+      const path = window.location.pathname || '/';
+      const isHome = path === '/' || path === '/index.html';
+      if (!isHome && window.history.length > 1) {
+        window.history.back();
+      } else if (isHome) {
+        // On home page, allow the app to exit naturally via Capacitor
+        window.Capacitor.Plugins.App.exitApp && window.Capacitor.Plugins.App.exitApp();
+      } else {
+        window.location.href = '/';
+      }
+    });
   }
 }
 
