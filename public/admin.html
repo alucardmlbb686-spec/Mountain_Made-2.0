@@ -5978,11 +5978,11 @@
                 // Cache settings and populate section banner selector
                 window._sectionBannerSettings = settings;
                 try {
-                    if (!window._homepageSectionsCache || !window._homepageSectionsCache.length) {
-                        const sectResp = await api.get('/admin/homepage-sections');
-                        window._homepageSectionsCache = sectResp.sections || [];
-                    }
+                    const sectResp = await api.get('/admin/homepage-sections');
+                    window._homepageSectionsCache = sectResp.sections || [];
                     populateBannerSectionSelect(window._homepageSectionsCache);
+                    // Re-render saved banners if a section was already selected
+                    onBannerSectionChange();
                 } catch(e) { console.warn('Could not load sections for banner selector', e); }
 
                 await loadAdminAccountSettings();
@@ -8923,7 +8923,7 @@
             if (prevVal) sel.value = prevVal;
         }
 
-        window.onBannerSectionChange = function() {
+        window.onBannerSectionChange = async function() {
             const sectionId = document.getElementById('banner-section-select')?.value;
             const manager = document.getElementById('section-banner-manager');
             if (!manager) return;
@@ -8937,7 +8937,11 @@
             const mobPending = document.getElementById('mobile-banners-pending');
             if (pcPending) pcPending.innerHTML = '';
             if (mobPending) mobPending.innerHTML = '';
-            // Render saved banners for this section
+            // Always fetch fresh settings so banners are up-to-date after navigating back
+            try {
+                const resp = await api.get('/admin/settings');
+                window._sectionBannerSettings = resp.settings || {};
+            } catch(e) { /* use cached if fetch fails */ }
             const settings = window._sectionBannerSettings || {};
             _renderSavedBannerList('pc-banners-saved', 'pc', sectionId, _parseBannerUrls(settings[`section_pc_banners_${sectionId}`]));
             _renderSavedBannerList('mobile-banners-saved', 'mobile', sectionId, _parseBannerUrls(settings[`section_mobile_banners_${sectionId}`]));
