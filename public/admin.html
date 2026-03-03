@@ -4330,22 +4330,25 @@
             }
 
             const sourceRatio = sourceWidth / sourceHeight;
-            let cropX = 0;
-            let cropY = 0;
-            let cropWidth = sourceWidth;
-            let cropHeight = sourceHeight;
 
+            let baseCropWidth = sourceWidth;
+            let baseCropHeight = sourceHeight;
             if (sourceRatio > targetRatio) {
-                cropWidth = Math.round(sourceHeight * targetRatio);
-                const maxOffsetX = Math.max(0, sourceWidth - cropWidth);
-                const normalizedX = Math.max(0, Math.min(100, Number(focusX) || 50));
-                cropX = Math.round((normalizedX / 100) * maxOffsetX);
+                baseCropWidth = Math.round(sourceHeight * targetRatio);
             } else if (sourceRatio < targetRatio) {
-                cropHeight = Math.round(sourceWidth / targetRatio);
-                const maxOffsetY = Math.max(0, sourceHeight - cropHeight);
-                const normalizedY = Math.max(0, Math.min(100, Number(focusY) || 50));
-                cropY = Math.round((normalizedY / 100) * maxOffsetY);
+                baseCropHeight = Math.round(sourceWidth / targetRatio);
             }
+
+            const responsiveWindowScale = 0.96;
+            const cropWidth = Math.max(1, Math.round(baseCropWidth * responsiveWindowScale));
+            const cropHeight = Math.max(1, Math.round(baseCropHeight * responsiveWindowScale));
+
+            const normalizedX = Math.max(0, Math.min(100, Number(focusX) || 50));
+            const normalizedY = Math.max(0, Math.min(100, Number(focusY) || 50));
+            const maxOffsetX = Math.max(0, sourceWidth - cropWidth);
+            const maxOffsetY = Math.max(0, sourceHeight - cropHeight);
+            const cropX = Math.round((normalizedX / 100) * maxOffsetX);
+            const cropY = Math.round((normalizedY / 100) * maxOffsetY);
 
             const maxOutputWidth = 1600;
             const outputWidth = Math.min(maxOutputWidth, cropWidth);
@@ -8953,8 +8956,8 @@
                 case 'square':    return `width:${s}px;height:${s}px;border-radius:8px;object-fit:cover;display:block;flex-shrink:0;`;
                 case 'triangle':  return `width:${s}px;height:${Math.round(s*0.8)}px;object-fit:cover;clip-path:polygon(50% 0%,0% 100%,100% 100%);display:block;flex-shrink:0;`;
                 case 'star':      return `width:${s}px;height:${s}px;object-fit:cover;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);display:block;flex-shrink:0;`;
-                case 'rectangle': return `width:100%;max-height:${s}px;aspect-ratio:16/9;border-radius:10px;object-fit:cover;display:block;`;
-                default:          return `width:100%;max-height:${s}px;object-fit:cover;border-radius:0;display:block;`; // full
+                case 'rectangle': return `width:100%;height:${s}px;border-radius:10px;object-fit:cover;display:block;`;
+                default:          return `width:100%;height:${s}px;object-fit:cover;border-radius:0;display:block;`; // full
             }
         }
         function _bannerShapePreviewStyle(shape, size) { return _bannerShapeStyle(shape, size); }
@@ -9370,13 +9373,28 @@
             }
             // Pre-set size
             const size = data.size || _defaultBannerSize(shape);
-            window[`_bsSize_${slotId}`] = size;
+            const clampedSize = Math.min(Math.max(parseInt(size) || _defaultBannerSize(shape), 50), 400);
+            window[`_bsSize_${slotId}`] = clampedSize;
             const sizeRange = document.getElementById(`${slotId}_sizer`);
             const sizeLabel = document.getElementById(`${slotId}_sizelabel`);
-            if (sizeRange) sizeRange.value = Math.min(Math.max(size, 50), 400);
-            if (sizeLabel) sizeLabel.textContent = size + 'px';
+            if (sizeRange) sizeRange.value = clampedSize;
+            if (sizeLabel) sizeLabel.textContent = clampedSize + 'px';
             // Store existing URL so user can save without re-uploading
             window[`_bsExistingUrl_${slotId}`] = data.url;
+            // Try to load existing image as a File so crop sliders work in edit mode
+            fetch(data.url)
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to fetch existing image');
+                    return res.blob();
+                })
+                .then(blob => {
+                    const ext = (blob.type || '').split('/')[1] || 'jpg';
+                    window[`_bsFile_${slotId}`] = new File([blob], `existing-banner.${ext}`, { type: blob.type || 'image/jpeg' });
+                })
+                .catch(() => {
+                    // Keep edit-mode save functional even if source cannot be fetched
+                    window[`_bsFile_${slotId}`] = null;
+                });
             // Load existing image into hidden preview + section preview
             const prevEl = document.getElementById(`${slotId}_prev`);
             if (prevEl) {

@@ -1787,8 +1787,8 @@
                         case 'square':    return `width:${s}px;height:${s}px;border-radius:8px;object-fit:cover;display:block;flex-shrink:0;`;
                         case 'triangle':  return `width:${s}px;height:${Math.round(s*.8)}px;object-fit:cover;clip-path:polygon(50% 0%,0% 100%,100% 100%);display:block;flex-shrink:0;`;
                         case 'star':      return `width:${s}px;height:${s}px;object-fit:cover;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);display:block;flex-shrink:0;`;
-                        case 'rectangle': return `width:100%;max-height:${s}px;aspect-ratio:16/9;border-radius:10px;object-fit:cover;display:block;`;
-                        default:          return `width:100%;max-height:${s}px;object-fit:cover;border-radius:0;display:block;`;
+                        case 'rectangle': return `width:100%;height:${s}px;border-radius:10px;object-fit:cover;display:block;`;
+                        default:          return `width:100%;height:${s}px;object-fit:cover;border-radius:0;display:block;`;
                     }
                 }
 
