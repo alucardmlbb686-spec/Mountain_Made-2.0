@@ -732,15 +732,23 @@
         /* ═══════ MODAL ═══════ */
         .modal {
             display: none;
-            position: fixed;
+            position: fixed !important;
             inset: 0;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            max-width: none;
+            max-height: none;
+            border-radius: 0;
+            border: 0;
             background: rgba(5,15,10,0.62);
             backdrop-filter: blur(3px);
             z-index: 4000;
             align-items: center;
             justify-content: center;
             padding: 1.25rem;
-            overflow-y: auto;
+            overflow: auto;
         }
 
         .modal.show { display: flex; }
@@ -8816,6 +8824,13 @@
 
         async function initializeAdmin() {
             try {
+                const adminModals = document.querySelectorAll('.modal');
+                adminModals.forEach((modalEl) => {
+                    if (modalEl && modalEl.parentElement !== document.body) {
+                        document.body.appendChild(modalEl);
+                    }
+                });
+
                 const dateEl = document.getElementById('current-date');
                 if (dateEl) {
                     dateEl.textContent = new Date().toLocaleDateString('en-US', {
