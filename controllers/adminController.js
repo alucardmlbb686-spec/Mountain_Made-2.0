@@ -1759,7 +1759,11 @@ exports.updateSiteSettings = async (req, res) => {
           if (size !== undefined && (isNaN(size) || size < 10 || size > 2000)) {
             return res.status(400).json({ error: `${key}: size must be 10-2000 px` });
           }
-          updates.push({ key, value: JSON.stringify({ url, shape, ...(size ? { size } : {}) }) });
+          const zoom = parsed.zoom ? parseInt(parsed.zoom) : undefined;
+          if (zoom !== undefined && (isNaN(zoom) || zoom < 60 || zoom > 220)) {
+            return res.status(400).json({ error: `${key}: zoom must be 60-220 %` });
+          }
+          updates.push({ key, value: JSON.stringify({ url, shape, ...(size ? { size } : {}), ...(zoom ? { zoom } : {}) }) });
           continue;
         }
         // Legacy format: array of URL strings — convert to single {url, shape} object

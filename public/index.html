@@ -1768,28 +1768,32 @@
                     if (!val || val === 'null') return null;
                     try {
                         const p = JSON.parse(val);
-                        if (p && !Array.isArray(p) && p.url) return { url: p.url, shape: p.shape || 'full', size: parseInt(p.size) || 0 };
+                        if (p && !Array.isArray(p) && p.url) return { url: p.url, shape: p.shape || 'full', size: parseInt(p.size) || 0, zoom: parseInt(p.zoom) || 100 };
                         if (Array.isArray(p) && p[0]) {
                             const first = p[0];
-                            if (typeof first === 'string') return { url: first, shape: 'full', size: 0 };
-                            if (first && first.url) return { url: first.url, shape: first.shape || 'full', size: parseInt(first.size) || 0 };
+                            if (typeof first === 'string') return { url: first, shape: 'full', size: 0, zoom: 100 };
+                            if (first && first.url) return { url: first.url, shape: first.shape || 'full', size: parseInt(first.size) || 0, zoom: parseInt(first.zoom) || 100 };
                         }
                     } catch(_) {}
                     return null;
                 }
 
-                // Build inline style for an img based on shape + saved size (px)
-                function _bannerImgStyle(shape, size) {
+                function _bannerMaskStyle(shape, size) {
                     const defaults = { full:200, rectangle:180, circle:130, square:130, triangle:150, star:130 };
                     const s = parseInt(size) || defaults[shape] || 200;
                     switch(shape) {
-                        case 'circle':    return `width:${s}px;height:${s}px;border-radius:50%;object-fit:cover;display:block;flex-shrink:0;`;
-                        case 'square':    return `width:${s}px;height:${s}px;border-radius:8px;object-fit:cover;display:block;flex-shrink:0;`;
-                        case 'triangle':  return `width:${s}px;height:${Math.round(s*.8)}px;object-fit:cover;clip-path:polygon(50% 0%,0% 100%,100% 100%);display:block;flex-shrink:0;`;
-                        case 'star':      return `width:${s}px;height:${s}px;object-fit:cover;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);display:block;flex-shrink:0;`;
-                        case 'rectangle': return `width:100%;height:${s}px;border-radius:10px;object-fit:cover;display:block;`;
-                        default:          return `width:100%;height:${s}px;object-fit:cover;border-radius:0;display:block;`;
+                        case 'circle':    return `width:${s}px;height:${s}px;border-radius:50%;overflow:hidden;display:block;flex-shrink:0;`;
+                        case 'square':    return `width:${s}px;height:${s}px;border-radius:8px;overflow:hidden;display:block;flex-shrink:0;`;
+                        case 'triangle':  return `width:${s}px;height:${Math.round(s*.8)}px;clip-path:polygon(50% 0%,0% 100%,100% 100%);overflow:hidden;display:block;flex-shrink:0;`;
+                        case 'star':      return `width:${s}px;height:${s}px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);overflow:hidden;display:block;flex-shrink:0;`;
+                        case 'rectangle': return `width:100%;height:${s}px;border-radius:10px;overflow:hidden;display:block;`;
+                        default:          return `width:100%;height:${s}px;border-radius:0;overflow:hidden;display:block;`;
                     }
+                }
+
+                function _bannerInnerImgStyle(zoom = 100) {
+                    const z = Math.max(60, Math.min(220, parseInt(zoom) || 100));
+                    return `width:100%;height:100%;object-fit:cover;display:block;transform:scale(${z / 100});transform-origin:center center;`;
                 }
 
                 sections.forEach((section) => {
@@ -1808,10 +1812,10 @@
                     if (hasBanners) {
                         bannersHtml = `<div class="section-banners-row${noMob ? ' no-mobile' : ''}${noPc ? ' no-pc' : ''}">`;
                         if (pcData) {
-                            bannersHtml += `<div class="section-banner-pc"><img style="${_bannerImgStyle(pcData.shape, pcData.size)}" src="${encodeURI(pcData.url)}" alt="${section.name} banner" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'"></div>`;
+                            bannersHtml += `<div class="section-banner-pc"><div style="${_bannerMaskStyle(pcData.shape, pcData.size)}"><img style="${_bannerInnerImgStyle(pcData.zoom)}" src="${encodeURI(pcData.url)}" alt="${section.name} banner" loading="lazy" decoding="async" onerror="this.closest('.section-banner-pc').style.display='none'"></div></div>`;
                         }
                         if (mobData) {
-                            bannersHtml += `<div class="section-banner-mobile"><img style="${_bannerImgStyle(mobData.shape, mobData.size)}" src="${encodeURI(mobData.url)}" alt="${section.name} banner" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'"></div>`;
+                            bannersHtml += `<div class="section-banner-mobile"><div style="${_bannerMaskStyle(mobData.shape, mobData.size)}"><img style="${_bannerInnerImgStyle(mobData.zoom)}" src="${encodeURI(mobData.url)}" alt="${section.name} banner" loading="lazy" decoding="async" onerror="this.closest('.section-banner-mobile').style.display='none'"></div></div>`;
                         }
                         bannersHtml += `</div>`;
                     }

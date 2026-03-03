@@ -4318,7 +4318,7 @@
             });
         }
 
-        async function cropImageToBannerFile(file, ratioWidth = 20, ratioHeight = 8, focusX = 50, focusY = 50) {
+        async function cropImageToBannerFile(file, ratioWidth = 20, ratioHeight = 8, focusX = 50, focusY = 50, zoom = 100) {
             const targetRatio = ratioWidth / ratioHeight;
             const dataUrl = await readFileAsDataUrl(file);
             const image = await loadImageFromDataUrl(dataUrl);
@@ -4339,7 +4339,8 @@
                 baseCropHeight = Math.round(sourceWidth / targetRatio);
             }
 
-            const responsiveWindowScale = 0.90;
+            const normalizedZoom = Math.max(60, Math.min(220, parseInt(zoom) || 100));
+            const responsiveWindowScale = Math.max(0.35, Math.min(1, 0.90 / (normalizedZoom / 100)));
             const cropWidth = Math.max(1, Math.round(baseCropWidth * responsiveWindowScale));
             const cropHeight = Math.max(1, Math.round(baseCropHeight * responsiveWindowScale));
 
@@ -8932,12 +8933,12 @@
             try {
                 const parsed = JSON.parse(val);
                 if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.url) {
-                    return { url: parsed.url, shape: parsed.shape || 'full', size: parseInt(parsed.size) || 0 };
+                    return { url: parsed.url, shape: parsed.shape || 'full', size: parseInt(parsed.size) || 0, zoom: parseInt(parsed.zoom) || 100 };
                 }
                 if (Array.isArray(parsed) && parsed.length) {
                     const first = parsed[0];
-                    if (typeof first === 'string') return { url: first, shape: 'full', size: 0 };
-                    if (first && first.url) return { url: first.url, shape: first.shape || 'full', size: parseInt(first.size) || 0 };
+                    if (typeof first === 'string') return { url: first, shape: 'full', size: 0, zoom: 100 };
+                    if (first && first.url) return { url: first.url, shape: first.shape || 'full', size: parseInt(first.size) || 0, zoom: parseInt(first.zoom) || 100 };
                 }
             } catch(_) {}
             return null;
@@ -8961,6 +8962,23 @@
             }
         }
         function _bannerShapePreviewStyle(shape, size) { return _bannerShapeStyle(shape, size); }
+
+        function _bannerMaskStyle(shape, size) {
+            const s = parseInt(size) || _defaultBannerSize(shape);
+            switch (shape) {
+                case 'circle':    return `width:${s}px;height:${s}px;border-radius:50%;display:block;overflow:hidden;flex-shrink:0;`;
+                case 'square':    return `width:${s}px;height:${s}px;border-radius:8px;display:block;overflow:hidden;flex-shrink:0;`;
+                case 'triangle':  return `width:${s}px;height:${Math.round(s*0.8)}px;clip-path:polygon(50% 0%,0% 100%,100% 100%);display:block;overflow:hidden;flex-shrink:0;`;
+                case 'star':      return `width:${s}px;height:${s}px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);display:block;overflow:hidden;flex-shrink:0;`;
+                case 'rectangle': return `width:100%;height:${s}px;border-radius:10px;display:block;overflow:hidden;`;
+                default:          return `width:100%;height:${s}px;border-radius:0;display:block;overflow:hidden;`; // full
+            }
+        }
+
+        function _bannerInnerImageStyle(zoom = 100) {
+            const z = Math.max(60, Math.min(220, parseInt(zoom) || 100));
+            return `width:100%;height:100%;object-fit:cover;display:block;transform:scale(${z / 100});transform-origin:center center;`;
+        }
 
         function _hiddenSourcePreviewStyle(shape, size) {
             return `${_bannerShapeStyle(shape, size)}position:absolute;left:-99999px;top:-99999px;visibility:hidden;pointer-events:none;`;
@@ -8999,6 +9017,7 @@
             // Reset size to shape default when shape changes
             const newDefault = _defaultBannerSize(newShape);
             window[`_bsSize_${slotId}`] = newDefault;
+            window[`_bsZoom_${slotId}`] = window[`_bsZoom_${slotId}`] || 100;
             const sizeRange = document.getElementById(`${slotId}_sizer`);
             const sizeLabel = document.getElementById(`${slotId}_sizelabel`);
             if (sizeRange) sizeRange.value = newDefault;
@@ -9012,7 +9031,8 @@
                     const [rW2, rH2] = _getCropRatio(bsType, newShape);
                     const cx = parseFloat(document.getElementById(`${slotId}_cx`)?.value ?? 50);
                     const cy = parseFloat(document.getElementById(`${slotId}_cy`)?.value ?? 50);
-                    _cropAndPreviewSlot(bsType, slotId, file, cx, cy, rW2, rH2);
+                    const zoom = parseInt(window[`_bsZoom_${slotId}`]) || 100;
+                    _cropAndPreviewSlot(bsType, slotId, file, cx, cy, rW2, rH2, zoom);
                     return; // _applySlotPreview + _refreshSectionPreview called inside
                 }
             }
@@ -9039,20 +9059,44 @@
             _refreshSectionPreview(slotId);
         };
 
+        window._updateBannerImageZoom = async function(rangeEl, type, slotId) {
+            const zoom = Math.max(60, Math.min(220, parseInt(rangeEl.value) || 100));
+            window[`_bsZoom_${slotId}`] = zoom;
+            const lbl = document.getElementById(`${slotId}_zoomlabel`);
+            if (lbl) lbl.textContent = zoom + '%';
+            const file = window[`_bsFile_${slotId}`];
+            if (!file) {
+                _refreshSectionPreview(slotId);
+                return;
+            }
+            const isGif = file.name.toLowerCase().endsWith('.gif') || file.type === 'image/gif';
+            if (isGif) {
+                _refreshSectionPreview(slotId);
+                return;
+            }
+            const shape = window[`_bsShape_${slotId}`] || 'full';
+            const [rW, rH] = _getCropRatio(type, shape);
+            const cx = parseFloat(document.getElementById(`${slotId}_cx`)?.value ?? 50);
+            const cy = parseFloat(document.getElementById(`${slotId}_cy`)?.value ?? 50);
+            await _cropAndPreviewSlot(type, slotId, file, cx, cy, rW, rH, zoom);
+        };
+
         // Update the live homepage-section preview inside the slot
         function _refreshSectionPreview(slotId) {
             const shape      = window[`_bsShape_${slotId}`] || 'full';
             const size       = parseInt(window[`_bsSize_${slotId}`]) || _defaultBannerSize(shape);
+            const zoom       = Math.max(60, Math.min(220, parseInt(window[`_bsZoom_${slotId}`]) || 100));
             // Compact size for the preview pane so mock title+cards are always visible
             const isWideBanner = ['full', 'rectangle'].includes(shape);
-            const compactSize = isWideBanner ? Math.min(size, 110) : Math.min(size, 90);
+            const compactSize = isWideBanner ? Math.max(45, Math.min(180, Math.round(size * 0.55))) : Math.max(45, Math.min(140, Math.round(size * 0.75)));
             const srcEl      = document.getElementById(`${slotId}_prev`);
             const bannerWrap = document.getElementById(`${slotId}_sp_banner`);
+            const maskEl     = document.getElementById(`${slotId}_sp_mask`);
             const imgEl      = document.getElementById(`${slotId}_sp_img`);
             const phEl       = document.getElementById(`${slotId}_sp_ph`);
             const titleEl    = document.getElementById(`${slotId}_sp_title`);
             const sectionSel = document.getElementById(`${slotId}_section`);
-            if (!bannerWrap || !imgEl) return;
+            if (!bannerWrap || !imgEl || !maskEl) return;
             const src = srcEl?.src && srcEl.src !== window.location.href ? srcEl.src : null;
             if (titleEl && sectionSel) {
                 const opt = sectionSel.options?.[sectionSel.selectedIndex];
@@ -9062,11 +9106,14 @@
             bannerWrap.style.justifyContent = isCentered ? 'center' : 'flex-start';
             bannerWrap.style.padding = isCentered ? '8px 0' : '0';
             if (src) {
-                imgEl.style.cssText = _bannerShapeStyle(shape, compactSize);
+                maskEl.style.cssText = _bannerMaskStyle(shape, compactSize);
+                maskEl.style.display = 'block';
+                imgEl.style.cssText = _bannerInnerImageStyle(zoom);
                 imgEl.src = src;
                 imgEl.style.display = 'block';
                 if (phEl) phEl.style.display = 'none';
             } else {
+                maskEl.style.display = 'none';
                 imgEl.style.display = 'none';
                 if (phEl) phEl.style.display = '';
             }
@@ -9109,11 +9156,12 @@
                 if (pcData) {
                     const shape = pcData.shape || 'full';
                     const size  = pcData.size || _defaultBannerSize(shape);
+                    const zoom  = Math.max(60, Math.min(220, parseInt(pcData.zoom) || 100));
                     const previewStyle = _bannerShapeStyle(shape, Math.min(size, 180)).replace('width:100%', 'max-width:280px;width:100%');
                     html += `<div style="position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:4px;max-width:280px;">
                         <img src="${_escBannerAttr(pcData.url)}" style="${previewStyle}" alt="">
                         <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">
-                            <span style="background:rgba(0,0,0,0.55);color:#fff;font-size:0.63rem;padding:1px 6px;border-radius:3px;">PC &middot; ${shape} &middot; ${size}px</span>
+                            <span style="background:rgba(0,0,0,0.55);color:#fff;font-size:0.63rem;padding:1px 6px;border-radius:3px;">PC &middot; ${shape} &middot; ${size}px &middot; ${zoom}%</span>
                             <button data-type="pc" data-sid="${sid}"
                                 onclick="_editSavedBanner(this.dataset.type,this.dataset.sid)"
                                 style="background:rgba(37,117,252,0.85);border:none;color:#fff;border-radius:4px;padding:1px 7px;cursor:pointer;font-size:0.68rem;" title="Edit">
@@ -9128,6 +9176,7 @@
                 if (mobData) {
                     const shape = mobData.shape || 'full';
                     const size  = mobData.size || _defaultBannerSize(shape);
+                    const zoom  = Math.max(60, Math.min(220, parseInt(mobData.zoom) || 100));
                     const isFullLike = ['full','rectangle'].includes(shape);
                     const previewStyle = isFullLike
                         ? 'width:70px;aspect-ratio:9/16;object-fit:cover;border-radius:4px;display:block;'
@@ -9135,7 +9184,7 @@
                     html += `<div style="position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
                         <img src="${_escBannerAttr(mobData.url)}" style="${previewStyle}" alt="">
                         <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">
-                            <span style="background:rgba(0,0,0,0.55);color:#fff;font-size:0.63rem;padding:1px 6px;border-radius:3px;">MOB &middot; ${shape} &middot; ${size}px</span>
+                            <span style="background:rgba(0,0,0,0.55);color:#fff;font-size:0.63rem;padding:1px 6px;border-radius:3px;">MOB &middot; ${shape} &middot; ${size}px &middot; ${zoom}%</span>
                             <button data-type="mobile" data-sid="${sid}"
                                 onclick="_editSavedBanner(this.dataset.type,this.dataset.sid)"
                                 style="background:rgba(37,117,252,0.85);border:none;color:#fff;border-radius:4px;padding:1px 7px;cursor:pointer;font-size:0.68rem;" title="Edit">
@@ -9177,8 +9226,10 @@
             if (!container) return;
             const defaultShape = 'full';
             const defaultSize  = _defaultBannerSize(defaultShape);
+            const defaultZoom  = 100;
             window[`_bsShape_${slotId}`] = defaultShape;
             window[`_bsSize_${slotId}`]  = defaultSize;
+            window[`_bsZoom_${slotId}`]  = defaultZoom;
 
             const shapeBtns = _BANNER_SHAPES.map(s => {
                 const isActive = s.key === defaultShape;
@@ -9219,6 +9270,16 @@
                     <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-top:2px;"><span>50px</span><span>400px</span></div>
                 </div>
 
+                <div style="margin-bottom:0.85rem;">
+                    <label class="form-label" style="font-size:0.8rem;margin-bottom:0.25rem;display:flex;align-items:center;gap:0.5rem;">
+                        <i class="fas fa-search-plus" style="color:var(--primary);"></i>Image Zoom&nbsp;<span id="${slotId}_zoomlabel" style="font-weight:700;color:var(--primary);">${defaultZoom}%</span>
+                    </label>
+                    <input type="range" id="${slotId}_zoom" min="60" max="220" step="5" value="${defaultZoom}"
+                        style="width:100%;accent-color:var(--primary);" oninput="_updateBannerImageZoom(this,'${type}','${slotId}')">
+                    <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-top:2px;"><span>60%</span><span>220%</span></div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px;">Zoom changes only image fit inside the same shape</div>
+                </div>
+
                 <div style="margin-bottom:0.6rem;">
                     <label class="form-label" style="font-size:0.8rem;margin-bottom:0.25rem;"><i class="fas fa-image" style="color:var(--primary);margin-right:0.3rem;"></i>Image / GIF</label>
                     <input type="file" id="${slotId}_file" class="form-input" accept=".jpg,.jpeg,.png,.gif,.webp"
@@ -9245,7 +9306,9 @@
                     </label>
                     <div style="border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;">
                         <div id="${slotId}_sp_banner" style="width:100%;display:flex;align-items:center;justify-content:center;background:#f3f4f6;overflow:hidden;">
-                            <img id="${slotId}_sp_img" style="display:none;" alt="">
+                            <div id="${slotId}_sp_mask" style="display:none;overflow:hidden;">
+                                <img id="${slotId}_sp_img" style="display:block;width:100%;height:100%;object-fit:cover;" alt="">
+                            </div>
                             <div id="${slotId}_sp_ph" style="padding:1.1rem;text-align:center;color:#aaa;font-size:0.73rem;line-height:1.5;">
                                 <i class="fas fa-image" style="font-size:1.4rem;display:block;margin-bottom:4px;color:#ccc;"></i>Select image
                             </div>
@@ -9284,7 +9347,8 @@
             } else {
                 const shape = window[`_bsShape_${slotId}`] || 'full';
                 const [rW, rH] = _getCropRatio(type, shape);
-                await _cropAndPreviewSlot(type, slotId, file, 50, 50, rW, rH);
+                const zoom = parseInt(window[`_bsZoom_${slotId}`]) || 100;
+                await _cropAndPreviewSlot(type, slotId, file, 50, 50, rW, rH, zoom);
             }
         };
 
@@ -9297,7 +9361,8 @@
             const [rW, rH] = _getCropRatio(type, shape);
             const cx = parseFloat(document.getElementById(`${slotId}_cx`)?.value ?? 50);
             const cy = parseFloat(document.getElementById(`${slotId}_cy`)?.value ?? 50);
-            await _cropAndPreviewSlot(type, slotId, file, cx, cy, rW, rH);
+            const zoom = parseInt(window[`_bsZoom_${slotId}`]) || 100;
+            await _cropAndPreviewSlot(type, slotId, file, cx, cy, rW, rH, zoom);
         };
 
         function _applySlotPreview(slotId, objectUrl) {
@@ -9313,9 +9378,9 @@
             _refreshSectionPreview(slotId);
         }
 
-        async function _cropAndPreviewSlot(type, slotId, file, focusX, focusY, rW, rH) {
+        async function _cropAndPreviewSlot(type, slotId, file, focusX, focusY, rW, rH, zoom = 100) {
             try {
-                const cropped = await cropImageToBannerFile(file, rW, rH, focusX, focusY);
+                const cropped = await cropImageToBannerFile(file, rW, rH, focusX, focusY, zoom);
                 window[`_bsCropped_${slotId}`] = cropped;
                 _applySlotPreview(slotId, URL.createObjectURL(cropped));
             } catch (e) { console.warn('Banner slot crop error', e); }
@@ -9326,6 +9391,7 @@
             if (!sectionId) { showAlert('Please choose a section for this banner', 'error'); return; }
             const shape = window[`_bsShape_${slotId}`] || 'full';
             const size  = parseInt(window[`_bsSize_${slotId}`]) || _defaultBannerSize(shape);
+            const zoom  = Math.max(60, Math.min(220, parseInt(window[`_bsZoom_${slotId}`]) || 100));
             const [rW, rH] = _getCropRatio(type, shape);
             const fileInput = document.getElementById(`${slotId}_file`);
             let fileToUpload = window[`_bsCropped_${slotId}`];
@@ -9334,7 +9400,7 @@
                 const cx = parseFloat(document.getElementById(`${slotId}_cx`)?.value ?? 50);
                 const cy = parseFloat(document.getElementById(`${slotId}_cy`)?.value ?? 50);
                 const isGif = fileInput.files[0].name.toLowerCase().endsWith('.gif') || fileInput.files[0].type === 'image/gif';
-                fileToUpload = isGif ? fileInput.files[0] : await cropImageToBannerFile(fileInput.files[0], rW, rH, cx, cy);
+                fileToUpload = isGif ? fileInput.files[0] : await cropImageToBannerFile(fileInput.files[0], rW, rH, cx, cy, zoom);
             }
             // Allow saving with existing URL (edit mode — no new file selected)
             const existingUrl = window[`_bsExistingUrl_${slotId}`];
@@ -9348,7 +9414,7 @@
                 }
                 const key = `section_${type}_banners_${sectionId}`;
                 const payload = {};
-                payload[key] = JSON.stringify({ url, shape, size });
+                payload[key] = JSON.stringify({ url, shape, size, zoom });
                 await api.post('/admin/settings', payload);
                 if (!window._sectionBannerSettings) window._sectionBannerSettings = {};
                 window._sectionBannerSettings[key] = payload[key];
@@ -9386,10 +9452,16 @@
             const size = data.size || _defaultBannerSize(shape);
             const clampedSize = Math.min(Math.max(parseInt(size) || _defaultBannerSize(shape), 50), 400);
             window[`_bsSize_${slotId}`] = clampedSize;
+            const zoom = Math.max(60, Math.min(220, parseInt(data.zoom) || 100));
+            window[`_bsZoom_${slotId}`] = zoom;
             const sizeRange = document.getElementById(`${slotId}_sizer`);
             const sizeLabel = document.getElementById(`${slotId}_sizelabel`);
+            const zoomRange = document.getElementById(`${slotId}_zoom`);
+            const zoomLabel = document.getElementById(`${slotId}_zoomlabel`);
             if (sizeRange) sizeRange.value = clampedSize;
             if (sizeLabel) sizeLabel.textContent = clampedSize + 'px';
+            if (zoomRange) zoomRange.value = zoom;
+            if (zoomLabel) zoomLabel.textContent = zoom + '%';
             // Store existing URL so user can save without re-uploading
             window[`_bsExistingUrl_${slotId}`] = data.url;
             // Try to load existing image as a File so crop sliders work in edit mode
