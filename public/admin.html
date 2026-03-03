@@ -9003,15 +9003,19 @@
         }
         function _bannerShapePreviewStyle(shape, size) { return _bannerShapeStyle(shape, size); }
 
-        function _bannerMaskStyle(shape, size) {
+        function _bannerMaskStyle(type, shape, size) {
             const s = parseInt(size) || _defaultBannerSize(shape);
             switch (shape) {
                 case 'circle':    return `width:${s}px;height:${s}px;border-radius:50%;display:block;overflow:hidden;flex-shrink:0;`;
                 case 'square':    return `width:${s}px;height:${s}px;border-radius:8px;display:block;overflow:hidden;flex-shrink:0;`;
                 case 'triangle':  return `width:${s}px;height:${Math.round(s*0.8)}px;clip-path:polygon(50% 0%,0% 100%,100% 100%);display:block;overflow:hidden;flex-shrink:0;`;
                 case 'star':      return `width:${s}px;height:${s}px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);display:block;overflow:hidden;flex-shrink:0;`;
-                case 'rectangle': return `width:100%;height:${s}px;border-radius:10px;display:block;overflow:hidden;`;
-                default:          return `width:100%;height:${s}px;border-radius:0;display:block;overflow:hidden;`; // full
+                case 'rectangle': return `width:min(100%, ${Math.round(s * (16 / 9))}px);aspect-ratio:16/9;border-radius:10px;display:block;overflow:hidden;`;
+                default:
+                    if (type === 'mobile') {
+                        return `width:min(100%, ${Math.round(s * (9 / 16))}px);aspect-ratio:9/16;border-radius:0;display:block;overflow:hidden;`;
+                    }
+                    return `width:min(100%, ${Math.round(s * (20 / 8))}px);aspect-ratio:20/8;border-radius:0;display:block;overflow:hidden;`; // full pc
             }
         }
 
@@ -9126,13 +9130,14 @@
 
         // Update the live homepage-section preview inside the slot
         function _refreshSectionPreview(slotId) {
+            const bsType     = document.getElementById(slotId)?.dataset?.bstype || 'pc';
             const shape      = window[`_bsShape_${slotId}`] || 'full';
             const size       = parseInt(window[`_bsSize_${slotId}`]) || _defaultBannerSize(shape);
             const zoom       = Math.max(50, Math.min(250, parseInt(window[`_bsZoom_${slotId}`]) || 100));
             const isGif      = !!window[`_bsIsGif_${slotId}`];
             // Compact size for the preview pane so mock title+cards are always visible
             const isWideBanner = ['full', 'rectangle'].includes(shape);
-            const compactSize = isWideBanner ? Math.max(45, Math.min(180, Math.round(size * 0.55))) : Math.max(45, Math.min(140, Math.round(size * 0.75)));
+            const compactSize = isWideBanner ? Math.max(45, Math.min(170, Math.round(size * 0.5))) : Math.max(45, Math.min(140, Math.round(size * 0.75)));
             const srcEl      = document.getElementById(`${slotId}_prev`);
             const bannerWrap = document.getElementById(`${slotId}_sp_banner`);
             const maskEl     = document.getElementById(`${slotId}_sp_mask`);
@@ -9146,11 +9151,10 @@
                 const opt = sectionSel.options?.[sectionSel.selectedIndex];
                 titleEl.textContent = (opt && opt.textContent) ? opt.textContent : 'Section title';
             }
-            const isCentered = !isWideBanner;
-            bannerWrap.style.justifyContent = isCentered ? 'center' : 'flex-start';
-            bannerWrap.style.padding = isCentered ? '8px 0' : '0';
+            bannerWrap.style.justifyContent = 'center';
+            bannerWrap.style.padding = '8px 0';
             if (src) {
-                maskEl.style.cssText = _bannerMaskStyle(shape, compactSize);
+                maskEl.style.cssText = _bannerMaskStyle(bsType, shape, compactSize);
                 maskEl.style.display = 'block';
                 imgEl.style.cssText = _bannerInnerImageStyle(zoom, isGif);
                 imgEl.src = src;

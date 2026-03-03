@@ -1782,7 +1782,7 @@
                     return null;
                 }
 
-                function _bannerMaskStyle(shape, size) {
+                function _bannerMaskStyle(type, shape, size) {
                     const defaults = { full:200, rectangle:180, circle:130, square:130, triangle:150, star:130 };
                     const s = parseInt(size) || defaults[shape] || 200;
                     switch(shape) {
@@ -1790,8 +1790,12 @@
                         case 'square':    return `width:${s}px;height:${s}px;border-radius:8px;overflow:hidden;display:block;flex-shrink:0;`;
                         case 'triangle':  return `width:${s}px;height:${Math.round(s*.8)}px;clip-path:polygon(50% 0%,0% 100%,100% 100%);overflow:hidden;display:block;flex-shrink:0;`;
                         case 'star':      return `width:${s}px;height:${s}px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);overflow:hidden;display:block;flex-shrink:0;`;
-                        case 'rectangle': return `width:100%;height:${s}px;border-radius:10px;overflow:hidden;display:block;`;
-                        default:          return `width:100%;height:${s}px;border-radius:0;overflow:hidden;display:block;`;
+                        case 'rectangle': return `width:min(100%, ${Math.round(s * (16 / 9))}px);aspect-ratio:16/9;border-radius:10px;overflow:hidden;display:block;`;
+                        default:
+                            if (type === 'mobile') {
+                                return `width:min(100%, ${Math.round(s * (9 / 16))}px);aspect-ratio:9/16;border-radius:0;overflow:hidden;display:block;`;
+                            }
+                            return `width:min(100%, ${Math.round(s * (20 / 8))}px);aspect-ratio:20/8;border-radius:0;overflow:hidden;display:block;`;
                     }
                 }
 
@@ -1817,10 +1821,10 @@
                     if (hasBanners) {
                         bannersHtml = `<div class="section-banners-row">`;
                         if (pcData) {
-                            bannersHtml += `<div class="section-banner-pc"><div style="${_bannerMaskStyle(pcData.shape, pcData.size)}"><img style="${_bannerInnerImgStyle(pcData.zoom, !!pcData.isGif)}" src="${encodeURI(pcData.url)}" alt="${section.name} banner" loading="lazy" decoding="async" onerror="this.closest('.section-banner-pc').style.display='none'"></div></div>`;
+                            bannersHtml += `<div class="section-banner-pc"><div style="${_bannerMaskStyle('pc', pcData.shape, pcData.size)}"><img style="${_bannerInnerImgStyle(pcData.zoom, !!pcData.isGif)}" src="${encodeURI(pcData.url)}" alt="${section.name} banner" loading="lazy" decoding="async" onerror="this.closest('.section-banner-pc').style.display='none'"></div></div>`;
                         }
                         if (mobData) {
-                            bannersHtml += `<div class="section-banner-mobile"><div style="${_bannerMaskStyle(mobData.shape, mobData.size)}"><img style="${_bannerInnerImgStyle(mobData.zoom, !!mobData.isGif)}" src="${encodeURI(mobData.url)}" alt="${section.name} banner" loading="lazy" decoding="async" onerror="this.closest('.section-banner-mobile').style.display='none'"></div></div>`;
+                            bannersHtml += `<div class="section-banner-mobile"><div style="${_bannerMaskStyle('mobile', mobData.shape, mobData.size)}"><img style="${_bannerInnerImgStyle(mobData.zoom, !!mobData.isGif)}" src="${encodeURI(mobData.url)}" alt="${section.name} banner" loading="lazy" decoding="async" onerror="this.closest('.section-banner-mobile').style.display='none'"></div></div>`;
                         }
                         bannersHtml += `</div>`;
                     }
