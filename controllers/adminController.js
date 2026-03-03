@@ -1745,7 +1745,7 @@ exports.updateSiteSettings = async (req, res) => {
           updates.push({ key, value: null });
           continue;
         }
-        // New format: single {url, shape} object
+        // New format: single {url, shape, size} object
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
           const url = String(parsed.url || '').trim();
           if (url && !/^(https?:\/\/|\/uploads\/)/i.test(url)) {
@@ -1755,7 +1755,11 @@ exports.updateSiteSettings = async (req, res) => {
           if (!validBannerShapes.includes(shape)) {
             return res.status(400).json({ error: `${key}: invalid shape '${shape}'` });
           }
-          updates.push({ key, value: JSON.stringify({ url, shape }) });
+          const size = parsed.size ? parseInt(parsed.size) : undefined;
+          if (size !== undefined && (isNaN(size) || size < 10 || size > 2000)) {
+            return res.status(400).json({ error: `${key}: size must be 10-2000 px` });
+          }
+          updates.push({ key, value: JSON.stringify({ url, shape, ...(size ? { size } : {}) }) });
           continue;
         }
         // Legacy format: array of URL strings — convert to single {url, shape} object

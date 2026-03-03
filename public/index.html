@@ -1763,19 +1763,33 @@
                 
                 let html = '';
 
-                // Parse banner setting value → {url, shape} or null (handles legacy arrays too)
+                // Parse banner setting value → {url, shape, size} or null
                 function parseBannerData(val) {
                     if (!val || val === 'null') return null;
                     try {
                         const p = JSON.parse(val);
-                        if (p && !Array.isArray(p) && p.url) return { url: p.url, shape: p.shape || 'full' };
+                        if (p && !Array.isArray(p) && p.url) return { url: p.url, shape: p.shape || 'full', size: parseInt(p.size) || 0 };
                         if (Array.isArray(p) && p[0]) {
                             const first = p[0];
-                            if (typeof first === 'string') return { url: first, shape: 'full' };
-                            if (first && first.url) return { url: first.url, shape: first.shape || 'full' };
+                            if (typeof first === 'string') return { url: first, shape: 'full', size: 0 };
+                            if (first && first.url) return { url: first.url, shape: first.shape || 'full', size: parseInt(first.size) || 0 };
                         }
                     } catch(_) {}
                     return null;
+                }
+
+                // Build inline style for an img based on shape + saved size (px)
+                function _bannerImgStyle(shape, size) {
+                    const defaults = { full:200, rectangle:180, circle:130, square:130, triangle:150, star:130 };
+                    const s = parseInt(size) || defaults[shape] || 200;
+                    switch(shape) {
+                        case 'circle':    return `width:${s}px;height:${s}px;border-radius:50%;object-fit:cover;display:block;flex-shrink:0;`;
+                        case 'square':    return `width:${s}px;height:${s}px;border-radius:8px;object-fit:cover;display:block;flex-shrink:0;`;
+                        case 'triangle':  return `width:${s}px;height:${Math.round(s*.8)}px;object-fit:cover;clip-path:polygon(50% 0%,0% 100%,100% 100%);display:block;flex-shrink:0;`;
+                        case 'star':      return `width:${s}px;height:${s}px;object-fit:cover;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);display:block;flex-shrink:0;`;
+                        case 'rectangle': return `width:100%;max-height:${s}px;aspect-ratio:16/9;border-radius:10px;object-fit:cover;display:block;`;
+                        default:          return `width:100%;max-height:${s}px;object-fit:cover;border-radius:0;display:block;`;
+                    }
                 }
 
                 sections.forEach((section) => {
@@ -1794,10 +1808,10 @@
                     if (hasBanners) {
                         bannersHtml = `<div class="section-banners-row${noMob ? ' no-mobile' : ''}${noPc ? ' no-pc' : ''}">`;
                         if (pcData) {
-                            bannersHtml += `<div class="section-banner-pc"><img class="banner-shape-${pcData.shape||'full'}" src="${encodeURI(pcData.url)}" alt="${section.name} banner" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'"></div>`;
+                            bannersHtml += `<div class="section-banner-pc"><img style="${_bannerImgStyle(pcData.shape, pcData.size)}" src="${encodeURI(pcData.url)}" alt="${section.name} banner" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'"></div>`;
                         }
                         if (mobData) {
-                            bannersHtml += `<div class="section-banner-mobile"><img class="banner-shape-${mobData.shape||'full'}" src="${encodeURI(mobData.url)}" alt="${section.name} banner" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'"></div>`;
+                            bannersHtml += `<div class="section-banner-mobile"><img style="${_bannerImgStyle(mobData.shape, mobData.size)}" src="${encodeURI(mobData.url)}" alt="${section.name} banner" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'"></div>`;
                         }
                         bannersHtml += `</div>`;
                     }
