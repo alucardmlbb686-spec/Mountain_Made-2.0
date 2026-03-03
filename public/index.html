@@ -1809,14 +1809,12 @@
 
                 sections.forEach((section) => {
                     const sectionProducts = Array.isArray(section.products) ? section.products : [];
-                    const sectionHeadingImageUrl = (section.heading_image_url || '').trim();
-                    const safeSectionHeadingImageUrl = sectionHeadingImageUrl ? encodeURI(sectionHeadingImageUrl) : '';
 
                     // Banners from site_settings — one banner per type per section
                     const pcData  = parseBannerData(settings[`section_pc_banners_${section.id}`]);
                     const mobData = parseBannerData(settings[`section_mobile_banners_${section.id}`]);
                     const hasBanners = !!(pcData || mobData);
-                    const showHeadingImage = !!sectionHeadingImageUrl && !hasBanners;
+                    const showHeadingImage = false;
                     let bannersHtml = '';
                     if (hasBanners) {
                         bannersHtml = `<div class="section-banners-row">`;
@@ -1835,7 +1833,7 @@
                             <div class="section-title">
                                 <div class="homepage-section-heading-wrap">
                                     <div class="homepage-section-heading-image-box ${showHeadingImage ? '' : 'hidden'}">
-                                        <img class="homepage-section-heading-image" src="${showHeadingImage ? safeSectionHeadingImageUrl : ''}" alt="${section.name || 'Section'} heading image" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('hidden')">
+                                        <img class="homepage-section-heading-image" src="" alt="${section.name || 'Section'} heading image" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('hidden')">
                                     </div>
                                     <div class="homepage-section-heading-text">
                                         <h2>${section.name}</h2>
