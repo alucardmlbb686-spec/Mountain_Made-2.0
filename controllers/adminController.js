@@ -1543,8 +1543,22 @@ exports.updateSiteSettings = async (req, res) => {
       admin_license_blocked !== undefined ||
       admin_license_expires_at !== undefined;
 
+    const hasSuperAdminOnlyCommerceSetting =
+      business_support_email !== undefined ||
+      gpay_enabled !== undefined ||
+      gpay_payee_name !== undefined ||
+      gpay_upi_id !== undefined ||
+      gpay_phone_number !== undefined ||
+      gpay_bank_name !== undefined ||
+      gpay_qr_image_url !== undefined ||
+      req.body?.cod_available_pincodes !== undefined;
+
     if (hasLicenseChange && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: 'Only super admin can manage admin license settings.' });
+    }
+
+    if (hasSuperAdminOnlyCommerceSetting && req.user?.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Only super admin can manage Business Email, GPay, and COD pincode settings.' });
     }
 
     // Collect all provided settings so this endpoint can be reused

@@ -3475,6 +3475,18 @@
         window._ssNavObserver = null;
         window._ssNavResizeHandler = null;
 
+        function _isSuperAdminUser() {
+            return auth?.currentUser?.role === 'super_admin';
+        }
+
+        function _applySuperAdminOnlySiteSettingsVisibility() {
+            const isSuper = _isSuperAdminUser();
+            ['ss-sub-email', 'ss-sub-gpay', 'ss-sub-cod'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.style.display = isSuper ? '' : 'none';
+            });
+        }
+
         function _positionSsQuickNav() {
             var nav = document.getElementById('ss-quicknav');
             if (!nav || nav.style.display === 'none') return;
@@ -3492,6 +3504,7 @@
         window.buildSiteSettingsQuickNav = function() {
             var nav = document.getElementById('ss-quicknav');
             if (!nav) return;
+            _applySuperAdminOnlySiteSettingsVisibility();
 
             // Collect all labelled sub-sections
             var subs = [
@@ -3505,7 +3518,10 @@
                 { id: 'ss-sub-email',     label: 'Business Email' },
                 { id: 'ss-sub-gpay',      label: 'Google Pay' },
                 { id: 'ss-sub-cod',       label: 'COD Pincodes' }
-            ].filter(function(s) { return !!document.getElementById(s.id); });
+            ].filter(function(s) {
+                var el = document.getElementById(s.id);
+                return !!el && el.style.display !== 'none';
+            });
 
             // Build buttons
             nav.innerHTML = subs.map(function(s) {
@@ -5854,6 +5870,7 @@
         // Site Settings - Logo Management
         async function loadSiteSettings() {
             try {
+                _applySuperAdminOnlySiteSettingsVisibility();
                 const response = await api.get('/admin/settings');
                 const settings = response.settings || {};
                 
@@ -6595,6 +6612,10 @@
         };
 
         window.saveBusinessEmailSettings = async function() {
+            if (!_isSuperAdminUser()) {
+                showAlert('Only super admin can update Business Email integration.', 'error');
+                return;
+            }
             try {
                 const businessEmailEl = document.getElementById('business-support-email');
                 const business_support_email = (businessEmailEl?.value || '').trim();
@@ -6621,6 +6642,10 @@
         };
 
         window.handleGpayQrFileSelection = function(event) {
+            if (!_isSuperAdminUser()) {
+                showAlert('Only super admin can update GPay integration.', 'error');
+                return;
+            }
             try {
                 const file = event?.target?.files?.[0];
                 if (!file) {
@@ -6652,6 +6677,10 @@
         }
 
         window.saveGpayIntegrationSettings = async function() {
+            if (!_isSuperAdminUser()) {
+                showAlert('Only super admin can update GPay integration.', 'error');
+                return;
+            }
             try {
                 const gpay_enabled = !!document.getElementById('gpay-enabled')?.checked;
                 const gpay_payee_name = (document.getElementById('gpay-payee-name')?.value || '').trim();
@@ -6698,6 +6727,10 @@
 
         /* ── Homepage Hero Slider Admin Functions ── */
         window.saveCodPincodeSettings = async function() {
+            if (!_isSuperAdminUser()) {
+                showAlert('Only super admin can update COD pincodes.', 'error');
+                return;
+            }
             try {
                 const raw = (document.getElementById('cod-available-pincodes')?.value || '').trim();
                 // Normalize: split by comma or newline, trim each, rejoin with comma
@@ -9672,6 +9705,7 @@
                 if (superAdminTools) {
                     superAdminTools.classList.toggle('hidden', !isSuperAdmin);
                 }
+                _applySuperAdminOnlySiteSettingsVisibility();
 
                 const userMenu = document.getElementById('user-menu');
                 const authButtons = document.getElementById('auth-buttons');
