@@ -9475,6 +9475,13 @@
             } else if (fileToUpload) {
                 isGifUpload = fileToUpload.name?.toLowerCase?.().endsWith('.gif') || fileToUpload.type === 'image/gif';
             }
+            if (!fileToUpload && window[`_bsFile_${slotId}`]) {
+                const srcFile = window[`_bsFile_${slotId}`];
+                const cx = parseFloat(document.getElementById(`${slotId}_cx`)?.value ?? 50);
+                const cy = parseFloat(document.getElementById(`${slotId}_cy`)?.value ?? 50);
+                isGifUpload = srcFile.name?.toLowerCase?.().endsWith('.gif') || srcFile.type === 'image/gif';
+                fileToUpload = isGifUpload ? srcFile : await cropImageToBannerFile(srcFile, rW, rH, cx, cy, zoom);
+            }
             if (!fileToUpload) { showAlert('Please select an image or GIF first', 'error'); return; }
             try {
                 showAlert('Saving banner…', 'info');
@@ -9531,9 +9538,10 @@
             if (sizeLabel) sizeLabel.textContent = clampedSize + 'px';
             if (zoomRange) zoomRange.value = zoom;
             if (zoomLabel) zoomLabel.textContent = zoom + '%';
-            // Force explicit file pick for updates so Site Settings always gets a fresh uploaded file URL
+            // Prepare editable source (existing saved media) so zoom/crop works during edit
             window[`_bsFile_${slotId}`] = null;
             window[`_bsCropped_${slotId}`] = null;
+            window[`_bsSourceUrl_${slotId}`] = data.url;
             const fileInput = document.getElementById(`${slotId}_file`);
             if (fileInput) fileInput.value = '';
             // Load existing image into hidden preview + section preview
@@ -9543,6 +9551,27 @@
                 prevEl.onload = () => _refreshSectionPreview(slotId);
                 if (prevEl.complete) _refreshSectionPreview(slotId);
             }
+            // Load current banner as File so edit zoom/crop can regenerate upload output
+            fetch(data.url, { cache: 'no-store' })
+                .then(res => {
+                    if (!res.ok) throw new Error('Unable to fetch existing banner source');
+                    return res.blob();
+                })
+                .then(blob => {
+                    const guessedExt = (blob.type || '').split('/')[1] || ((/\.gif($|[?#])/i.test(String(data.url || ''))) ? 'gif' : 'jpg');
+                    const file = new File([blob], `existing-banner.${guessedExt}`, { type: blob.type || 'image/jpeg', lastModified: Date.now() });
+                    const isGifFile = file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
+                    window[`_bsFile_${slotId}`] = file;
+                    window[`_bsIsGif_${slotId}`] = isGifFile;
+                    if (isGifFile) {
+                        window[`_bsCropped_${slotId}`] = file;
+                    }
+                    const cropRowEl = document.getElementById(`${slotId}_croprow`);
+                    if (cropRowEl) cropRowEl.style.display = isGifFile ? 'none' : '';
+                })
+                .catch(() => {
+                    // Keep preview visible even if source fetch fails; user can pick a new file manually
+                });
             // Show crop row
             const cropRow = document.getElementById(`${slotId}_croprow`);
             if (cropRow) cropRow.style.display = data.isGif ? 'none' : '';
