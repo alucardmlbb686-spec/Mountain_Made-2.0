@@ -3274,50 +3274,48 @@
             // Avoid acting on incomplete operator-only edits during typing
             if (/^[+\-*/.]$/.test(adjustmentRaw)) return;
 
-            const looksLikeMainPriceAdjustment =
-                adjustmentRaw.startsWith('+') ||
-                adjustmentRaw.startsWith('-') ||
-                adjustmentRaw.startsWith('*') ||
-                adjustmentRaw.startsWith('/') ||
-                /[+\-*/()]/.test(adjustmentRaw);
+            let computedDiscount = null;
+            const plainNumber = /^[+-]?\d*\.?\d+$/;
 
-            // Positive plain numbers remain as direct discount values.
-            if (!looksLikeMainPriceAdjustment) {
-                const asNumber = parseFloat(adjustmentRaw);
-                if (!Number.isFinite(asNumber) || asNumber < 0) return;
-                const computedText = Number(asNumber).toFixed(2);
-                discountInput.value = computedText;
-                discountInput.setAttribute('data-saved-discount', computedText);
-                return;
+            if (plainNumber.test(adjustmentRaw)) {
+                const numeric = parseFloat(adjustmentRaw);
+                if (!Number.isFinite(numeric)) return;
+
+                if (adjustmentRaw.startsWith('-')) {
+                    computedDiscount = basePrice - Math.abs(numeric);
+                } else if (adjustmentRaw.startsWith('+')) {
+                    computedDiscount = basePrice + Math.abs(numeric);
+                } else {
+                    // Plain positive number = direct discount price
+                    computedDiscount = numeric;
+                }
+            } else {
+                const safeExpr = adjustmentRaw.replace(/\s+/g, '');
+                if (!/^[0-9+\-*/().]+$/.test(safeExpr)) return;
+
+                // Expressions starting with operator are relative to main price: -10-76, *0.9, /2
+                const normalizedExpr = /^[+\-*/]/.test(safeExpr)
+                    ? `${basePrice}${safeExpr}`
+                    : safeExpr;
+
+                let evaluated = null;
+                try {
+                    evaluated = Function(`"use strict"; return (${normalizedExpr});`)();
+                } catch (_) {
+                    return;
+                }
+                if (!Number.isFinite(evaluated)) return;
+                computedDiscount = evaluated;
             }
 
-            const safeExpr = adjustmentRaw.replace(/\s+/g, '');
-            if (!/^[0-9+\-*/().]+$/.test(safeExpr)) return;
+            computedDiscount = Math.max(0, computedDiscount);
 
-            const normalizedExpr = /^[+\-*/]/.test(safeExpr)
-                ? `${basePrice}${safeExpr}`
-                : safeExpr;
-
-            let evaluatedPrice = null;
+            const computedText = Number(computedDiscount).toFixed(2);
+            discountInput.value = computedText;
+            discountInput.setAttribute('data-saved-discount', computedText);
             try {
-                evaluatedPrice = Function(`"use strict"; return (${normalizedExpr});`)();
-            } catch (_) {
-                return;
-            }
-            if (!Number.isFinite(evaluatedPrice)) return;
-            evaluatedPrice = Math.max(0, evaluatedPrice);
-
-            const updatedPriceText = Number(evaluatedPrice).toFixed(2);
-            priceInput.value = updatedPriceText;
-            priceInput.setAttribute('data-base-price', updatedPriceText);
-            priceInput.setAttribute('data-saved-price', updatedPriceText);
-
-            // This field acted as a price-adjust command, so clear stored discount.
-            discountInput.value = '';
-            discountInput.setAttribute('data-saved-discount', '');
-            try {
-                priceInput.dispatchEvent(new Event('input', { bubbles: true }));
-                priceInput.dispatchEvent(new Event('change', { bubbles: true }));
+                discountInput.dispatchEvent(new Event('input', { bubbles: true }));
+                discountInput.dispatchEvent(new Event('change', { bubbles: true }));
             } catch (_) {
                 // ignore
             }
